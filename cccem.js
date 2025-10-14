@@ -798,6 +798,7 @@ var cccemDir = window.locally_hosted?'./':'https://cursedsliver.github.io/CCCEM/
 if (Game.ready && !l('topbarFrenzy')) {
   pureWriteSave=false;
   Game.LoadMod(cccemDir+"cccemInterface.js");
+  console.log(cccemDir+"cccemInterface.js");
   
   if (Game.chimeType==0 && !hasSettingsSet) {PresetSettingsConsist(); ResetGame(1); PresetSettingsGrail();} else if (hasSettingsSet) {IntegratedSettingsConsist(); ResetGame(1); IntegratedSettingsGrail(); pushStoredGameSettings(); } else {ResetGame(1);};
   if (!hasSettingsSet) { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Your save will return upon closing the game.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [18, 6]) } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [19, 6]) }
