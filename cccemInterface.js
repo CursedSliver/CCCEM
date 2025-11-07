@@ -165,32 +165,28 @@ function PrintScore() {
   var consistentPow = AllConsistentBuffsPow();
   var scoreRed=(maxComboPow*iniRaw*consistentPow/relComboPow);
   var score=cookieGain/scoreRed;
-  var icon=[1,7]
-  if (score>1e6) {icon=[1,7]}
-  else if (score>9e5) {icon=[1,1,cccemSpritesheet]}
-  else if (score>9.5e5) {icon=[3,1,cccemSpriteSheet]}
-  else if (score>8.5e5) {icon=[33,4]}
-  else if (score>8e5) {icon=[32,4]}
-  else if (score>7.5e5) {icon=[22,7]}
-  else if (score>7e5) {icon=[2,1,cccemSpritesheet]}
-  else if (score>6.5e5) {icon=[0,1,cccemSpritesheet]}
-  else if (score>6e5) {icon=[14,5]}
-  else if (score>5.5e5) {icon=[13,5]}
-  else if (score>5e5) {icon=[12,5]}
-  else if (score>4e5) {icon=[3,0,cccemSpritesheet]}
-  else if (score>3e5) {icon=[2,0,cccemSpritesheet]}
-  else if (score>2e5) {icon=[1,0,cccemSpritesheet]}
-  else if (score>1e5) {icon=[0,0,cccemSpritesheet]}
-  else if (score>5e4) {icon=[12,0]}
-  else if (score>1e4) {icon=[1,6]}
-  else if (score>1e3) {icon=[0,6]}
-  else if (score>1e2) {icon=[0,2]}
-  else if (score>1e1) {icon=[0,1]}
-  else if (score>1) {icon=[0,0]}
+  var icon=[12,8]
+  var originalScore = score;
+  score/=1.333e6;
+  if (score>3) {icon=[1,7]}
+  else if (score>2.5) {icon=[1,1,cccemSpritesheet]}
+  else if (score>2) {icon=[33,4]}
+  else if (score>1.5) {icon=[32,4]}
+  else if (score>1) {icon=[0,1,cccemSpritesheet]}
+  else if (score>0.9) {icon=[14,5]}
+  else if (score>0.8) {icon=[13,5]}
+  else if (score>0.7) {icon=[12,5]}
+  else if (score>0.6) {icon=[3,0,cccemSpritesheet]}
+  else if (score>0.5) {icon=[2,0,cccemSpritesheet]}
+  else if (score>0.4) {icon=[1,0,cccemSpritesheet]}
+  else if (score>0.3) {icon=[0,0,cccemSpritesheet]}
+  else if (score>0.2) {icon=[2,5]}
+  else if (score>0.1) {icon=[1,5]}
+  else if (score>0.01) {icon=[0,5]}
   else if (score>0) {icon=[12,8]}
     
-  console.log('Score: '+score,'Combo Strength: '+maxComboPow,'Strength of non-divided buffs: '+relComboPow,'Number of BSs: '+maxBSCount,'Strength of Godzamok: '+maxGodz,'Initial Raw CpS: '+iniRaw,'Years of CpS: '+Beautify(cookieGain/iniRaw/31536000),'All Consistent Buffs power: ' + consistentPow,'Cookie gained: ' + cookieGain);
-  if (invalidateScore==0) {Game.Notify('Score: '+score.toPrecision(3),Beautify(cookieGain/iniRaw/31536000)+' years of CpS, GZ: '+maxGodz.toPrecision(3)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
+  console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)','Combo Strength: '+maxComboPow,'Strength of non-divided buffs: '+relComboPow,'Number of BSs: '+maxBSCount,'Strength of Godzamok: '+maxGodz,'Initial Raw CpS: '+iniRaw,'Years of CpS: '+Beautify(cookieGain/iniRaw/31536000),'All Consistent Buffs power: ' + consistentPow,'Cookie gained: ' + cookieGain);
+  if (invalidateScore==0) {Game.Notify('Score: '+(score*100).toFixed(1)+'%',Beautify(cookieGain/iniRaw/31536000)+' years of CpS, GZ: '+maxGodz.toPrecision(3)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
   };
 
 function CycleFtHoF(reverse) {
