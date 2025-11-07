@@ -186,7 +186,7 @@ function PrintScore() {
   else if (score>0) {icon=[12,8]}
     
   console.log('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)','Combo Strength: '+maxComboPow,'Strength of non-divided buffs: '+relComboPow,'Number of BSs: '+maxBSCount,'Strength of Godzamok: '+maxGodz,'Initial Raw CpS: '+iniRaw,'Years of CpS: '+Beautify(cookieGain/iniRaw/31536000),'All Consistent Buffs power: ' + consistentPow,'Cookie gained: ' + cookieGain);
-  if (invalidateScore==0) {Game.Notify('Score: '+(score*100).toFixed(1)+'%',Beautify(cookieGain/iniRaw/31536000)+' years of CpS, GZ: '+maxGodz.toPrecision(3)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
+  if (invalidateScore==0) {Game.Notify('Score: '+originalScore.toPrecision(3)+' ('+(score*100).toFixed(1)+'%)',Beautify(cookieGain/iniRaw/31536000)+' years of CpS, GZ: '+maxGodz.toPrecision(3)+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
   };
 
 function CycleFtHoF(reverse) {
