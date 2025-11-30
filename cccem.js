@@ -37,12 +37,13 @@
 //version 2.58: added ability to normalize score
 //version 2.59: silencing build count under 9 popup if notif setting set to silent
 //version 2.60: added check for handmade cookies
+//version 2.61: added variable for incorrect EB usage, as well as code to allow for automatic score correction (and also getting rid of building count warning), and less lag when resetting
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 //The "non-real" cccemver is for detecting whether to wipe settings
 var CCCEMVer = 'v2.58';
-var CCCEMVerReal = 'v2.60';
+var CCCEMVerReal = 'v2.61';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -104,6 +105,7 @@ var muteBuildings=[1,1,0,1,1,0,0,0,1,1,0,1,1,1,1,1,1,1,1,1] //list of which buil
 var unmuteMinigames=true //unmutes all buildings with minigames, overrides muteBuildings
 var buyOption1=1 //set to 0 to have buy selected and 1 to have sell selected at the start
 var buyOption2=4 //set to 2 to have "1" selected, 3 for "10", 4 for "100", 5 for "all"
+var autoScoreCor=1; //score correction value CCCEM tries to set automatically
 var scoreCorVal=1; //value to multiply the score by in order to normalize it
 var scoreCorNotify=true; //whether to get notified about score inaccuracies
 var DFChanceMult=1; //dragonflight buff chance multiplier (also multiplies dh chance but who cares about that)
@@ -378,7 +380,7 @@ function PresetSettingsBSScry() {
     
 var limitedReset = false;
 var noLoadCCCEMData = false;
- 
+
 function ResetGame(toFindRaw) {
   Game.popups=0;
   if (!(typeof Game.Objects.Temple.minigame === "undefined")){Game.Objects.Temple.minigame.slot=[Game.Objects.Temple.minigame.slot[0],Game.Objects.Temple.minigame.slot[1],Game.Objects.Temple.minigame.slot[2]]}; //fixes import corruption before importing the save
@@ -394,16 +396,6 @@ function ResetGame(toFindRaw) {
     Game.Objects['Wizard tower'].levelUp(true);
     Game.Objects['Farm'].level = gardenLevel - 1;
     Game.Objects['Farm'].levelUp(true);
-    if (toFindRaw) {
-      for (var i = 0; i < Object.keys(Game.Objects).length; i++)
-        {
-          if (Game.ObjectsById[i].amount<10 && scoreCorNotify) {
-            Game.popups=1;
-            Game.Notify('Likely score inaccuracy','Your imported save has building numbers below 10. This may give innacurate scores, the imported save should instead have a "normal" amount of buildings, while any drastic reduction in building count is done with building override in the settings',[1,7]);
-            Game.popups=0;
-            break};
-        }
-      }
     } 
   else {
     for (var i in Game.Upgrades) 
@@ -415,19 +407,10 @@ function ResetGame(toFindRaw) {
     Game.MaxSpecials();
     Game.nextResearch=0;
     Game.researchT=-1;
-    var buildCount=iniBC;
-    var rebuy=useRebuy
-    if (toFindRaw) rebuy=0
-    if (!useEB || toFindRaw) {buildCount+=buildingRelList[rebuy+1]} else {buildCount+=buildingRelListEB[rebuy+1]}
-    var num=0
-    for (var i = 0; i < Object.keys(Game.Objects).length; i++)
-      {
-        if (buildCount<0) buildCount=0;
-        Game.ObjectsById[i].amount=buildCount; 
-        if (i==7) {num+=wizCount} else {num+=buildCount};
-        if (!useEB || toFindRaw) {buildCount+=buildingRelList[rebuy][i]} else {buildCount+=buildingRelListEB[rebuy][i]}; 
-      }
-    Game.BuildingsOwned=num
+    var rebuy = useRebuy
+    var EB = useEB
+    if (toFindRaw) {rebuy=0; EB=0}
+    SetBuildings(iniBC, EB, rebuy);
     Game.cookies=iniC;
     Game.cookiesEarned=iniCE;
     iniHM=iniCE;
@@ -442,7 +425,10 @@ function ResetGame(toFindRaw) {
       }
     };
   Game.prefs.autosave=0;
-  Game.ObjectsById[7].amount=wizCount
+  if (!toFindRaw) {
+    Game.BuildingsOwned+=wizCount-Game.ObjectsById[7].amount; 
+    Game.ObjectsById[7].amount=wizCount;
+    };
   Game.Upgrades['Chocolate egg'].bought=boughtCE;
   Game.Upgrades['Sugar frenzy'].bought=boughtSF;
   Game.popups=0
@@ -470,7 +456,7 @@ function ResetGame(toFindRaw) {
   Game.dragonAura2=(toFindRaw?0:d2Aura)
   Game.TickerAge=0;
   
-  Game.Logic();
+  Game.CalculateGains();
   Game.popups=1;
   };
  
@@ -496,8 +482,9 @@ function ResetMinigames(toFindRaw) {
     }
   Game.Objects['Farm'].minigame.freeze=0;
   Game.Objects['Farm'].minigame.soil=2;
-  if (toFindRaw) {Game.Objects['Farm'].minigame.harvestAll(); Game.Objects['Farm'].minigame.computeEffs()}
+  if (toFindRaw == 1) {Game.Objects['Farm'].minigame.harvestAll(); Game.Objects['Farm'].minigame.computeEffs()}
   Game.Objects['Farm'].minigame.nextStep=window.PForPause?window.PForPause.cumulativeRealTime:Date.now()
+  if (toFindRaw == 2) {Game.Objects['Farm'].minigame.nextStep+=100000; Game.Objects['Farm'].minigame.computeEffs()}
   if (!toFindRaw) {Game.Objects['Farm'].minigame.logic(); let nextTick = (window.PForPause?window.PForPause.cumulativeRealTime:Date.now())+(toNextTick?toNextTick:Math.round(Math.random()*900))*1000;
   if (!limitedReset) { Game.Objects['Farm'].minigame.nextStep=nextTick } else { MacadamiaModList.cccem.mod.nextTickRPC.send({ time: nextTick }); } }
   Game.Objects['Farm'].minigame.seedSelected=gardenSeed;
@@ -506,7 +493,9 @@ function ResetMinigames(toFindRaw) {
   
   Game.Objects['Bank'].minigame.reset();
   Game.Objects['Bank'].minigame.officeLevel=officeL;
- 
+  
+  if (toFindRaw == 2) {toFindRaw=0}
+
   Game.Objects['Temple'].minigame.reset();
   Game.Objects['Temple'].minigame.dragging=Game.Objects['Temple'].minigame.godsById[(toFindRaw?0:spirit1)];
   Game.Objects['Temple'].minigame.slotGod(Game.Objects['Temple'].minigame.godsById[(toFindRaw?0:spirit1)], 0);
@@ -599,7 +588,6 @@ function SpawnGoldenCookies(noSpawn) {
     var newShimmer=new Game.shimmer('golden',{noWrath:true});
     newShimmer.spawnLead=1; 
     Game.shimmerTypes.golden.spawned=1;
-    Game.Logic();
   }
   Game.killShimmers();
   Game.volume=priorVol
@@ -646,28 +634,47 @@ function ResetAll(manual) {
     devastatedness=0
     rebuyedness=0
     maxUndevastated=0
+    incorrectEBwarn=useEB?1:0
   }
   let tempseed = Game.makeSeed();
   if (iniSeed=='R') {Game.seed=tempseed; } else {Game.seed=iniSeed;}; console.log(Game.seed);
   ResetGame(1);
   ResetMinigames(1);
   if (iniSeed=='R') {Game.seed=tempseed}
-  Game.recalculateGains=1
-  Game.Logic();
-  if (!(typeof CCCEMUILoaded === "undefined")) {iniRaw=Game.cookiesPsRaw};
+  Game.CalculateGains();
+  if (!(typeof CCCEMUILoaded === "undefined")) {
+    autoScoreCor=AutoScoreCorrect()
+    };
   ResetGame();
   ResetMinigames();
   if (iniSeed=='R') {Game.seed=tempseed}
   setGrimoireCasts();
-  overrideBuildings(); Game.Logic();
+  overrideBuildings(); 
+  Game.CalculateGains();
   SpawnGoldenCookies();
+  };
+
+function SetBuildings(buildCount, EB, rebuy) {
+  num=0
+  if (rebuy) {rebuy=2} else {rebuy=0}
+  if (EB) {buildCount+=buildingRelListEB[rebuy+1]} else {buildCount+=buildingRelList[rebuy+1]};
+  for (var i = 0; i < Object.keys(Game.Objects).length; i++)
+    {
+      if (buildCount<0) buildCount=0;
+      Game.ObjectsById[i].amount=buildCount; 
+      num+=buildCount;
+      if (EB) {buildCount+=buildingRelListEB[rebuy][i]} else {buildCount+=buildingRelList[rebuy][i]};
+    }
+  Game.BuildingsOwned=num
   };
 
 function overrideBuildings() {
   for (var i = 0; i < Object.keys(Game.Objects).length; i++)
       {
+        var prev = Game.ObjectsById[i].amount
         if (manualBuildings[i] > 0) { Game.ObjectsById[i].amount=manualBuildings[i]; } 
         else if (manualBuildings[i] < 0) { Game.ObjectsById[i].amount=0; }
+        Game.BuildingsOwned+=Game.ObjectsById[i].amount-prev
       }
 }
 function GetEffectDurMod() {
@@ -690,6 +697,38 @@ function GetEffectDurMod() {
   };
   return effectDurMod
 };
+
+function AutoScoreCorrect() {
+  iniRaw=Game.cookiesPsRaw
+  SetBuildings(iniBC)
+  Game.CalculateGains();
+  var raw2 = Game.cookiesPsRaw
+
+  /*
+  var tempSetting=getSettingsCode()
+  var tempSave=iniLoadSave
+  d1Aura=15
+  d2Aura=useEB?3:1
+  spirit1=8
+  spirit2=0
+  spirit3=6
+  ResetGame();
+  iniP=Game.prestige
+  iniLoadSave=false
+  ResetMinigames();
+  gardenP1=[15, 0]
+  gardenP2=[15, 0]
+  ResetMinigames(2);
+  Game.CalculateGains();
+  var cps1 = Game.cookiesPsRaw
+  ResetGame();
+  var cps2 = Game.cookiesPsRaw
+  CCCEMContainerModObj.load(tempSetting)
+  iniLoadSave=tempSave
+  */
+
+  return iniRaw/raw2
+  };
 
 function CheckModLoaded() {
   if (typeof CCCEMUILoaded === "undefined") {var keepNotifs=Game.prefs.notifs; Game.prefs.notifs=0; Game.Notify('Mod partially not loaded','Try reloading and clearing mod data, and maybe try later',[15, 5]); Game.prefs.notifs=keepNotifs};
