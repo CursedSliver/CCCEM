@@ -24,6 +24,7 @@
 //version 2.49: adds ability to tinker with score, as well as mute buildings
 //version 2.491: bugfix for rebuy calculation when a buff dies, improved score display again
 //version 2.5: tidied up the printscore function and tried fixing more score mult calculation issues
+//version 2.51: added check for incorrect EB usage and automatic score correction
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -37,6 +38,7 @@ var maxGodz=1
 var devastatedness=0
 var rebuyedness=0
 var maxUndevastated=0
+var incorrectEBwarn=0
 var iniRaw=1
 var tickerCount=0
 var buildingSelected=0;
@@ -90,7 +92,7 @@ function FortuneTicker(manual) {
   };
 
 function FindAuraP(a1, a2) { //finds the strength of the a1 aura in the case that a2 is also slotted
-  if (a1 == 15) {return 2}
+  if (a1 == 15 && a2 != 18) {return 2}
   if (!a2) {a2=0};
   var auraSlot1=Game.dragonAura
   var auraSlot2=Game.dragonAura2
@@ -99,7 +101,7 @@ function FindAuraP(a1, a2) { //finds the strength of the a1 aura in the case tha
   Game.CalculateGains();
   var noA1=Game.cookiesPs
   Game.dragonAura=a1
-  Game.CalculateGains();	
+  Game.CalculateGains();
   var yesA1=Game.cookiesPs
   Game.dragonAura=auraSlot1
   Game.dragonAura2=auraSlot2
@@ -142,6 +144,9 @@ function Devastate() {
   Game.CalculateGains()
   devastatedness+=undevastated*devastation
   rebuyedness+=undevastated*devastation*diff
+  var EB = (Game.auraMult("Elder Battalion")>=1)?1:0
+  if (EB && !useEB) {incorrectEBwarn++}
+  if (EB && useEB) {incorrectEBwarn--}
   //console.log(cookiesFromClick, undevastated, devastation, diff)
   };
 
@@ -165,7 +170,7 @@ function FindUndevastated() { //calculates combo power based on non-devastation 
     if (Game.shimmerTypes['golden'].n>0) {
       cComboPow*=Math.pow(2.23, Game.shimmerTypes['golden'].n); 
       };
-    var corAura = useEB?15:1; 
+    var corAura = useEB?15:1;
     cComboPow/=FindAuraP(corAura);
     };
   if (maxUndevastated<cComboPow) {maxUndevastated=cComboPow}
@@ -251,7 +256,7 @@ function PrintScore() {
   var clickGain=Game.handmadeCookies-iniHM
   var consistentPow = AllConsistentBuffsPow();
   var scoreRed=(maxComboPow*iniRaw*consistentPow/relComboPow);
-  var score=(cookieGain/scoreRed)*scoreCorVal;
+  var score=(cookieGain/scoreRed)*scoreCorVal*autoScoreCor;
   var icon=[12,8]
   var originalScore = score;
   score/=1.333e6;
@@ -273,8 +278,6 @@ function PrintScore() {
   else if (score>0) {icon=[12,8]}
   
   var z ='​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ '
-  var clickScore=score*(clickGain/cookieGain)*1.05
-  var scoreCorStr = ''
   devastatedness = NormalizeDevastatedness(devastatedness);
   rebuyedness = NormalizeDevastatedness(rebuyedness)/devastatedness;
   var clicks = Math.trunc(0.000000001+(devastatedness/maxGodz));
@@ -297,26 +300,29 @@ function PrintScore() {
   logArr.push('Initial Raw CpS: ' + Beautify(iniRaw) +'<br>')
 
 
-
+  var clickScore=score*(clickGain/cookieGain)*1.05
   if (clickScore) {
     var clickDiffCor = (devastatedness/maxGodz)/clicks
     var godzScore = clickScore/clickDiffCor
     var trueDevastated = rebuyedness*clicks*maxGodz
-    var scorePerClick = godzScore/(trueDevastated)
-    var scoreCorrection = (trueDevastated / 4250) / (godzScore)
+    var scorePerClick = (godzScore/trueDevastated)*1333000
+    var scoreCorrection = ((trueDevastated / 4250) / (godzScore))
+    var manualCor = scoreCorrection*scoreCorVal
     logArr.push('<br>')
-    logArr.push('Score per Click: '+(scorePerClick*1333000).toPrecision(4) +'<br>')
-    logArr.push('Score correction value: '+scoreCorrection.toFixed(4) +'<br>')
-    logArr.push(z+'Set score mult to: '+(scoreCorrection*scoreCorVal).toFixed(4) +'<br>')
+    logArr.push('Score per Click: '+(scorePerClick).toPrecision(4) +'<br>')
+    logArr.push('Score correction value: '+scoreCorrection.toPrecision(4) +'<br>')
+    logArr.push(z+'Automatic score correction: '+autoScoreCor.toPrecision(4) +'<br>')
+    logArr.push(z+'Set score mult to: '+(manualCor).toPrecision(4) +'<br>')
     };
 
   logStr=''
   for (i in logArr) logStr+=logArr[i].replace("<br>","\n").replace(z,"");
   console.log(logStr)
   if (invalidateScore==0) {Game.Notify(logArr[0],logArr[1]+logArr[2]+logArr[3]+logArr[4]+logArr[5].replace('<br>','')+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
-  if (clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
-    Game.Notify('Large score fault',logArr[logArr.length-3]+logArr[logArr.length-2]+logArr[logArr.length-1],[1,7]);
+  if (scoreCorNotify && clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
+    Game.Notify('Large score fault',logArr[logArr.length-4]+logArr[logArr.length-3]+logArr[logArr.length-2]+logArr[logArr.length-1],[1,7]);
     };
+  if (scoreCorNotify && clickScore && incorrectEBwarn>0) {Game.Notify('EB setting fault','EB setting not matching usage of Elder Battalion',[1,7]);}
   };
 
 function CycleFtHoF(reverse) {
@@ -329,13 +335,40 @@ function CycleFtHoF(reverse) {
 };
 
 function GetPrompt() {
-  Game.Prompt('<id ImportSave><h3>'+"Input to variable"+'</h3><div class="block">'+loc("Please paste what you want the variable to be equal to.")+'<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;">'+'</textarea></div>',[[loc("Load"),';Game.ClosePrompt(); switch (promptN) {case 0: iniLoadSave=(l(\'textareaPrompt\').value); if (iniLoadSave.length<100) {iniLoadSave=false};break;case 1: iniSeed=(l(\'textareaPrompt\').value.trim()); if (iniSeed.length!=5) {iniSeed=\'R\'};break;case 2: iniC=Number(l(\'textareaPrompt\').value);break;case 3: iniCE=Number(l(\'textareaPrompt\').value);break;case 4: iniP=Number(l(\'textareaPrompt\').value);break;case 5: iniLumps=Number(l(\'textareaPrompt\').value);break;case 6: iniBC=Number(l(\'textareaPrompt\').value);break;case 7: wizCount=Number(l(\'textareaPrompt\').value);break;case 8: wizLevel=Number(l(\'textareaPrompt\').value);break;case 9: iniDHdur=Number(l(\'textareaPrompt\').value.replace("s",""));break;case 10: iniBSdur=Number(l(\'textareaPrompt\').value.replace("s",""));break;case 11: toNextTick=Number(l(\'textareaPrompt\').value.replace("s",""));break;case 12: iniTimer=Number(l(\'textareaPrompt\').value.replace("s",""));UpdateMoreButtons();break;case 13:manualBuildings[buildingSelected]=Number(l(\'textareaPrompt\').value);break;case 14:forcedCastCount[0]=Number(l(\'textareaPrompt\').value);break;case 15:iniFdur=Number(l(\'textareaPrompt\').value);break;case 16:break;case 17:setSettings(l(\'textareaPrompt\').value);hasSetSettings=true;break;case 18:DFChanceMult=Number(l(\'textareaPrompt\').value);break;case 19:gcRateMult=Number(l(\'textareaPrompt\').value);break;case 20:clickWait=Number(l(\'textareaPrompt\').value);break;case 21:gardenLevel=Number(l(\'textareaPrompt\').value);break;case 22:scoreCorVal=Number(l(\'textareaPrompt\').value);break;};RedrawCCCEM();'],loc("Nevermind")]);
+  Game.Prompt('<id ImportSave><h3>'+"Input to variable"+'</h3><div class="block">'+loc("Please paste what you want the variable to be equal to.")+'<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;">'+'</textarea></div>',[[loc("Load"),`;Game.ClosePrompt(); 
+    switch (promptN) {
+    case 0: iniLoadSave=(l(\'textareaPrompt\').value); if (iniLoadSave.length<100) {iniLoadSave=false};break;
+    case 1: iniSeed=(l(\'textareaPrompt\').value.trim()); if (iniSeed.length!=5) {iniSeed=\'R\'};break;
+    case 2: iniC=Number(l(\'textareaPrompt\').value);break;
+    case 3: iniCE=Number(l(\'textareaPrompt\').value);break;
+    case 4: iniP=Number(l(\'textareaPrompt\').value);break;
+    case 5: iniLumps=Number(l(\'textareaPrompt\').value);break;
+    case 6: iniBC=Number(l(\'textareaPrompt\').value);break;
+    case 7: wizCount=Number(l(\'textareaPrompt\').value);break;
+    case 8: wizLevel=Number(l(\'textareaPrompt\').value);break;
+    case 9: iniDHdur=Number(l(\'textareaPrompt\').value.replace("s",""));break;
+    case 10: iniBSdur=Number(l(\'textareaPrompt\').value.replace("s",""));break;
+    case 11: toNextTick=Number(l(\'textareaPrompt\').value.replace("s",""));break;
+    case 12: var prev=iniTimer; iniTimer=Number(l(\'textareaPrompt\').value.replace("s",""));UpdateMoreButtons(prev);break;
+    case 13:manualBuildings[buildingSelected]=Number(l(\'textareaPrompt\').value);break;
+    case 14:forcedCastCount[0]=Number(l(\'textareaPrompt\').value);break;
+    case 15:iniFdur=Number(l(\'textareaPrompt\').value);break;
+    case 16:break;
+    case 17:setSettings(l(\'textareaPrompt\').value);hasSetSettings=true;break;
+    case 18:DFChanceMult=Number(l(\'textareaPrompt\').value);break;
+    case 19:gcRateMult=Number(l(\'textareaPrompt\').value);break;
+    case 20:clickWait=Number(l(\'textareaPrompt\').value);break;
+    case 21:gardenLevel=Number(l(\'textareaPrompt\').value);break;
+    case 22:scoreCorVal=Number(l(\'textareaPrompt\').value);break;
+    };
+    RedrawCCCEM();`],loc("Nevermind")]);
 	l('textareaPrompt').focus();
   };
 
-function UpdateMoreButtons() {
-  iniTimerButton='<a class="option neatocyan" '+Game.clickStr+'="promptN=12; isShifting()?info(58):GetPrompt();">Nat Spawn Timer '+iniTimer+' frames</a><br>'
+function UpdateMoreButtons(prev) {
+  iniTimerButton='<a class="option neatocyan" '+Game.clickStr+'="promptN=12; isShifting()?info(58):GetPrompt();">Nat Spawn Timer '+prev+' frames</a><br>'
   if (moreButtons[2].indexOf(iniTimerButton)!=-1) {moreButtons[2].splice(moreButtons[2].indexOf(iniTimerButton),1)}
+  iniTimerButton='<a class="option neatocyan" '+Game.clickStr+'="promptN=12; isShifting()?info(58):GetPrompt();">Nat Spawn Timer '+iniTimer+' frames</a><br>'
   moreButtons[2].push(iniTimerButton);
   };
   
@@ -532,7 +565,7 @@ function RedrawCCCEM(noinvalidate) {
   str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(11):(isCtrl()?chooseLump--:chooseLump++); if (chooseLump>4) chooseLump=0; else if (chooseLump<0) chooseLump=4; RedrawCCCEM();">Lump type '+lumpTypes[chooseLump]+'</a>';
   str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=20; isShifting()?info(77):GetPrompt();">Click cooldown '+(clickWait)+'ms</a><br>';
   str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=6; isShifting()?info(12):GetPrompt();">Building count anchor '+(iniBC)+'</a>';
-  str+='<a class="option neato'+(useEB?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(15):(useEB=!useEB); RedrawCCCEM();">'+(useEB?'EB List':'No EB')+'</a>';
+  str+='<a class="option neato'+(useEB?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(15):(useEB=!useEB); RedrawCCCEM();">'+(useEB?'Use EB':'No EB')+'</a>';
   str+='<a class="option neato'+((useRebuy/2)?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(16):(useRebuy+=2); if (useRebuy>2) useRebuy=0; RedrawCCCEM();">'+(useRebuy?'Rebuy':'No Rebuy')+'</a><br>';
   str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(13):(isCtrl()?buildingSelected--:buildingSelected++); if (buildingSelected > 19) { buildingSelected = 0; } else if (buildingSelected < 0) { buildingSelected = 19; } RedrawCCCEM();">'+(Game.ObjectsById[buildingSelected].name)+':</a>';
   if (buildingSelected!=7) {str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=13; isShifting()?info(14):GetPrompt();">Overriding number '+(manualBuildings[buildingSelected])+'</a>'};
