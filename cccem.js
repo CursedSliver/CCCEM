@@ -38,12 +38,13 @@
 //version 2.59: silencing build count under 9 popup if notif setting set to silent
 //version 2.60: added check for handmade cookies
 //version 2.61: added variable for incorrect EB usage, as well as code to allow for automatic score correction (and also getting rid of building count warning), and less lag when resetting
+//version 2.62: made CCCEM version popup persist, to give more time to read the information it gives.
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 //The "non-real" cccemver is for detecting whether to wipe settings
 var CCCEMVer = 'v2.58';
-var CCCEMVerReal = 'v2.61';
+var CCCEMVerReal = 'v2.62';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -723,7 +724,7 @@ function AutoScoreCorrect() {
   var cps1 = Game.cookiesPsRaw
   ResetGame();
   var cps2 = Game.cookiesPsRaw
-  CCCEMContainerModObj.load(tempSetting)
+  setSettings(tempSetting)
   iniLoadSave=tempSave
   */
 
@@ -871,7 +872,10 @@ if (Game.ready && !l('topbarFrenzy')) {
   //console.log(cccemDir+"cccemInterface.js");
   
   if (Game.chimeType==0 && !hasSettingsSet) {PresetSettingsConsist(); ResetGame(1); PresetSettingsGrail();} else if (hasSettingsSet) {IntegratedSettingsConsist(); ResetGame(1); IntegratedSettingsGrail(); pushStoredGameSettings(); } else {ResetGame(1);};
+  var prev=Game.prefs.notifs
+  Game.prefs.notifs=0
   if (!hasSettingsSet) { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Your save will return upon closing the game.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [18, 6]) } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [19, 6]) }
+  Game.prefs.notifs=prev
   Game.prefs.autosave=0
   Game.bakeryNameSet('grail moments')
     
