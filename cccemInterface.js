@@ -25,6 +25,7 @@
 //version 2.491: bugfix for rebuy calculation when a buff dies, improved score display again
 //version 2.5: tidied up the printscore function and tried fixing more score mult calculation issues
 //version 2.51: added check for incorrect EB usage and automatic score correction
+//version 2.511: minor bugfix for krumblor aura cycling
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -577,7 +578,7 @@ function RedrawCCCEM(noinvalidate) {
   str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(22):(isCtrl()?buyOption2--:buyOption2++); if (buyOption2>5) {buyOption2=2} else if (buyOption2<2) { buyOption2=4; }; RedrawCCCEM();">'+(Math.max(0, buyOption2-4)?'All':(Math.pow(10,buyOption2-2)))+'</a><br>';
   str+='<a class="option neato'+((Game.heralds-41)?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(23):(Game.heralds=(Game.heralds==41)?100:41);if(!isShifting()) { Game.externalDataLoaded=true; }RedrawCCCEM();">'+(Game.heralds)+' heralds</a>';
   str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(24):(isCtrl()?d2Aura--:d2Aura++); if (d2Aura>21) d2Aura=0; else if (d2Aura<0) d2Aura=21; RedrawCCCEM();">Left Aura '+Game.dragonAuras[d2Aura].name+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(25):(isCtrl?d1Aura--:d1Aura++); if (d1Aura>21) d1Aura=0; else if (d1Aura<0) d1Aura=21;RedrawCCCEM();">Right Aura '+Game.dragonAuras[d1Aura].name+'</a><br>';
+  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(25):(isCtrl()?d1Aura--:d1Aura++); if (d1Aura>21) d1Aura=0; else if (d1Aura<0) d1Aura=21;RedrawCCCEM();">Right Aura '+Game.dragonAuras[d1Aura].name+'</a><br>';
   str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(26);} else if (isCtrl()) { if (forceFortune<=0.04) {forceFortune-=0.02;} else {forceFortune-=0.04;}; if (forceFortune<=-0.01) {forceFortune=1;} } else { if (forceFortune<0.04) {forceFortune+=0.02;} else {forceFortune+=0.04;}; if (forceFortune>1.004) forceFortune=0;} RedrawCCCEM();">Fortune chance: '+Math.round(forceFortune*100)+'%</a>';
   str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(70);} else { cycleSeason(isCtrl()); } RedrawCCCEM();">Starting season: '+(setSeason?Game.UpgradesById[setSeason].season:'none')+'</a><br>';
   str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(79);} else { cycleCastInitSeason(isCtrl()); } RedrawCCCEM();">Scried season: '+((initCastFindSeason != null)?((initCastFindSeason == 0)?'none':Game.UpgradesById[initCastFindSeason].season):'current season')+'</a><br>';
