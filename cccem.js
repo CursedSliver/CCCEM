@@ -175,6 +175,7 @@ var currentSave = retrieveSave();
 
 //literally also just orteils code but in part
 function customSave() {
+    Game.toSave = false;
     let str = currentSave.replace('!END!', '');
     str = str.replace(/\|\|(.*)/, str.match(/\|\|.*?\|\|/))
     str+=Game.saveModData();
