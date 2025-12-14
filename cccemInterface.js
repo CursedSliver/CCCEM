@@ -26,6 +26,8 @@
 //version 2.5: tidied up the printscore function and tried fixing more score mult calculation issues
 //version 2.51: added check for incorrect EB usage and automatic score correction
 //version 2.511: minor bugfix for krumblor aura cycling
+//version 2.6: refactor or some shit idk we love writing changelogs
+//version 2.61: restructuring the onclick function
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -608,12 +610,31 @@ class numberInputButton extends buttonType {
   }
   onClick() {
     invalidateScore = 1;
-    Game.Prompt('<id ImportSave><h3>'+"Input to variable"+'</h3><div class="block">'+loc("Please paste what you want the variable to be equal to.")+
-    '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;">'+this.parent.state+'</textarea></div>'
-    ,[[loc("Load"),`;Game.ClosePrompt(); 
-    CCCEMButtonsList[${this.parent.id}].state = Number(l('textareaPrompt').value); 
-    if (CCCEMButtonsList[${this.parent.id}].updateVarFunc) { CCCEMButtonsList[${this.parent.id}].updateVarFunc.call(CCCEMButtonsList[${this.parent.id}], CCCEMButtonsList[${this.parent.id}].state); }
-    RedrawCCCEM();`],loc("Nevermind")]);
+    let heading = 'Input number'
+    let subheading = 'Please input a number the variable should be equal to.'
+    let readonly = '' //if 'readonly' the prompt will be treated as read-only
+    let buttons = [[
+      loc("Load"),
+      `Game.ClosePrompt(); 
+      CCCEMButtonsList[${this.parent.id}].state = Number(l('textareaPrompt').value); 
+      if (CCCEMButtonsList[${this.parent.id}].updateVarFunc) { 
+        CCCEMButtonsList[${this.parent.id}].updateVarFunc.call(CCCEMButtonsList[${this.parent.id}], 
+        CCCEMButtonsList[${this.parent.id}].state); 
+        };
+      RedrawCCCEM();`
+      ],[
+        loc("Nevermind")
+      ]]
+    Game.Prompt('<id NumImport><h3>'
+      + loc(heading)
+      + '</h3><div class="block">'
+      + loc(subheading)
+      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;"'
+      + readonly
+      + '>'
+      + this.parent.state
+      + '</textarea></div>',
+      buttons);
 	  l('textareaPrompt').focus();
     l('textareaPrompt').select();
   }
@@ -640,12 +661,31 @@ class stringInputButton extends buttonType {
   }
   onClick() {
     invalidateScore = 1;
-    Game.Prompt('<id ImportSave><h3>'+"Input to variable"+'</h3><div class="block">'+loc("Please paste what you want the variable to be equal to.")+
-    '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;">'+this.parent.state+'</textarea></div>'
-    ,[[loc("Load"),`;Game.ClosePrompt(); 
-    CCCEMButtonsList[${this.parent.id}].state = l('textareaPrompt').value; 
-    if (CCCEMButtonsList[${this.parent.id}].updateVarFunc) { CCCEMButtonsList[${this.parent.id}].updateVarFunc.call(CCCEMButtonsList[${this.parent.id}], CCCEMButtonsList[${this.parent.id}].state); }
-    RedrawCCCEM();`],loc("Nevermind")]);
+    let heading = 'Input to variable'
+    let subheading = 'Please input what you want the variable to be equal to.'
+    let readonly = '' //if 'readonly' the prompt will be treated as read-only
+    let buttons = [[
+      loc("Load"),
+      `Game.ClosePrompt(); 
+      CCCEMButtonsList[${this.parent.id}].state = l('textareaPrompt').value; 
+      if (CCCEMButtonsList[${this.parent.id}].updateVarFunc) { 
+        CCCEMButtonsList[${this.parent.id}].updateVarFunc.call(CCCEMButtonsList[${this.parent.id}], 
+        CCCEMButtonsList[${this.parent.id}].state); 
+        };
+      RedrawCCCEM();`
+      ],[
+        loc("Nevermind")
+      ]]
+    Game.Prompt('<id StrImport><h3>'
+      + loc(heading)
+      + '</h3><div class="block">'
+      + loc(subheading)
+      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;"'
+      + readonly
+      + '>'
+      + this.parent.state
+      + '</textarea></div>',
+      buttons);
 	  l('textareaPrompt').focus();
     l('textareaPrompt').select();
   }
@@ -1018,7 +1058,11 @@ new buttonCategory('batchSettings', 2, [
   new CCCEMButton('exportSettings', 'Export settings',
     new stringInputButton(),
     new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32]),
-    s => { if (l('textareaPrompt')) { l('textareaPrompt').value = getSettingsCode(); } }
+    s => { if (l('textareaPrompt')) { 
+      l('textareaPrompt').value = getSettingsCode(); 
+      l('textareaPrompt').focus();
+      l('textareaPrompt').select();
+      }}
   ),
   new CCCEMButton('importSettings', 'Import settings',
     new stringInputButton(),
