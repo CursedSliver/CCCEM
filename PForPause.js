@@ -122,35 +122,6 @@ eval("Game.Loop="+Game.Loop.toString().replace("Game.accumulatedDelay+=((time-Ga
 eval("Game.Logic="+Game.Logic.toString().replace("//minigames","//minigames \nfor (var i in gfdArr) {gfdArr[i][1]+=1000/PForPause.fFps;}"))
 eval("Game.harvestLumps="+Game.harvestLumps.toString().replace("Game.lumpT=Date.now();","Game.lumpT=Date.now(); lumpTimeDifference=0;"))
 
-AddEvent(window,'keydown',function(e){
-    if (e.keyCode==pForPause[0][0] && !changeKeyBind) {PauseGame();UpdatePForPB();}; 
-    if (e.keyCode==pForPause[1][0] && !changeKeyBind) {TickStep();}
-    if (pForPause[3][0] > 0 && e.keyCode==pForPause[3][0]) {PForPause.changeGameSpeed(timeFactorWhenEnabled)}
-});
-
-AddEvent(window,'keyup',function(e){
-    if (pForPause[3][0] > 0 && e.keyCode==pForPause[3][0]) {PForPause.changeGameSpeed(1)}
-});
-
-if (!(typeof CCCEMUILoaded === 'undefined')) {
-    UpdatePForPB=function() {
-        for (var i in moreButtons) {for (var ii in pForPauseButtons) {if (moreButtons[i].indexOf(pForPauseButtons[ii])!=-1) {moreButtons[i].splice(moreButtons[i].indexOf(pForPauseButtons[ii]),1)}}}
-        pForPauseButtons[0]='<div class="line"></div>'
-        pForPauseButtons[1]='<a class="option neato'+(gamePause?'orange':'yellow')+'" '+Game.clickStr+'="PauseGame(); UpdatePForPB(); RedrawCCCEM();">'+(gamePause?'Unpause':'Pause')+'</a>'
-        pForPauseButtons[2]='<a class="option neato" '+Game.clickStr+'="TickStep();">Tick step</a><br>'
-        pForPauseButtons[3]='<a class="option neatoblue" '+Game.clickStr+'="changeKeyBind=1; notifyKeyBind();">Pause: '+pForPause[0][1]+'</a>'
-        pForPauseButtons[4]='<a class="option neatoblue" '+Game.clickStr+'="changeKeyBind=2; notifyKeyBind();">Step: '+pForPause[1][1]+'</a>'
-        pForPauseButtons[5]='<a class="option neatoblue" '+Game.clickStr+'="changeKeyBind=3; notifyKeyBind();">Reset: '+pForPause[2][1]+'</a><br>'
-        pForPauseButtons[6]='<a class="option neatocyan" '+Game.clickStr+'="PForPBGetPrompt();">Gamespeed multiplier: '+timeFactorWhenEnabled+'</a>'
-        pForPauseButtons[7]='<a class="option neatoblue" '+Game.clickStr+'="if (pForPause[3][0] == 0) { NewKeyBind(-1, 3); PForPause.changeGameSpeed(timeFactorWhenEnabled); } else { changeKeyBind=4; notifyKeyBind(true); } UpdatePForPB(); RedrawCCCEM();">Trigger method: '+pForPause[3][1]+'</a>'
-
-        PForPauseButtons();
-        RedrawCCCEM();
-        }
-    AddEvent(window,'keydown',function(e){if (changeKeyBind) {NewKeyBind(e.keyCode, changeKeyBind-1)} else if (e.keyCode==pForPause[2][0]) {ResetAll(1)};});
-    UpdatePForPB();
-    };
-
 var PForPause = null;
 var timeFactorE = 1;
 var originalFpsE = 30;
@@ -460,3 +431,106 @@ if (typeof Macadamia != 'undefined' && Macadamia && !hasPForPausePort) {
 		version: "1.0.0"
 	});
 }
+
+
+if (!(typeof CCCEMUILoaded === 'undefined')) {
+    UpdatePForPB=function() {
+        for (var i in moreButtons) {for (var ii in pForPauseButtons) {if (moreButtons[i].indexOf(pForPauseButtons[ii])!=-1) {moreButtons[i].splice(moreButtons[i].indexOf(pForPauseButtons[ii]),1)}}}
+        pForPauseButtons[0]='<div class="line"></div>'
+        pForPauseButtons[1]='<a class="option neato'+(gamePause?'orange':'yellow')+'" '+Game.clickStr+'="PauseGame(); UpdatePForPB(); RedrawCCCEM();">'+(gamePause?'Unpause':'Pause')+'</a>'
+        pForPauseButtons[2]='<a class="option neato" '+Game.clickStr+'="TickStep();">Tick step</a><br>'
+        pForPauseButtons[3]='<a class="option neatoblue" '+Game.clickStr+'="changeKeyBind=1; notifyKeyBind();">Pause: '+pForPause[0][1]+'</a>'
+        pForPauseButtons[4]='<a class="option neatoblue" '+Game.clickStr+'="changeKeyBind=2; notifyKeyBind();">Step: '+pForPause[1][1]+'</a>'
+        pForPauseButtons[5]='<a class="option neatoblue" '+Game.clickStr+'="changeKeyBind=3; notifyKeyBind();">Reset: '+pForPause[2][1]+'</a><br>'
+        pForPauseButtons[6]='<a class="option neatocyan" '+Game.clickStr+'="PForPBGetPrompt();">Gamespeed multiplier: '+timeFactorWhenEnabled+'</a>'
+        pForPauseButtons[7]='<a class="option neatoblue" '+Game.clickStr+'="if (pForPause[3][0] == 0) { NewKeyBind(-1, 3); PForPause.changeGameSpeed(timeFactorWhenEnabled); } else { changeKeyBind=4; notifyKeyBind(true); } UpdatePForPB(); RedrawCCCEM();">Trigger method: '+pForPause[3][1]+'</a>'
+
+        PForPauseButtons();
+        RedrawCCCEM();
+        }
+    UpdatePForPB();
+
+    class gameSpeedKeySelect extends keySelectButton {
+        parseConvert = key => { 
+            if (key == -1) {
+                return 'Always';
+            }
+            if (key == 0) {
+                return 'Never';
+            }
+            return String.fromCharCode((96 <= key && key <= 105) ? key - 48 : key).toUpperCase(); 
+        }
+
+        onClick() {
+            if (this.parent.state == 0) { 
+                this.parent.changeState(-1);
+                return;
+            } 
+
+            window.toChangeKeyBind = this.parent.key;
+            Game.Notify('Press a key to set!<br>press esc to set as Never, and click button again to set as Always', '', 0);
+        }
+
+        onKeyConfirmation(e) {
+            if (e.keyCode == 27) {
+                this.parent.state = 0;
+            } else {
+                this.parent.state = e.keyCode;
+            }
+            window.toChangeKeyBind = null;
+        }
+
+        default() {
+            window.keyBindEvents.push(this.parent);
+            return 1;
+        }
+    }
+    new CCCEMExternalCategory('PForPause', 'P for Pause', [
+        new CCCEMButton('gamePause', '[##]', 
+            new boolButton('Unpause', 'Pause'),
+            new buttonInfo('Game pause', 'Stops the game from performing logic ticks until unpaused.', [8, 22]),
+            function() { PauseGame(); this.state = gamePause; }, 
+            false, function() { if (this.state != gamePause) { this.state = gamePause; RedrawCCCEM(); } }
+        ),
+        new CCCEMButton('tickStep','Tick step',
+            new triggerButton(),
+            new buttonInfo('Tick step', 'Perform a single logic tick while paused.', [8, 26]),
+            () => { TickStep(); },
+            true
+        ),
+        new CCCEMButton('pauseKey','Pause: [##]',
+            new keySelectButton(80),
+            new buttonInfo('Pause key select', 'Selects the key that pauses the game on press.', [0, 8]),
+            down => { if (!down) { return; } PauseGame(); CCCEMButtons['gamePause'].state = gamePause; }
+        ),
+        new CCCEMButton('tickKey','Tick: [##]',
+            new keySelectButton(84),
+            new buttonInfo('Tick key select', 'Selects the key that performs a single logic tick on press.', [0, 8]),
+            down => { if (!down) { return; } TickStep(); }
+        ),
+        new CCCEMButton('resetKey','Reset: [##]',
+            new keySelectButton(82),
+            new buttonInfo('Reset key select', 'Selects the key that restarts the current attempt on press.', [0, 8]),
+            down => { if (!down) { return; } ResetAll(); }, true
+        ),
+        new CCCEMButton('gamespeed','Gamespeed multiplier: [##]',
+            new numberInputButton(2),
+            new buttonInfo('Gamespeed multiplier', 'Sets the multiplier that will be applied when the gamespeed trigger is used.', [23, 11]),
+            s => {
+                console.log('a', s);
+                console.trace();
+                timeFactorWhenEnabled = s;
+                if (Game.keys[CCCEMButtons['gamespeedKey'].state] || CCCEMButtons['gamespeedKey'].state == -1) {
+                    PForPause.changeGameSpeed(timeFactorWhenEnabled);
+                }
+            }
+        ),
+        new CCCEMButton('gamespeedKey','Trigger method: [##]',
+            new gameSpeedKeySelect(0),
+            new buttonInfo('Gamespeed trigger method', 'Selects the key that changes the game speed to the specified game speed when held.', [0, 8]),
+            down => { if (!down) { PForPause.changeGameSpeed(1); return; } PForPause.changeGameSpeed(timeFactorWhenEnabled); }
+        )
+    ]);
+    CCCEMButtons['gamePause'].type.willSave = false;
+    RedrawCCCEM();
+};
