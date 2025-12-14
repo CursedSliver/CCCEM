@@ -283,12 +283,12 @@ function PresetSettingsGrail() {
     CCCEMButtons['jadeGod'].changeState(6);
     CCCEMButtons['iniSpawn'].changeState(true);
     CCCEMButtons['iniSpawnTimer'].changeState(0);
-    CCCEMButtons['iniGC'].changeState(19);
+    CCCEMButtons['iniGC'].changeState(18);
     CCCEMButtons['iniDO'].changeState(false);
     CCCEMButtons['iniDEoRL'].changeState(false);
     // iniGC2 / iniGC3
-    CCCEMButtons['iniGC2'].changeState(21);
-    CCCEMButtons['iniGC3'].changeState(1);
+    CCCEMButtons['iniGC2'].changeState(20);
+    CCCEMButtons['iniGC3'].changeState(0);
     // iniTimer has an iniTimerButton in moreButtons but not a CCCEM button; handled below as fallback variable
     CCCEMButtons['iniF'].changeState(true);
     CCCEMButtons['iniFdur'].changeState(600);
@@ -389,7 +389,7 @@ function PresetSettingsConsist() {
     CCCEMButtons['jadeGod'].changeState(6);
     CCCEMButtons['iniSpawn'].changeState(true);
     CCCEMButtons['iniSpawnTimer'].changeState(0);
-    CCCEMButtons['iniGC'].changeState(19);
+    CCCEMButtons['iniGC'].changeState(18);
     CCCEMButtons['iniDO'].changeState(false);
     CCCEMButtons['iniDEoRL'].changeState(false);
     CCCEMButtons['iniF'].changeState(true);
@@ -480,7 +480,7 @@ function PresetSettingsBSScry() {
     CCCEMButtons['jadeGod'].changeState(6);
     CCCEMButtons['iniSpawn'].changeState(true);
     CCCEMButtons['iniSpawnTimer'].changeState(0);
-    CCCEMButtons['iniGC'].changeState(19);
+    CCCEMButtons['iniGC'].changeState(18);
     CCCEMButtons['iniDO'].changeState(false);
     CCCEMButtons['iniDEoRL'].changeState(false);
     CCCEMButtons['iniF'].changeState(true);
