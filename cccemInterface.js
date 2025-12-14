@@ -606,6 +606,9 @@ class numberInputButton extends buttonType {
       throw err;
     }
   }
+  triggerVarFunc() {
+
+  }
   onClick() {
     invalidateScore = 1;
     Game.Prompt('<id ImportSave><h3>'+"Input to variable"+'</h3><div class="block">'+loc("Please paste what you want the variable to be equal to.")+
@@ -650,6 +653,9 @@ class stringInputButton extends buttonType {
   load(str) { 
     this.parent.state = str;
     if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
+  }
+  triggerVarFunc() {
+
   }
   default() {
     return '';
@@ -1334,17 +1340,17 @@ new buttonCategory('buffSettings', 5, [
   new CCCEMButton('iniGC', 'GC1 [##]',
     new twoStepCycle(-2, 27, e => (e === -2 ? 'R' : Game.goldenCookieChoices[e])),
     new buttonInfo('First Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial natural Golden cookie spawn.', [0, 10]),
-    s => { iniGC = (s === -2 ? 'R' : (s + 1)); }
+    s => { iniGC = (s === -2 ? 'R' : (s)); }
   ),
   new CCCEMButton('iniGC2', 'GC2 [##]',
     new twoStepCycle(-2, 27, e => (e === -2 ? 'R' : Game.goldenCookieChoices[e])),
     new buttonInfo('Second Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial Dragon Orbs Golden cookie spawn.', [1, 10]),
-    s => { iniGC2 = (s === -2 ? 'R' : (s + 1)); }
+    s => { iniGC2 = (s === -2 ? 'R' : (s)); }
   ),
   new CCCEMButton('iniGC3', 'GC3 [##]',
     new twoStepCycle(-2, 27, e => (e === -2 ? 'R' : Game.goldenCookieChoices[e])),
     new buttonInfo('Third Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial, successful invoke of DEoRL.', [2, 10]),
-    s => { iniGC3 = (s === -2 ? 'R' : (s + 1)); }, true
+    s => { iniGC3 = (s === -2 ? 'R' : (s)); }, true
   ),
   new CCCEMButton('boughtSF', 'Sugar frenzy [##]',
     new boolButton('used', 'unused'),
