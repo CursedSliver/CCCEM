@@ -478,6 +478,7 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
                 this.parent.state = e.keyCode;
             }
             window.toChangeKeyBind = null;
+            Game.Notify('Key set: '+e.key.toUpperCase(), '', 0);
         }
 
         default() {

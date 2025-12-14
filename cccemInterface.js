@@ -798,6 +798,7 @@ class keySelectButton extends buttonType {
   onKeyConfirmation(e) {
     this.parent.state = e.keyCode;
     window.toChangeKeyBind = null;
+    Game.Notify('Key set: '+e.key.toUpperCase(), '', 0);
   }
 }
 AddEvent(window, 'keydown', function (e) {
