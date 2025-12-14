@@ -8,7 +8,10 @@
     "typeRoots": ["./types", "./node_modules/@types"]
   },
   "include": [
-    "types/**/*"
+    "types/**/*",
+    "cccem.js",
+    "cccemInterface.js",
+    "testFile.js"
   ],
   "exclude": [
     "main.js",
