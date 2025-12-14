@@ -940,7 +940,12 @@ new buttonCategory('interfaceBegin', 0, [
     () => {
       ResetAll(1); if (hasHarbor && netcodeSettingsExport.hosting) { MacadamiaModList.cccem.mod.tryAgainRPC.send(); }
     }
-  )
+  ),
+  new CCCEMButton('resetKey','([##])',
+    new keySelectButton(82),
+    new buttonInfo('Reset key select', 'Selects the key that restarts the current attempt on press.', [0, 8]),
+    down => { if (!down) { return; } ResetAll(1); }
+  ),
 ]);
 
 new buttonCategory('categoryTogglePanel', 1, [

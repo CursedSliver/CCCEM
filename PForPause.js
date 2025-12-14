@@ -506,12 +506,7 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
         new CCCEMButton('tickKey','Tick: [##]',
             new keySelectButton(84),
             new buttonInfo('Tick key select', 'Selects the key that performs a single logic tick on press.', [0, 8]),
-            down => { if (!down) { return; } TickStep(); }
-        ),
-        new CCCEMButton('resetKey','Reset: [##]',
-            new keySelectButton(82),
-            new buttonInfo('Reset key select', 'Selects the key that restarts the current attempt on press.', [0, 8]),
-            down => { if (!down) { return; } ResetAll(1); }, true
+            down => { if (!down) { return; } TickStep(); }, true
         ),
         new CCCEMButton('gamespeed','Gamespeed multiplier: [##]',
             new numberInputButton(2),
