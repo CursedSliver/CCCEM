@@ -1070,6 +1070,8 @@ new buttonCategory('batchSettings', 2, [
     function(s) { if (s) { setSettings(s); hasSetSettings = true; } this.state = ''; }
   ),
 ]);
+CCCEMButtons['exportSettings'].willSave = false;
+CCCEMButton['importSettings'].willSave = false;
 
 new buttonCategory('gameSettings', 3, [
   new CCCEMButton('iniSeed', 'Initial seed [##]',
