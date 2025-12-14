@@ -1071,7 +1071,7 @@ new buttonCategory('batchSettings', 2, [
   ),
 ]);
 CCCEMButtons['exportSettings'].willSave = false;
-CCCEMButton['importSettings'].willSave = false;
+CCCEMButtons['importSettings'].willSave = false;
 
 new buttonCategory('gameSettings', 3, [
   new CCCEMButton('iniSeed', 'Initial seed [##]',
