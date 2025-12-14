@@ -473,12 +473,13 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
 
         onKeyConfirmation(e) {
             if (e.keyCode == 27) {
+                Game.Notify('Key cleared!', '', 0);
                 this.parent.state = 0;
             } else {
+                Game.Notify('Key set: '+e.key.toUpperCase(), '', 0);
                 this.parent.state = e.keyCode;
             }
             window.toChangeKeyBind = null;
-            Game.Notify('Key set: '+e.key.toUpperCase(), '', 0);
         }
 
         default() {
