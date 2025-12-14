@@ -733,7 +733,7 @@ if (typeof CCCEMUILoaded !== 'undefined') {
     hasCCCEM = true;
     if (forceFtHoF == "blood frenzy") {
         CCCEMButtons["cfCode"].changeState("b^"+forceFtHoF) } else {
-    	CCCEMButtons["cfCode"].changeState("n^"+forceFtHoF)
+    	CCCEMButtons["cfCode"].changeState("nn^"+forceFtHoF)
     }
     codes = compile(get("cfCode"));
     RedrawCCCEM();
