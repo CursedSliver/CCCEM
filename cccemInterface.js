@@ -650,6 +650,7 @@ class stringInputButton extends buttonType {
     if (CCCEMButtonsList[${this.parent.id}].updateVarFunc) { CCCEMButtonsList[${this.parent.id}].updateVarFunc.call(CCCEMButtonsList[${this.parent.id}], CCCEMButtonsList[${this.parent.id}].state); }
     RedrawCCCEM();`],loc("Nevermind")]);
 	  l('textareaPrompt').focus();
+    l('textareaPrompt').select();
   }
   load(str) { 
     this.parent.state = str;
