@@ -706,25 +706,25 @@ if (typeof CCCEMUILoaded !== 'undefined') {
             new buttonInfo('Preload backups', 'Set the amount of seeds to compute for each sequence.<br>Useful for simulating the other elements of rng that cannot normally be replicated with preloading.', [17, 20]),
             s => preLoadAmountPerSequence = s, true
         ),
+        new CCCEMButton('cfExportPreload','Export current preload',
+            new stringInputButton(),
+            new buttonInfo('Export preload','Exports preload code.',[17,2]),
+            () => { if (l('textareaPrompt')) {
+                temp = arrayToString(preLoadedSeeds)
+                l('textareaPrompt').value = temp;
+                l('textareaPrompt').focus();
+                l('textareaPrompt').select();
+            }}
+        ),
         new CCCEMButton('cfImportPreload','Import preload',
             new stringInputButton(),
             new buttonInfo('Import preload','Imports preload code.',[17,1]),
-            function(s) {
+            s => {
                 preLoadedSeeds = stringToArray(s);
                 if (preLoadedSeeds) {
                     CCCEMButtons['cfUsePreload'].changeState(true);
                     usingPreload = true;
                 }
-            }
-        ),
-        new CCCEMButton('cfExportPreload','Export current preload',
-            new triggerButton(),
-            new buttonInfo('Export preload','Exports preload code.',[17,2]),
-            () => {
-                temp = arrayToString(preLoadedSeeds)
-                Game.Prompt('<id ExportSave><h3>'+loc("Export preload")+'</h3><div class="block">'+loc("This is your current preload code.<br>Input it with import preload to load.")+'</div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;" readonly>'+temp+'</textarea></div>',[loc("All done!")])
-                l('textareaPrompt').focus();
-                l('textareaPrompt').select();
             }
         )
     ]);
