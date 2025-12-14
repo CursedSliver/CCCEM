@@ -511,7 +511,7 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
         new CCCEMButton('resetKey','Reset: [##]',
             new keySelectButton(82),
             new buttonInfo('Reset key select', 'Selects the key that restarts the current attempt on press.', [0, 8]),
-            down => { if (!down) { return; } ResetAll(); }, true
+            down => { if (!down) { return; } ResetAll(1); }, true
         ),
         new CCCEMButton('gamespeed','Gamespeed multiplier: [##]',
             new numberInputButton(2),
