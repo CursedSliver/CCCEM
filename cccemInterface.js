@@ -606,9 +606,6 @@ class numberInputButton extends buttonType {
       throw err;
     }
   }
-  triggerVarFunc() {
-
-  }
   onClick() {
     invalidateScore = 1;
     Game.Prompt('<id ImportSave><h3>'+"Input to variable"+'</h3><div class="block">'+loc("Please paste what you want the variable to be equal to.")+
@@ -655,9 +652,6 @@ class stringInputButton extends buttonType {
   load(str) { 
     this.parent.state = str;
     if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
-  }
-  triggerVarFunc() {
-
   }
   default() {
     return '';
