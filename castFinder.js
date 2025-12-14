@@ -1,6 +1,5 @@
 var hasCCCEM = false;
 var hasFinder = true;
-var code = '';
 var codes = [];
 //first one is for global scope, second one is for sequence scope, third one is for local scope (not available to all)
 var limit = 9999;
@@ -56,7 +55,7 @@ Game.registerMod('CastFinder', {
         	this.upgrades[0].pool = 'toggle'; this.upgrades[0].order = 999999; this.upgrades[0].unlocked = 1; Game.UpgradesByPool["toggle"].push(this.upgrades[0]);
             this.upgrades[0].choicesFunction = function() { 
             	var choices = ["shutup"] //get the game to shut up about using the cohice function in unintended ways
-                GetPromptN(0);
+                CCCEMButtons['cfCode'].triggerSetVar();
                 return choices;
             }
         	LocalizeUpgradesAndAchievs();
@@ -626,15 +625,17 @@ function arrayToString(arr) {
 	if (!Array.isArray(arr)) { return arr; }
     let str = '[';
     for (let i in arr) {
-    	str+=arrayToString(arr[i]);
         str+=',';
+    	str+=arrayToString(arr[i]);
     }
-    return str.slice(0,str.length-1)+']';
+    return str.slice(0,1)+str.slice(2)+']';
 }
 
 function stringToArray(str) {
-	eval('str='+str);
-    return str;
+	let arr=''
+    str = str.replace(/[\n\r\t]/gm, "")
+    if (str) {eval('arr='+str)}
+    return arr
 }
 
 eval('Game.Objects["Wizard tower"].minigame.draw='+Game.Objects["Wizard tower"].minigame.draw.toString().replace('Beautify(M.spellsCastTotal)','(usingPreload?"[hidden]":Beautify(M.spellsCastTotal))').replace('if (Game.drawT%5==0)','let M = Game.Objects["Wizard tower"].minigame; if (Game.drawT%5==0)'));
@@ -665,10 +666,75 @@ if (typeof CCCEMUILoaded !== 'undefined') {
         moreButtonsPlus[0] = [];
         RedrawCCCEM();
     }
-    updateFinder();
+    new CCCEMExternalCategory('castFinder', 'Cast Finder', [
+        new CCCEMButton('cfCode', 'Open Cast Finder', 
+            new stringInputButton(),
+            new buttonInfo('Open Cast Finder', 'Opens the Cast Finder. Inputs will be ran upon pressing Try Again, unless auto execute is off.', [17, 14]),
+            function(s) {codes = compile(s);}
+        ),
+        new CCCEMButton('cfDocs', 'Documentation',
+            new triggerButton(),
+            new buttonInfo('Open Documentation', 'Opens the documentation to the Cast Finder in a new tab.', [26, 7]),
+            () => linking()
+        ),
+        new CCCEMButton('cfExecute', 'Execute',
+            new triggerButton(),
+            new buttonInfo('Execute Cast Finder', 'Executes the code in the Cast Finder.', [11, 10]),
+            () => CCCEMIntegratedExecute()
+        ),
+        new CCCEMButton('cfAutoExec', 'Auto execute [##]',
+            new boolButton("On", "Off"),
+            new buttonInfo('Auto execute', 'Whether the Cast Finder is ran upon pressing Try Again. Disabling would cause the outcome to become randomized.', [17, 22]),
+            s => { autoExecute = s; }, true
+        ),
+        new CCCEMButton('cfPreload', 'Pre-Load',
+            new triggerButton(),
+            new buttonInfo('Pre-Load Casts', 'Computes a set of seeds and cast amounts that would correspond to code entered, then stores it for later use. <br>Useful for very complex sequences that may take a while to compute.', [22, 29]),
+            () => {
+                preLoad();
+                CCCEMButtons['cfUsePreload'].changeState(true);
+                usingPreload=true;
+            }
+        ),
+        new CCCEMButton('cfUsePreload','Use preload [##]',
+            new boolButton("On", "Off"),
+            new buttonInfo('Use Preload', 'Whether or not to choose one of the precomputed seeds (from preloading) to use upon trying again.<br>If enabled, the cast count will be hidden.', [34, 12]),
+            s => usingPreload = s
+        ),
+        new CCCEMButton('cfPreloadNum','Preload backups [##]',
+            new numberInputButton(),
+            new buttonInfo('Preload backups', 'Set the amount of seeds to compute for each sequence.<br>Useful for simulating the other elements of rng that cannot normally be replicated with preloading.', [17, 20]),
+            s => preLoadAmountPerSequence = s, true
+        ),
+        new CCCEMButton('cfImportPreload','Import preload',
+            new stringInputButton(),
+            new buttonInfo('Import preload','Imports preload code.',[17,1]),
+            function(s) {
+                preLoadedSeeds = stringToArray(s);
+                if (preLoadedSeeds) {
+                    CCCEMButtons['cfUsePreload'].changeState(true);
+                    usingPreload = true;
+                }
+            }
+        ),
+        new CCCEMButton('cfExportPreload','Export current preload',
+            new triggerButton(),
+            new buttonInfo('Export preload','Exports preload code.',[17,2]),
+            () => {
+                temp = arrayToString(preLoadedSeeds)
+                Game.Prompt('<id ExportSave><h3>'+loc("Export preload")+'</h3><div class="block">'+loc("This is your current preload code.<br>Input it with import preload to load.")+'</div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;" readonly>'+temp+'</textarea></div>',[loc("All done!")])
+                l('textareaPrompt').focus();
+                l('textareaPrompt').select();
+            }
+        )
+    ]);
+    CCCEMButtons['cfAutoExec'].changeState(true);
+    CCCEMButtons['cfPreloadNum'].changeState(1);
     hasCCCEM = true;
-    code = forceFtHoF; if (forceFtHoF == "blood frenzy") { code = "b^"+code; } else {
-    	code = "n^"+code;
+    if (forceFtHoF == "blood frenzy") {
+        CCCEMButtons["cfCode"].changeState("b^"+forceFtHoF) } else {
+    	CCCEMButtons["cfCode"].changeState("n^"+forceFtHoF)
     }
-    codes = compile(code);
+    codes = compile(get("cfCode"));
+    RedrawCCCEM();
 }
