@@ -1626,7 +1626,7 @@ function RedrawCCCEM(noinvalidate) {
   var str='';
   str+='<div class="icon" style="position:absolute;left:-9px;top:-6px;background-position:'+(-28*48)+'px '+(-12*48)+'px;"></div>';
   
-  str+='<div id="devConsoleContent" class="CCCEMInterface" style="max-height:calc(100vh - '+((App?0:l('topBar').getBoundingClientRect().height) + 18)+'px);">';
+  str+='<div id="devConsoleContent">';
   str+='<div class="title" style="font-size:14px;margin:6px;">CCCEM interface</div>';
   //str+='<a class="option neatolime" '+Game.clickStr+'="isShifting()?info(0):ResetAll(1); if (!isShifting() && hasHarbor && netcodeSettingsExport.hosting) { MacadamiaModList.cccem.mod.tryAgainRPC.send(); }">Try again</a>';
   
@@ -1744,10 +1744,12 @@ function RedrawCCCEM(noinvalidate) {
   l('devConsole').innerHTML=str;
   l('devConsole').style.minWidth='24px'
   l('devConsole').style.width='auto'
+  l('devConsole').style.maxHeight = 'calc(100vh - '+((App?0:l('topBar').getBoundingClientRect().height) + 18)+'px)';
   l('debug').style.display='block';
   };
 moreButtons[0].push(pForPauseButtons[0])
 moreButtonsPlus[0].push(castFinderButtons[0])
+l('devConsole').classList.add('CCCEMInterface');
 RedrawCCCEM();
 invalidateScore=0;
 
