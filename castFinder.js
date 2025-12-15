@@ -707,14 +707,10 @@ if (typeof CCCEMUILoaded !== 'undefined') {
             s => preLoadAmountPerSequence = s, true
         ),
         new CCCEMButton('cfExportPreload','Export current preload',
-            new stringInputButton(),
-            new buttonInfo('Export preload','Exports preload code.',[17,2]),
-            () => { if (l('textareaPrompt')) {
-                temp = arrayToString(preLoadedSeeds)
-                l('textareaPrompt').value = temp;
-                l('textareaPrompt').focus();
-                l('textareaPrompt').select();
-            }}
+            new readonlyDisplayButton(() => {
+                return arrayToString(preLoadedSeeds);
+            }),
+            new buttonInfo('Export preload','Exports preload code.',[17,2])
         ),
         new CCCEMButton('cfImportPreload','Import preload',
             new stringInputButton(),

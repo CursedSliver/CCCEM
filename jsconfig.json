@@ -11,6 +11,8 @@
     "types/**/*",
     "cccem.js",
     "cccemInterface.js",
+    "PForPause.js",
+    "castFinder.js",
     "testFile.js"
   ],
   "exclude": [

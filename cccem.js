@@ -949,12 +949,11 @@ function getSettingsCode() {
 }
 
 function setSettings(str) { 
-  const BOTTOM = '>>ContainerEnd<<';
   if (str.startsWith('>>CCCEMContainerTop<<')) {
       oldLoadFunc(str);
       return; 
     }
-	CCCEMContainerModObj.applyLoad(str, true);
+	CCCEMContainerModObj.applyLoad(CCCEMContainerModObj.trimLoad(str), true);
 }
 
 var oldLoadFunc = function(str, noNotify) {
@@ -1173,6 +1172,25 @@ Game.registerMod('CCCEMContainer', {
       }
       return; 
     }
+ 
+    str = this.trimLoad(str);
+    settingsToLoad = str;
+
+    if (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded) { 
+      this.applyLoad(str);
+    } else {
+      const interval = setInterval(function(a) {
+        if (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded) {
+          a.applyLoad(settingsToLoad);
+          clearInterval(interval);
+        }
+      }, 50, this);
+    }
+  },
+  trimLoad: function(str) {
+    str = str.trim();
+    const TOP = '>>CCCEMContainerTop:';
+    const BOTTOM = '>>ContainerEnd<<';
 
     if (!str.startsWith(TOP)) { throwCCCEMLoadIssue('CCCEMContainer load: top marker not found'); return; }
     const midIdx = str.indexOf('<<', TOP.length);
@@ -1193,23 +1211,12 @@ Game.registerMod('CCCEMContainer', {
     }
 
     str = str.slice(midIdx + 2, str.length - BOTTOM.length).trim();
- 
-    settingsToLoad = str;
 
-    if (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded) { 
-      this.applyLoad(str);
-    } else {
-      const interval = setInterval(function(a) {
-        if (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded) {
-          a.applyLoad(settingsToLoad);
-          clearInterval(interval);
-        }
-      }, 50, this);
-    }
+    return str;
   },
   applyLoad: function(str) {
     strs = str.split('|--+--+--|');
-    let obj = JSON.parse(strs[0]);
+    try { let obj = JSON.parse(strs[0]);
     for (let i in obj) {
       if (!CCCEMButtons[i]) { continue; }
       CCCEMButtons[i].load(obj[i]);
@@ -1222,7 +1229,11 @@ Game.registerMod('CCCEMContainer', {
       } else {
         modDataSlotsYetToBeLoaded.set(categoryName, modContent);
       }
-    }
+    } } catch(err) {
+      throwCCCEMLoadIssue('Unknown load error (saved settings discarded)<br>To restore default settings, click "Default" in "Batch settings"');
+      console.log(err);
+      console.log(...strs);
+    } 
   }
 });
 var modDataSlotsYetToBeLoaded = new Map();
@@ -1245,7 +1256,7 @@ if (Game.ready && !l('topbarFrenzy')) {
   setTimeout(CheckModLoaded, 1900);
 } else if (!l('topbarFrenzy')) {console.log("mod launch halted, game not loaded")};
 function initializeMod() {
-  if (Game.chimeType==0 && !hasSettingsSet) {PresetSettingsConsist(); ResetGame(1); PresetSettingsGrail();} else if (hasSettingsSet) {IntegratedSettingsConsist(); ResetGame(1); IntegratedSettingsGrail(); pushStoredGameSettings(); } else {ResetGame(1);};
+  if (Game.chimeType==0 && !hasSettingsSet) {PresetSettingsConsist(); ResetGame(1); PresetSettingsGrail();} else if (hasSettingsSet) {IntegratedSettingsConsist(); ResetGame(1); IntegratedSettingsGrail(); } else {ResetGame(1);};
   var prev=Game.prefs.notifs
   Game.prefs.notifs=0
   if (!hasSettingsSet) { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Your save will return upon closing the game.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [18, 6]) } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [19, 6]) }

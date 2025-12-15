@@ -581,6 +581,7 @@ class triggerButton extends buttonType {
 class limeButton extends buttonType {
   //alternate color signifying something important
   //will not invalidate score
+  constructor() { super(); }
   getColorStr() {
     return 'neatolime';
   }
@@ -589,16 +590,64 @@ class limeButton extends buttonType {
   }
   willSave = false
 }
-class numberInputButton extends buttonType {
+class inputButton extends buttonType {
+  //base class, should never be used in practice
+  constructor() {
+    super();
+  }
+  heading = 'Input variable'
+  subHeading = 'Please input what you want the variable to be set to.'
+  readonly = false
+  getOptions() {
+    return [[loc("Load"),`Game.ClosePrompt(); \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value);\nRedrawCCCEM();`],[loc("Nevermind")]]
+  }
+  afterCall() {
+    l('textareaPrompt').focus();
+    l('textareaPrompt').select();
+  }
+  onInputConfirmation(content) {
+    this.parent.state = content;
+    if (this.parent.updateVarFunc) {
+      this.parent.updateVarFunc.call(this.parent, this.parent.state);
+    }
+  }
+  getColorStr() {
+    return 'neatocyan';
+  }
+  parse(names, state) {
+    return names[0].replace('[##]', state);
+  }
+  onClick() {
+    invalidateScore = 1;
+    Game.Prompt('<id NumImport><h3>'
+      + loc(this.heading)
+      + '</h3><div class="block">'
+      + loc(this.subHeading)
+      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;"'
+      + (this.readonly?'readonly':'')
+      + '>'
+      + this.parent.state
+      + '</textarea></div>',
+      this.getOptions());
+    this.afterCall();
+  }
+  load(str) {
+    this.parent.state = str;
+    if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
+  }
+  default() {
+    return '';
+  }
+}
+class numberInputButton extends inputButton {
   //cyan button (number input)
   constructor(precision) {
     super();
     if (precision) { this.precision = precision; }
   }
   precision = 3
-  getColorStr() {
-    return 'neatocyan';
-  }
+  heading = 'Input number'
+  subHeading = 'Please input a number the variable should be equal to.'
   parse(names, state) {
      try {
     return names[0].replace('[##]', Beautify(state, this.precision));
@@ -608,94 +657,46 @@ class numberInputButton extends buttonType {
       throw err;
     }
   }
-  onClick() {
-    invalidateScore = 1;
-    let heading = 'Input number'
-    let subheading = 'Please input a number the variable should be equal to.'
-    let readonly = '' //if 'readonly' the prompt will be treated as read-only
-    let buttons = [[
-      loc("Load"),
-      `Game.ClosePrompt(); 
-      CCCEMButtonsList[${this.parent.id}].state = Number(l('textareaPrompt').value); 
-      if (CCCEMButtonsList[${this.parent.id}].updateVarFunc) { 
-        CCCEMButtonsList[${this.parent.id}].updateVarFunc.call(CCCEMButtonsList[${this.parent.id}], 
-        CCCEMButtonsList[${this.parent.id}].state); 
-        };
-      RedrawCCCEM();`
-      ],[
-        loc("Nevermind")
-      ]]
-    Game.Prompt('<id NumImport><h3>'
-      + loc(heading)
-      + '</h3><div class="block">'
-      + loc(subheading)
-      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;"'
-      + readonly
-      + '>'
-      + this.parent.state
-      + '</textarea></div>',
-      buttons);
-	  l('textareaPrompt').focus();
-    l('textareaPrompt').select();
+  onInputConfirmation(content) {
+    this.parent.state = Number(content);
+    if (this.parent.updateVarFunc) {
+      this.parent.updateVarFunc.call(this.parent, this.parent.state);
+    }
   }
   load(str) {
-    this.parent.state = parseFloat(str);
+    this.parent.state = Number(str);
     if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
   }
   default() {
     return 0;
   }
 }
-class stringInputButton extends buttonType {
+class stringInputButton extends inputButton {
   //cyan button (string input)
   constructor(parseConvert) {
     super();
-   if (parseConvert) { this.parseConvert = parseConvert; }
+    if (parseConvert) { this.parseConvert = parseConvert; }
   }
   parseConvert = e => e;
-  getColorStr() {
-    return 'neatocyan';
-  }
   parse(names, state) {
     return names[0].replace('[##]', this.parseConvert(state));
   }
-  onClick() {
-    invalidateScore = 1;
-    let heading = 'Input to variable'
-    let subheading = 'Please input what you want the variable to be equal to.'
-    let readonly = '' //if 'readonly' the prompt will be treated as read-only
-    let buttons = [[
-      loc("Load"),
-      `Game.ClosePrompt(); 
-      CCCEMButtonsList[${this.parent.id}].state = l('textareaPrompt').value; 
-      if (CCCEMButtonsList[${this.parent.id}].updateVarFunc) { 
-        CCCEMButtonsList[${this.parent.id}].updateVarFunc.call(CCCEMButtonsList[${this.parent.id}], 
-        CCCEMButtonsList[${this.parent.id}].state); 
-        };
-      RedrawCCCEM();`
-      ],[
-        loc("Nevermind")
-      ]]
-    Game.Prompt('<id StrImport><h3>'
-      + loc(heading)
-      + '</h3><div class="block">'
-      + loc(subheading)
-      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;"'
-      + readonly
-      + '>'
-      + this.parent.state
-      + '</textarea></div>',
-      buttons);
-	  l('textareaPrompt').focus();
+}
+class readonlyDisplayButton extends inputButton {
+  //cyan button (string input)
+  constructor(autoSet) {
+    super();
+    if (autoSet) { this.autoSet = autoSet; }
+  }
+  autoSet = () => ''
+  afterCall() {
+    l('textareaPrompt').value = this.autoSet.call(this);
+    l('textareaPrompt').focus();
     l('textareaPrompt').select();
   }
-  load(str) { 
-    this.parent.state = str;
-    if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
-  }
-  default() {
-    return '';
-  }
+  heading = 'Export variable'
+  subHeading = 'Copy the contents of the box below to export it.'
+  readonly = true
 }
 class cycleButton extends buttonType {
   //blue button
@@ -1053,16 +1054,13 @@ new buttonCategory('batchSettings', 2, [
   new CCCEMButton('importSave', 'Import save',
     new stringInputButton(),
     new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents.', [24, 7]),
-    s => iniLoadSave = s, true
+    function(s) { iniLoadSave = s; this.state = ''; }, true
   ),
   new CCCEMButton('exportSettings', 'Export settings',
-    new stringInputButton(),
-    new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32]),
-    s => { if (l('textareaPrompt')) { 
-      l('textareaPrompt').value = getSettingsCode(); 
-      l('textareaPrompt').focus();
-      l('textareaPrompt').select();
-      }}
+    new readonlyDisplayButton(() => {
+      return getSettingsCode();
+    }),
+    new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32])
   ),
   new CCCEMButton('importSettings', 'Import settings',
     new stringInputButton(),
