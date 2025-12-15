@@ -599,7 +599,7 @@ class inputButton extends buttonType {
   subHeading = 'Please input what you want the variable to be set to.'
   readonly = false
   getOptions() {
-    return [[loc("Load"),`Game.ClosePrompt(); \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value);\nRedrawCCCEM();`],[loc("Nevermind")]]
+    return [[loc("Load"),`Game.ClosePrompt(); \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value.trim());\nRedrawCCCEM();`],[loc("Nevermind")]]
   }
   afterCall() {
     l('textareaPrompt').focus();
