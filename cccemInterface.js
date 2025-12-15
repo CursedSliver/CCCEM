@@ -1626,7 +1626,7 @@ function RedrawCCCEM(noinvalidate) {
   var str='';
   str+='<div class="icon" style="position:absolute;left:-9px;top:-6px;background-position:'+(-28*48)+'px '+(-12*48)+'px;"></div>';
   
-  str+='<div id="devConsoleContent">';
+  str+='<div id="devConsoleContent" class="CCCEMInterface" style="max-height:calc(100vh - '+((App?0:l('topBar').getBoundingClientRect().height) + 18)+'px);">';
   str+='<div class="title" style="font-size:14px;margin:6px;">CCCEM interface</div>';
   //str+='<a class="option neatolime" '+Game.clickStr+'="isShifting()?info(0):ResetAll(1); if (!isShifting() && hasHarbor && netcodeSettingsExport.hosting) { MacadamiaModList.cccem.mod.tryAgainRPC.send(); }">Try again</a>';
   
@@ -1753,6 +1753,25 @@ invalidateScore=0;
 
 //colored buttons
 var customStyles = [];
+customStyles.push(`
+  .CCCEMInterface {
+    scrollbar-width: thin; overflow-y:auto;
+  }
+  .CCCEMInterface::-webkit-scrollbar {
+    width: 5px;
+    background-color: #33333333;
+    border: none;
+    border-radius: 3px; 
+  }
+  .CCCEMInterface::-webkit-scrollbar-thumb {
+    width: 5px;
+    background-color: #282b2bff;
+    outline: none;
+    border: none;
+    box-shadow: none;
+    border-radius: 3px; 
+  }
+  `)
 customStyles.push(`
   .neatocyan, a.option.neatocyan {
     color: #00bcda;
