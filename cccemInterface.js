@@ -652,7 +652,10 @@ class numberInputButton extends inputButton {
     return names[0].replace('[##]', Beautify(state, this.precision));
   }
   onInputConfirmation(content) {
-    if (isNaN(Number(content))) { return; }
+    if (isNaN(Number(content))) { 
+      Game.Notify('Setting value failed!', 'The value set was not a number!', [7, 7]);
+      return; 
+    }
     this.parent.state = Number(content);
     if (this.parent.updateVarFunc) {
       this.parent.updateVarFunc.call(this.parent, this.parent.state);
