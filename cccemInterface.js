@@ -649,15 +649,10 @@ class numberInputButton extends inputButton {
   heading = 'Input number'
   subHeading = 'Please input a number the variable should be equal to.'
   parse(names, state) {
-     try {
     return names[0].replace('[##]', Beautify(state, this.precision));
-    } catch(err) {
-      console.log(names, state);
-      console.trace();
-      throw err;
-    }
   }
   onInputConfirmation(content) {
+    if (isNaN(Number(content))) { return; }
     this.parent.state = Number(content);
     if (this.parent.updateVarFunc) {
       this.parent.updateVarFunc.call(this.parent, this.parent.state);
