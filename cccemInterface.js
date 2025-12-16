@@ -790,6 +790,7 @@ class categoryToggleButton extends buttonType {
     this.categoryToToggle = category;
   }
   getColorStr() {
+    if (!CCCEMCategories[this.categoryToToggle]) { return ''; }
     return CCCEMCategories[this.categoryToToggle].hidden?'neatogray':'neatowhite';
   }
   parse(names, state) {
@@ -1524,100 +1525,10 @@ CCCEMCategories['gameSettings'].hidden = true;
 CCCEMCategories['minigameSettings'].hidden = true;
 CCCEMCategories['buffSettings'].hidden = true;
 
-var Messages = [
-    ['Try again', 'Resets everything and starts another attempt.', 21, 6],
-    ['Default', 'Resets settings to default.', 14, 6],
-    ['BS scry', 'Resets settings to a preset setting for a combo with a scried Building Special.', 13, 6],
-    ['100% consistency', 'Resets settings to a preset setting for a combo with a scried Click Frenzy.', 12, 6],
-    ['Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents.', 24, 7],
-    ['Load P for Pause', 'Loads the P for Pause mod, which enables you to stop time.', 8, 35],
-    ['Initial seed', 'Seed to determine RNG outcomes, or leave as \'R\' for random. <br>Also requires either toggling on Force cast count or change FtHoF to \'random\'.', 25, 25],
-    ['Cookies', 'The amount of cookies you start with each attempt.', 10, 0],
-    ['Cookies Baked All Time', 'The Cookies Baked All Time statistic. Tied to your prestige level.', 29, 4],
-    ['Prestige', 'idk what this is for tbh tbh', 0, 0],
-    ['Lumps', 'The amount of Sugar lumps you start with each attempt.', 29, 14],
-    ['Lump type', 'The type of Sugar lump you start with each attempt.', 29, 27],
-    ['Building count anchor', 'The amount of Cursors you start with each attempt. Then, the amount of every other building is adjusted accordingly so that a roughly equal amount of cookies is spent on each building. <br>Can be partially overridden by other options.', 33, 6],
-    ['Override and mute', 'The specific building to override or mute. <br>Once overridden, the building count anchor will no longer be used to determine the amount of that specific building.<br>Override does not include Wizard tower count; that is managed by the Wizard towers option.', 35, 33],
-    ['Overriding count', 'The number of that building you start with each attempt.<br>An assignment of 0 is equivalent to override disabled.<br>To override a value of 0, use any negative number.', 29, 21], 
-    ['Elder Battalion strategy', 'Changes the building distribution to better fit an Elder Battalion strategy.', 1, 25],
-    ['Elder Battalion rebuy', 'Changes the building distribution to better fit a strategy rebuying after godzamok.', 1, 27],
-    ['Force cast count', 'Forces the Grimoire\'s Spells casted all time stat to be whatever you choose. This option disables the FtHoF outcome finder if enabled.', 22, 11],
-    ['Forced cast count', 'The value to assign to the Grimoire\'s Spells casted all time. Only functional if the Force cast count option is On.', 30, 5],
-    ['Wizard towers', 'The amount of Wizard towers you start with each attempt.', 17, 0],
-    ['Wizard tower Level', 'The level of Wizard towers you start with each attempt.', 17, 26], 
-    ['Sell/Buy select', 'Selects whether you are selecting \'Sell\' or \'Buy\' on the building list with the start of each attempt.', 9, 9],
-    ['Sell/Buy amount', 'Selects the bulk-buying amount you are selecting at the start of each attempt.', 1, 6],
-    ['Heralds', 'Changes the amount of Heralds you have.<br>Possible numbers: 41 (the same as web players) and 100 (the same as steam players)', 21, 29],
-    ['Left Aura', 'The Dragon Aura you start with for the slot on the left.', 2, 25],
-    ['Right Aura', 'The Dragon Aura you start with for the slot on the right.', 8, 25],
-    ['Fortune chance', 'The chance for a natural News ticker scroll to be a Fortune. <br>Default chance: 4% (2% without O fortuna)', 10, 32],
-    ['FtHoF scry', 'The outcome of the first Force the Hand of Fate cast upon starting an attempt. <br>Typically predicted via scrying.', 27, 11],
-    ['Seed held', 'The seed selected upon starting an attempt. <br>The selector is not present, but you will still be selecting the seed.', 27, 15],
-    ['Garden rotation', 'The orientation of the garden upon starting an attempt. The direction defined is the edge entirely consisting of the second plant (Plant 2).<br>Select \'R\' for a random orientation.', 28, 18], 
-    ['Progress to next tick', 'The amount of time passed (in seconds) since the start of a new garden tick.<br>Select \'R\' for a random amount of time.', 24, 18],
-    ['Plant 1', 'One of the plants in the garden at the start of each attempt.', 26, 20], 
-    ['Plant 1 age', 'The age of the first plant (in terms of a percentage of its way to death) at the start of each attempt.', 25, 20], 
-    ['Plant 2', 'The other plant in the garden at the start of each attempt.', 26, 20], 
-    ['Plant 2 age', 'The age of the second plant (in terms of a percentage of its way to death) at the start of each attempt.', 25, 20], 
-    ['Office', 'The Stock market Office level. The office level determines the amount of loans available.', 18, 33], 
-    ['Pantheon Diamond slot', 'The god slotted within the Diamond slot of the Pantheon at the start of each attempt.', 23, 15],
-    ['Pantheon Ruby slot', 'The god slotted within the Ruby slot of the Pantheon at the start of each attempt.', 25, 18],
-    ['Pantheon Jade slot', 'The god slotted within the Jade slot of the Pantheon at the start of each attempt.', 27, 18],
-    ['Frenzy toggle', 'Whether Frenzy will be active at the start of each attempt.', 10, 14],
-    ['Frenzy duration', 'The duration of the Frenzy (in seconds) at the start of each attempt.', 8, 14],
-    ['Dragon Harvest toggle', 'Whether Dragon Harvest will be active at the start of each attempt.', 10, 25],
-    ['Dragon Harvest duration', 'The duration of the Dragon Harvest (in seconds) at the start of each attempt.', 8, 25],
-    ['Extra Building Specials', 'The amount of unique Building Specials at the start of each attempt.', 5, 6],
-    ['Building Special duration', 'The duration of each individual Building Special (in seconds) at the start of each attempt.', 23, 11],
-    ['Sugar Blessing toggle', 'Whether Sugar Blessing (Buff from Golden Sugar lumps) will be active at the start of each attempt.', 29, 16],
-    ['Seeded natural Golden cookies toggle', 'Whether naturally spawned Golden cookies will have their effects be determined by the current game seed.<br>If on, the natural Golden cookie spawns will always be the same if the seed is the same.', 22, 6],
-    ['Seeded News ticker messages toggle', 'Whether the appearance of Fortune messages in the News ticker will be determined by the current game seed.<br>If on, the scrolling of the News ticker will always yield Fortunes at the same moment(s) if the seed is the same.', 29, 8],
-    ['Initial natural Golden cookie spawn toggle', 'Whether a Golden Cookie will spawn at the start of each attempt.', 23, 6],
-    ['Initial Dragon Orbs spawn toggle', 'Whether a Golden cookie from Dragon Orbs usage will spawn at the start of each attempt.', 33, 25],
-    ['Initial Distilled Essence of Redoubled Luck spawn toggle', 'Whether an invoke of the Distilled Essence of Redoubled Luck heavenly upgrade (1% for each natural Golden cookie spawn to be doubled) at the start of each attempt will be successful; functionally the same as the Dragon Orbs spawn toggle.<br>Only affects the initial Golden cookie, and never any of the subsquent ones.', 27, 12],
-    ['First Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the <b>initial natural Golden cookie</b> spawn.<br>Only applicable if \'Natural GC\' is On.', 0, 10],
-    ['Second Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the <b>initial Dragon Orbs Golden cookie</b> spawn.<br>Only applicable if \'Dragon Orbs\' is On.', 1, 10],
-    ['Third Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the <b>initial, successful invoke of the Distilled Essence of Redoubled Luck</b>.<br>Only applicable if \'DEoRL\' is On.', 2, 10],
-    ['Load Cast Finder', 'Loads the Grimoire Cast Finder mod, which allows you to program specific strings of cast outcomes to find.<br>Disables the FtHoF button on load.', 17, 27],
-    
-    ['Open Cast Finder', 'Opens the Cast Finder. Inputs will be ran upon pressing Try Again, unless auto execute is off.', 17, 14],
-    ['Open Documentation', 'Opens the documentation to the Cast Finder in a new tab.', 26, 7],
-    ['Auto execute', 'Whether the Cast Finder is ran upon pressing Try Again. Disabling would cause the outcome to become randomized.', 17, 22],
-    
-    ['Natural Spawn Timer', 'The amount of time after each reset for the first Golden cookie to naturally spawn (in frames, this game is 30 fps).', 22, 6],
-    
-    ['Options group: Batch settings', 'Options related to widespread setting changes and preset settings. ', 27, 29],
-    ['Options group: Game settings', 'Options related to the game\'s core features, including adjusting cookies, buildings, and lumps. ', 28, 29],
-    ['Options group: Minigames', 'Options related to the four minigames. ', 28, 29],
-    ['Options group: Buffs & GC options', 'Options related to buffs and Golden cookies. Also includes many randomness-related options.', 28, 29],
-    ['Extras: P for Pause', 'Options related to the P for Pause mod. ', 28, 26],
-    ['Extras: Cast Finder', 'Options related to the Cast Finder mod. ', 28, 26],
-    ['Auto Save', 'If on, the game will save CCCEM settings (identical to pressing the Save current settings button) every minute.', 26, 7],
-    ['Execute Cast Finder', 'Executes the code in the Cast Finder.', 11, 10],
-    ['Pre-Load Casts', 'Computes a set of seeds and cast amounts that would correspond to code entered, then stores it for later use. <br>Useful for very complex sequences that may take a while to compute.', 22, 29],
-    ['Use Preload', 'Whether or not to choose one of the precomputed seeds (from preloading) to use upon trying again.<br>If enabled, the cast count will be hidden.', 34, 12],
-    ['Preload backups', 'Set the amount of seeds to compute for each sequence.<br>Useful for simulating the other elements of rng that cannot normally be replicated with preloading.', 17, 20],
-    ['Import preload','Imports preload code.',17,1],
-    ['Export preload','Exports preload code.',17,2],
-    ['Starting season','The season that you start with upon trying again.', 16, 6],
-    ['Export settings','Opens a prompt that allows you to store and reuse a setting for later.', 0, 32],
-    ['Import settings','Imports a setting.', 2, 32],
-    ['Dragonflight chance', 'Sets a multiplier to Dragonflight (buff) chance.', 5, 25],
-    ['Golden cookie spawnrate', 'Sets a multiplier to the spawn rate of golden cookies.', 10, 14],
-    ['Click cooldown', 'The minimum amount of milliseconds between each click.', 0, 15],
-    ['Garden level', 'The level of your Farm, which controls the size of your garden.', 2, 26],
-    ['Scried season', 'The season that the starting effect is scried (or predicted) in.', 16, 6],
-    ['Correction value', 'The value the score should be multiplied by to better match standard values.', 16, 5],
-    ['Score correction notifications', 'Whether to notify when the score does not conform to the baseline. Will only be given if most of your cookies are made from clicking', 1, 7],
-    ['Save current settings', 'Saves the settings in the CCCEM interface to the save before CCCEM was loaded, as mod data.<br>You can change the saved setting by saving again.<br>You can remove it by clearing mod data with the options menu while CCCEM is not loaded.', 25, 7],
-    ['Mute', 'Whether a building should start muted. Minigames will always unmute unless that option is disabled.', 28, 6],
-    ['Unmute minigames', 'Forces minigames to be unmuted on reset. If disabled, minigames can be freely muted and unmuted with the mute option.', 23, 15]
-           ];
 var infogot = 0;
 function info(num) {
   infogot = 1;
-  Game.Notify(Messages[num][0], Messages[num][1], [Messages[num][2], Messages[num][3]])
+  //Game.Notify(Messages[num][0], Messages[num][1], [Messages[num][2], Messages[num][3]])
 }
 
 function RedrawCCCEM(noinvalidate) {
@@ -1628,118 +1539,9 @@ function RedrawCCCEM(noinvalidate) {
   
   str+='<div id="devConsoleContent">';
   str+='<div class="title" style="font-size:14px;margin:6px;">CCCEM interface</div>';
-  //str+='<a class="option neatolime" '+Game.clickStr+'="isShifting()?info(0):ResetAll(1); if (!isShifting() && hasHarbor && netcodeSettingsExport.hosting) { MacadamiaModList.cccem.mod.tryAgainRPC.send(); }">Try again</a>';
   
   str+=compileAllButtons();
-  /*  
-  str+='<div class="line"></div>';
-  str+='<a class="option neato'+(hiding[0]?'gray':'white')+'" '+Game.clickStr+'="isShifting()?info(59):(hiding[0]=!hiding[0]);RedrawCCCEM(1);">Batch settings options '+(hiding[0]?'hidden':'visible')+'</a>';
-  str+='<a class="option neato'+(hiding[1]?'gray':'white')+'" '+Game.clickStr+'="isShifting()?info(60):(hiding[1]=!hiding[1]);RedrawCCCEM(1);">Game settings options '+(hiding[1]?'hidden':'visible')+'</a><br>';
-  str+='<a class="option neato'+(hiding[2]?'gray':'white')+'" '+Game.clickStr+'="isShifting()?info(61):(hiding[2]=!hiding[2]);RedrawCCCEM(1);">Minigame options '+(hiding[2]?'hidden':'visible')+'</a>';
-  str+='<a class="option neato'+(hiding[3]?'gray':'white')+'" '+Game.clickStr+'="isShifting()?info(62):(hiding[3]=!hiding[3]);RedrawCCCEM(1);">Buff & GC options '+(hiding[3]?'hidden':'visible')+'</a><br>';
-  for (var i in moreButtons[0]) {str+=moreButtons[0][i]}
-  if (typeof pForPause !== 'undefined') {str+='<a class="option neato'+(hiding[4]?'gray':'white')+'" '+Game.clickStr+'="isShifting()?info(63):(hiding[4]=!hiding[4]);RedrawCCCEM(1);">P for Pause interface '+(hiding[4]?'hidden':'visible')+'</a>'; }
-  for (var i in moreButtonsPlus[0]) {str+=moreButtonsPlus[0][i]}
-  if (typeof hasFinder !== 'undefined') { str+='<a class="option neato'+(hiding[5]?'gray':'white')+'" '+Game.clickStr+'="isShifting()?info(64):(hiding[5]=!hiding[5]);RedrawCCCEM(1);">Cast Finder interface '+(hiding[5]?'hidden':'visible')+'</a><br>'; }
-    
-  if (!hiding[0]) {
-  str+='<div class="line"></div>';
-  str+='<a class="option neato" '+Game.clickStr+'="isShifting()?info(1):PresetSettingsGrail();RedrawCCCEM();">Default</a>';
-  str+='<a class="option neato" '+Game.clickStr+'="isShifting()?info(3):PresetSettingsConsist();RedrawCCCEM();">100% consistency</a><br>';
-  str+='<a class="option neato" '+Game.clickStr+'="isShifting()?info(2):PresetSettingsBSScry();RedrawCCCEM();">BS scry</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=0; isShifting()?info(4):GetPrompt();">Import Save</a><br>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=16; if (isShifting()) { info(73); } else { GetPrompt(); l(\'textareaPrompt\').value=getSettingsCode(); }">Export Settings</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=17; isShifting()?info(74):GetPrompt();">Import Settings</a><br>';
-  }
-  
-  if (!hiding[1]) {
-  str+='<div class="line"></div>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=1; isShifting()?info(6):GetPrompt();">Initial seed '+iniSeed+'</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=2; isShifting()?info(7):GetPrompt();">Cookies '+(iniC.toPrecision(1))+'</a><br>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=3; isShifting()?info(8):GetPrompt();">CookiesBTA '+(iniCE.toPrecision(1))+'</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=4; isShifting()?info(9):GetPrompt();">Prestige '+(iniP.toPrecision(1))+'</a><br>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=22; isShifting()?info(80):GetPrompt();">Score mult '+(scoreCorVal)+'</a>';
-  str+='<a class="option neato'+(scoreCorNotify?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(81):scoreCorNotify=!scoreCorNotify;RedrawCCCEM();">Score info '+(scoreCorNotify)+'</a><br>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=5; isShifting()?info(10):GetPrompt();">Lumps '+(iniLumps)+'</a>';
-  let lumpTypes = ["Normal", "Bifurcated", "Golden", "Meaty", "Caramel"];
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(11):(isCtrl()?chooseLump--:chooseLump++); if (chooseLump>4) chooseLump=0; else if (chooseLump<0) chooseLump=4; RedrawCCCEM();">Lump type '+lumpTypes[chooseLump]+'</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=20; isShifting()?info(77):GetPrompt();">Click cooldown '+(clickWait)+'ms</a><br>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=6; isShifting()?info(12):GetPrompt();">Building count anchor '+(iniBC)+'</a>';
-  str+='<a class="option neato'+(useEB?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(15):(useEB=!useEB); RedrawCCCEM();">'+(useEB?'Use EB':'No EB')+'</a>';
-  str+='<a class="option neato'+((useRebuy/2)?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(16):(useRebuy+=2); if (useRebuy>2) useRebuy=0; RedrawCCCEM();">'+(useRebuy?'Rebuy':'No Rebuy')+'</a><br>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(13):(isCtrl()?buildingSelected--:buildingSelected++); if (buildingSelected > 19) { buildingSelected = 0; } else if (buildingSelected < 0) { buildingSelected = 19; } RedrawCCCEM();">'+(Game.ObjectsById[buildingSelected].name)+':</a>';
-  if (buildingSelected!=7) {str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=13; isShifting()?info(14):GetPrompt();">Overriding number '+(manualBuildings[buildingSelected])+'</a>'};
-  str+='<a class="option neato'+((muteBuildings[buildingSelected])?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(83):muteBuildings[buildingSelected]=!muteBuildings[buildingSelected];RedrawCCCEM();">'+((muteBuildings[buildingSelected])?"Muted":"Unmuted")+'</a>';
-  str+='<a class="option neato'+(unmuteMinigames?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(84):unmuteMinigames=!unmuteMinigames;RedrawCCCEM();">Minigames '+(unmuteMinigames?"Unmuted":"Muteable")+'</a><br>'
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=7; isShifting()?info(19):GetPrompt();">Wizard towers '+(wizCount)+'</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=8; isShifting()?info(20):GetPrompt();">Tower Level '+(wizLevel)+'</a>';
-  str+='<a class="option neato'+((!buyOption1)?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(21):(buyOption1?buyOption1--:buyOption1++); RedrawCCCEM();">'+(buyOption1?'Sell':'Buy')+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(22):(isCtrl()?buyOption2--:buyOption2++); if (buyOption2>5) {buyOption2=2} else if (buyOption2<2) { buyOption2=4; }; RedrawCCCEM();">'+(Math.max(0, buyOption2-4)?'All':(Math.pow(10,buyOption2-2)))+'</a><br>';
-  str+='<a class="option neato'+((Game.heralds-41)?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(23):(Game.heralds=(Game.heralds==41)?100:41);if(!isShifting()) { Game.externalDataLoaded=true; }RedrawCCCEM();">'+(Game.heralds)+' heralds</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(24):(isCtrl()?d2Aura--:d2Aura++); if (d2Aura>21) d2Aura=0; else if (d2Aura<0) d2Aura=21; RedrawCCCEM();">Left Aura '+Game.dragonAuras[d2Aura].name+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(25):(isCtrl()?d1Aura--:d1Aura++); if (d1Aura>21) d1Aura=0; else if (d1Aura<0) d1Aura=21;RedrawCCCEM();">Right Aura '+Game.dragonAuras[d1Aura].name+'</a><br>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(26);} else if (isCtrl()) { if (forceFortune<=0.04) {forceFortune-=0.02;} else {forceFortune-=0.04;}; if (forceFortune<=-0.01) {forceFortune=1;} } else { if (forceFortune<0.04) {forceFortune+=0.02;} else {forceFortune+=0.04;}; if (forceFortune>1.004) forceFortune=0;} RedrawCCCEM();">Fortune chance: '+Math.round(forceFortune*100)+'%</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(70);} else { cycleSeason(isCtrl()); } RedrawCCCEM();">Starting season: '+(setSeason?Game.UpgradesById[setSeason].season:'none')+'</a><br>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(79);} else { cycleCastInitSeason(isCtrl()); } RedrawCCCEM();">Scried season: '+((initCastFindSeason != null)?((initCastFindSeason == 0)?'none':Game.UpgradesById[initCastFindSeason].season):'current season')+'</a><br>';
-  }
-    
-  if (!hiding[2]) {
-  str+='<div class="line"></div>'
-  if (typeof hasFinder === 'undefined') {
-  	str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(27):(forceFtHoF=CycleFtHoF(isCtrl())); RedrawCCCEM();">FtHoF '+(forceFtHoF)+'</a>';
-  }
-  str+='<a class="option neato'+(forcedCastCount[1]?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(17):(forcedCastCount[1]=!forcedCastCount[1]); RedrawCCCEM();">'+(forcedCastCount[1]?'Force cast count On':'Force cast count Off')+'</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=14; isShifting()?info(18):GetPrompt();">Forced cast count '+forcedCastCount[0]+'</a><br>';
-  let garde = Game.Objects["Farm"].minigame;
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=21; isShifting()?info(78):GetPrompt();RedrawCCCEM();">Farm Level '+gardenLevel+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(28):(isCtrl()?gardenSeed--:gardenSeed++); if (gardenSeed>33) gardenSeed=0; else if (gardenSeed<0) gardenSeed=33;RedrawCCCEM();">Holding '+(garde.plantsById[gardenSeed].name)+' seed</a>';
-  let rotate = ['bottom', 'top', 'left', 'right'];
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(29):(isCtrl()?setGardenR--:setGardenR++); if (setGardenR>4) setGardenR=0; else if (setGardenR<0) setGardenR=4;RedrawCCCEM();">Rotation '+(setGardenR?rotate[setGardenR-1]:'R')+'</a><br>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=11; isShifting()?info(30):GetPrompt();RedrawCCCEM();">Tick '+(toNextTick?toNextTick+'s':'R')+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(31):(isCtrl()?gardenP1[0]--:gardenP1[0]++); if (gardenP1[0]>34) gardenP1[0]=1; else if (gardenP1[0]<0) gardenP1[0]=34;RedrawCCCEM();">Plant 1 '+(garde.plantsById[gardenP1[0]-1].name)+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(32):(isCtrl()?gardenP1[1]-=5:gardenP1[1]+=5); if (gardenP1[1]>99) gardenP1[1]=1; else if (gardenP1[1]<0) gardenP1[1]=99;RedrawCCCEM();">Plant 1 age '+(gardenP1[1])+'</a><br>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(33):(isCtrl()?gardenP2[0]--:gardenP2[0]++); if (gardenP2[0]>34) gardenP2[0]=1; else if (gardenP2[0]<0) gardenP1[0]=34;RedrawCCCEM();">Plant 2 '+(garde.plantsById[gardenP2[0]-1].name)+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(34):(isCtrl()?gardenP2[1]-=5:gardenP2[1]+=5); if (gardenP2[1]>99) gardenP2[1]=1; else if (gardenP2[1]<0) gardenP2[1]=99;RedrawCCCEM();">Plant 2 age '+(gardenP2[1])+'</a><br>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(35):(isCtrl()?officeL--:officeL++); if (officeL>5) officeL=0; else if (officeL<0) officeL=5;RedrawCCCEM();">Office '+(officeL + 1)+'</a>';
-  let godNames = ['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'];
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(36):(isCtrl()?spirit1--:spirit1++); if (spirit1>10) spirit1=0; else if (spirit1<0) spirit1=10;RedrawCCCEM();">Diamond '+(godNames[spirit1])+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(37):(isCtrl()?spirit2--:spirit2++); if (spirit2>10) spirit2=0; else if (spirit2<0) spirit2=10;RedrawCCCEM();">Ruby '+(godNames[spirit2])+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(38):(isCtrl()?spirit3--:spirit3++); if (spirit3>10) spirit3=0; else if (spirit3<0) spirit3=10;RedrawCCCEM();">Jade '+(godNames[spirit3])+'</a><br>';
-  for (var i in moreButtons[1]) {str+=moreButtons[1][i]}
-  }
-    
-  if (!hiding[3]) {
-    //BELOW HAS NOT BEEN CONVERTED
-  str+='<div class="line"></div>';
-  str+='<a class="option neato'+(iniF?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(39):(iniF=!iniF);RedrawCCCEM();">Frenzy '+(iniF?'On':'Off')+'</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=15; isShifting()?info(40):GetPrompt();">Frenzy dur '+(iniFdur)+'s</a><br>';
-  str+='<a class="option neato'+(iniDH?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(41):(iniDH=!iniDH);RedrawCCCEM();">Dragon Harvest '+(iniDH?'On':'Off')+'</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=9; isShifting()?info(42):GetPrompt();">Dragon Harvest dur '+(iniDHdur)+'s</a><br>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="isShifting()?info(43):(isCtrl()?iniBSCount--:iniBSCount++); if (iniBSCount>Object.keys(Game.Objects).length) iniBSCount=0; else if (iniBSCount<0) iniBSCount=Object.keys(Game.Objects).length-1; RedrawCCCEM();">Extra Building Specials: '+(iniBSCount)+'</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=10; isShifting()?info(44):GetPrompt();">Building Special dur '+(iniBSdur)+'s</a><br>';
-  str+='<a class="option neato'+(iniSB?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(45):(iniSB=!iniSB); RedrawCCCEM();">Sugar Blessing '+(iniSB?'On':'Off')+'</a>';
-  str+='<a class="option neato'+(seedNats?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(46):(seedNats=!seedNats);RedrawCCCEM();">Seeding GC '+(seedNats?'On':'Off')+'</a>';
-  str+='<a class="option neato'+(seedTicker?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(47):(seedTicker=!seedTicker);RedrawCCCEM();">Seeding News '+(seedTicker?'On':'Off')+'</a><br>';
-  str+='<a class="option neato'+(iniSpawn?'orange':'yellow')+'" '+Game.clickStr+'="if (!isShifting()) {iniSpawn=!iniSpawn; if (iniSpawn && moreButtons[2].indexOf(iniTimerButton)!=-1) {moreButtons[2].splice(moreButtons[2].indexOf(iniTimerButton),1)} else if (!iniSpawn) {moreButtons[2].unshift(iniTimerButton)}} else {info(48);} RedrawCCCEM();">Natural GC '+(iniSpawn?'On':'Off')+'</a>';
-  str+='<a class="option neato'+(iniDO?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(49):(iniDO=!iniDO);RedrawCCCEM();">Dragon Orbs '+(iniDO?'On':'Off')+'</a>';
-  str+='<a class="option neato'+(iniDEoRL?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(50):(iniDEoRL=!iniDEoRL);RedrawCCCEM();">DEoRL '+(iniDEoRL?'On':'Off')+'</a><br>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(51);} else { if (iniGC==\'R\') {iniGC=-1}; iniGC+=isCtrl()?-2:2; if (iniGC>27) iniGC=\'R\'; else if (iniGC==-1) iniGC=\'R\'; else if (iniGC<=-1) iniGC=27; } RedrawCCCEM();">GC1 '+(Game.goldenCookieChoices[iniGC])+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(52);} else { if (iniGC2==\'R\') {iniGC2=-1}; iniGC2+=isCtrl()?-2:2; if (iniGC2>27) iniGC2=\'R\'; else if (iniGC2==-1) iniGC2=\'R\'; else if (iniGC2<=-1) iniGC2=27;} RedrawCCCEM();">GC2 '+(Game.goldenCookieChoices[iniGC2])+'</a>';
-  str+='<a class="option neatoblue" '+Game.clickStr+'="if (isShifting()) {info(53);} else { if (iniGC3==\'R\') {iniGC3=-1}; iniGC3+=isCtrl()?-2:2; if (iniGC3>27) iniGC3=\'R\'; else if (iniGC3==-1) iniGC3=\'R\'; else if (iniGC3<=-1) iniGC3=27;} RedrawCCCEM();">GC3 '+(Game.goldenCookieChoices[iniGC3])+'</a><br>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=18; isShifting()?info(75):GetPrompt(); RedrawCCCEM();">Dragonflight chance x'+DFChanceMult+'</a>';
-  str+='<a class="option neatocyan" '+Game.clickStr+'="promptN=19; isShifting()?info(76):GetPrompt(); RedrawCCCEM();">Golden cookie spawnrate x'+gcRateMult+'</a>';
-  }
-  
-  if (!hiding[4]) { for (var i in moreButtons[2]) {str+=moreButtons[2][i]} }
-    
-   
-  if (!hiding[5]) { for (var i in moreButtonsPlus[1]) {str+=moreButtonsPlus[1][i]} }
-    
-    
-  str+='<div class="line"></div>';
-  str+='<a class="option neatolime" '+Game.clickStr+'="isShifting()?info(82):customSave();">Save current settings</a>';
-  str+='<a class="option neato'+(autoSaveCCCEM?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(65):(autoSaveCCCEM=!autoSaveCCCEM);RedrawCCCEM();">Auto save '+(autoSaveCCCEM?'On':'Off')+'</a>';
-  */
+
   str+='</div>';
   l('devConsole').innerHTML=str;
   l('devConsole').style.minWidth='24px'
