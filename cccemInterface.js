@@ -687,6 +687,9 @@ class readonlyDisplayButton extends inputButton {
     if (autoSet) { this.autoSet = autoSet; }
   }
   autoSet = () => ''
+  getOptions() {
+    return [loc("All done!")]
+  }
   afterCall() {
     l('textareaPrompt').value = this.autoSet.call(this);
     l('textareaPrompt').focus();
