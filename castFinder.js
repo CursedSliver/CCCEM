@@ -666,7 +666,7 @@ if (typeof CCCEMUILoaded !== 'undefined') {
         moreButtonsPlus[0] = [];
         RedrawCCCEM();
     }
-    new CCCEMExternalCategory('castFinder', 'Cast Finder', [
+    new CCCEMExternalCategory('CastFinder', 'Cast Finder', [
         new CCCEMButton('cfCode', 'Open Cast Finder', 
             new stringInputButton(),
             new buttonInfo('Open Cast Finder', 'Opens the Cast Finder. Inputs will be ran upon pressing Try Again, unless auto execute is off.', [17, 14]),
