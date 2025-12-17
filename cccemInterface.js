@@ -546,7 +546,7 @@ class buttonType {
   }
   parse(names, state) {
     //returns name of button based on namesList and whatever
-    return names[0];
+    return names[0].replace('[##]', state);
   }
   onClick() {
     invalidateScore = 1;
