@@ -168,6 +168,10 @@ Game.registerMod('P for Pause', {
             .replace('Game.toSave || (Game.T%(Game.fps*60)==0', 'Game.toSave || (PForPause.checkAnimTWasAMultipleOf(Game.fps*60)')
         );
 
+        eval('PlaySound='+PlaySound.toString()
+            .replace('sound.volume', 'sound.playbackRate = PForPause.timeFactor; sound.volume')
+        );
+
         //kc patched
         const funcsToPatch = ['Game.shimmerTypes.golden.updateFunc', (EN?'Game.Upgrades["Endless book of prose"].descFunc':''), 'Game.Achievements["Cookie Clicker"].descFunc', 'Game.UpdateWrinklers', 'Game.DrawWrinklers', 'Game.DrawSpecial', 'Game.DrawBackground'];
         for (let i in funcsToPatch) {
