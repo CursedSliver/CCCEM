@@ -42,11 +42,12 @@
 //version 2.7: Refactor nonsense stuffs
 //version 2.8: Added new starting buff logic
 //version 2.81: Bugfix and made initialization faster
+//version 2.82: Clicking cookie with enter bugfix
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.8';
-var CCCEMVerReal = 'v2.81';
+var CCCEMVerReal = 'v2.82';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -124,7 +125,7 @@ eval('Game.shimmerTypes.golden.popFunc='+Game.shimmerTypes.golden.popFunc.toStri
 eval('Game.shimmerTypes.golden.getTimeMod='+Game.shimmerTypes.golden.getTimeMod.toString().replace('m*=0.99;', 'm*=0.99; m *= (1 / gcRateMult)'));
     
 l('bigCookie').removeEventListener('click', Game.ClickCookie);
-eval('Game.ClickCookie='+Game.ClickCookie.toString().replace('now-Game.lastClick<1000/((e?e.detail:1)===0?3:50)', 'now-Game.lastClick<clickWait'));
+eval('Game.ClickCookie='+Game.ClickCookie.toString().replace('now-Game.lastClick<1000/((e?e.detail:1)===0?3:50)', 'now-Game.lastClick<((e?e.detail:1)===0?Math.max(1000/3, clickWait):clickWait)'));
 AddEvent(l('bigCookie'), 'click', Game.ClickCookie);
 
 //gets rid of language select
