@@ -39,11 +39,13 @@
 //version 2.60: added check for handmade cookies
 //version 2.61: added variable for incorrect EB usage, as well as code to allow for automatic score correction (and also getting rid of building count warning), and less lag when resetting
 //version 2.62: made CCCEM version popup persist, to give more time to read the information it gives.
+//version 2.7: Refactor nonsense stuffs
+//version 2.8: Added new starting buff logic
 
 if (typeof CCCEMLoaded === 'undefined') {
 
-var CCCEMVer = 'v2.7';
-var CCCEMVerReal = 'v2.7';
+var CCCEMVer = 'v2.8';
+var CCCEMVerReal = 'v2.8';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -88,13 +90,6 @@ var iniGC2=21 //what DO GC gives, 'R' for random
 var iniDEoRL=false //set to true to get an extra golden cookie at the start as if from DEoRL
 var iniGC3=1 //what DEoRL GC gives, 'R' for random
 var iniTimer=0 //set to a number of frames indicate how long since the last Golden cookie was spawned
-var iniF=true //true to start with Frenzy
-var iniFdur=600 //number of seconds of duration
-var iniDH=true //true to start with Dragon Harvest
-var iniDHdur=600
-var iniBSCount=0 // number of BSs to start with (not including other golden cookies)
-var iniBSdur=600
-var iniSB=false //if you start with sugar blessing
 var fortuneG=0 //0 to make GC fortune unclicked
 var forceFortune=1 //set to value between 0 and 1 for probability of getting a fortune
 var boughtSF=0 //0 or 1, 0 to make SF available
@@ -281,6 +276,7 @@ function PresetSettingsGrail() {
     CCCEMButtons['diamondGod'].changeState(1);
     CCCEMButtons['rubyGod'].changeState(4);
     CCCEMButtons['jadeGod'].changeState(6);
+    CCCEMButtons['buffs'].changeState("0,18000,18000,7;3,18000,18000,15;");
     CCCEMButtons['iniSpawn'].changeState(true);
     CCCEMButtons['iniSpawnTimer'].changeState(0);
     CCCEMButtons['iniGC'].changeState(18);
@@ -290,15 +286,8 @@ function PresetSettingsGrail() {
     CCCEMButtons['iniGC2'].changeState(20);
     CCCEMButtons['iniGC3'].changeState(0);
     // iniTimer has an iniTimerButton in moreButtons but not a CCCEM button; handled below as fallback variable
-    CCCEMButtons['iniF'].changeState(true);
-    CCCEMButtons['iniFdur'].changeState(600);
-    CCCEMButtons['iniDH'].changeState(true);
-    CCCEMButtons['iniDHdur'].changeState(600);
-    CCCEMButtons['iniBSCount'].changeState(0);
-    CCCEMButtons['iniBSdur'].changeState(600);
     CCCEMButtons['fortuneChance'].changeState(4);
     CCCEMButtons['fortuneClaim'].changeState(false);
-    CCCEMButtons['iniSB'].changeState(false);
     CCCEMButtons['buyOption1'].changeState(1);
     CCCEMButtons['buyOption2'].changeState(4);
     CCCEMButtons['boughtSF'].changeState(false);
@@ -343,12 +332,6 @@ function PresetSettingsGrail() {
     iniGC2=21;
     iniGC3=1;
     iniTimer=0;
-    iniF=true;
-    iniFdur=600;
-    iniDH=true;
-    iniDHdur=600;
-    iniBSCount=0;
-    iniBSdur=600;
     fortuneG=0;
     forceFortune=0.04;
     boughtSF=0;
@@ -392,8 +375,6 @@ function PresetSettingsConsist() {
     CCCEMButtons['iniGC'].changeState(18);
     CCCEMButtons['iniDO'].changeState(false);
     CCCEMButtons['iniDEoRL'].changeState(false);
-    CCCEMButtons['iniF'].changeState(true);
-    CCCEMButtons['iniDH'].changeState(true);
     CCCEMButtons['fortuneChance'].changeState(4);
     CCCEMButtons['fortuneClaim'].changeState(false);
     CCCEMButtons['pledgeStatus'].changeState(true);
@@ -422,8 +403,6 @@ function PresetSettingsConsist() {
     iniDO = false;
     iniDEoRL = false;
     iniTimer = 0;
-    iniF = true;
-    iniDH = true;
     fortuneG = 0;
     forceFortune = 0.04;
     boughtSF = 0;
@@ -483,8 +462,6 @@ function PresetSettingsBSScry() {
     CCCEMButtons['iniGC'].changeState(18);
     CCCEMButtons['iniDO'].changeState(false);
     CCCEMButtons['iniDEoRL'].changeState(false);
-    CCCEMButtons['iniF'].changeState(true);
-    CCCEMButtons['iniDH'].changeState(true);
     CCCEMButtons['fortuneChance'].changeState(4);
     CCCEMButtons['fortuneClaim'].changeState(false);
     CCCEMButtons['pledgeStatus'].changeState(true);
@@ -512,8 +489,6 @@ function PresetSettingsBSScry() {
     iniDO = false;
     iniDEoRL = false;
     iniTimer = 0;
-    iniF = true;
-    iniDH = true;
     fortuneG = 0;
     forceFortune = 0.04;
     boughtSF = 0;
@@ -727,7 +702,6 @@ function setGrimoireCasts() {
 }
  
 function SpawnGoldenCookies(noSpawn) {
-  if (iniSB==true) Game.gainBuff('sugar blessing',24*60*60,1);
   var priorVol=Game.volume
   Game.volume=0
     
@@ -740,7 +714,6 @@ function SpawnGoldenCookies(noSpawn) {
   }
   Game.killShimmers();
   Game.volume=priorVol
-  var effectDurMod=GetEffectDurMod();
   if (!noSpawn) {
     if (iniDO==true) 
     {
@@ -761,14 +734,46 @@ function SpawnGoldenCookies(noSpawn) {
     };
   }
   for (var i in Game.shimmerTypes) {me=Game.shimmerTypes[i]; me.time=iniTimer};
-  if (iniF==true) {Game.gainBuff('frenzy',(77*effectDurMod<iniFdur)?iniFdur:77*effectDurMod,7); Game.buffs['Frenzy'].time=iniFdur*Game.fps};
-  if (iniDH==true) {Game.gainBuff('dragon harvest',(60*effectDurMod<iniDHdur)?iniDHdur:60*effectDurMod,15); Game.buffs['Dragon Harvest'].time=iniDHdur*Game.fps};
-  
-  var list=[];
-  for (var i in Game.Objects) {if (Game.Objects[i].amount>=10) list.push(Game.Objects[i].id);}
-  var len=Math.min(list.length, iniBSCount)
-  var time=(30*effectDurMod<iniBSdur)?iniBSdur:Math.ceil(30*effectDurMod);
-  for (var i=0; i<len; i++) {var obj=choose(list); list.splice(list.indexOf(obj), 1); Game.gainBuff('building buff',time,Game.ObjectsById[obj].amount/10+1,obj); Game.buffs[Game.goldenCookieBuildingBuffs[Game.ObjectsById[obj].name][0]].time=iniBSdur*Game.fps; }
+  };
+
+function ImportBuffs(buffsStr) {
+  Game.killBuffs()
+  if (!buffsStr) {return}
+  let buffsArr = buffsStr.split(";")
+  let objArr = []
+  for (let i in Game.Objects) {if (Game.Objects[i].amount>=10) objArr.push(Game.Objects[i].id);}
+  for (let i in buffsArr) {
+    if (!buffsArr[i]) {break}
+    let buffArr = buffsArr[i].split(",")
+    let type = Game.buffTypes[parseInt(buffArr[0])].name;
+    let mTime = parseFloat(buffArr[1])
+    let time = parseFloat(buffArr[2])
+    let pow = buffArr[3]?parseFloat(buffArr[3]):buffArr[3]
+    let obj = buffArr[4]?parseFloat(buffArr[4]):buffArr[4]
+    let arg3 = buffArr[5]?parseFloat(buffArr[5]):buffArr[5]
+    if (type == 'building buff' || type == 'building debuff') {
+      if (obj == -1) {obj=choose(objArr)}; 
+      objArr.splice(objArr.indexOf(obj), 1)
+      if (!pow) {pow = Game.ObjectsById[obj].amount/10+1}
+      }
+    if (type == 'cursed finger') {Game.CalculateGains(); pow = Game.cookiesPs*Math.ceil(10*GetEffectDurMod())}
+    Game.gainBuff(type,mTime/Game.fps,pow,obj,arg3).time=time;
+    };
+  };
+
+function ExportBuffs() {
+  let str=''
+  for (let i in Game.buffs) {
+	  let me=Game.buffs[i];
+	  if (me.type) {
+		  str+=me.type.id+','+me.maxTime+','+me.time;
+		  if (typeof me.arg1!=='undefined') str+=','+parseFloat(me.arg1);
+		  if (typeof me.arg2!=='undefined') str+=','+parseFloat(me.arg2);
+		  if (typeof me.arg3!=='undefined') str+=','+parseFloat(me.arg3);
+		  str+=';';
+		  }
+	  }
+  return str
   };
 
 function ResetAll(manual) {
@@ -791,15 +796,14 @@ function ResetAll(manual) {
   ResetMinigames(1);
   if (iniSeed=='R') {Game.seed=tempseed}
   Game.CalculateGains();
-  if (!(typeof CCCEMUILoaded === "undefined")) {
-    autoScoreCor=AutoScoreCorrect()
-    };
+  if (manual) {autoScoreCor=AutoScoreCorrect()};
   ResetGame();
   ResetMinigames();
   if (iniSeed=='R') {Game.seed=tempseed}
   setGrimoireCasts();
   overrideBuildings(); 
   Game.CalculateGains();
+  ImportBuffs(get('buffs'))
   SpawnGoldenCookies();
   };
 
@@ -847,6 +851,63 @@ function GetEffectDurMod() {
   return effectDurMod
 };
 
+function InitBuffMod() {
+    Game.buffTypesByName["frenzy"].baseDur = 77
+    Game.buffTypesByName["frenzy"].basePow = 7
+    Game.buffTypesByName["blood frenzy"].baseDur = 6
+    Game.buffTypesByName["blood frenzy"].basePow = 666
+    Game.buffTypesByName["clot"].baseDur = 66
+    Game.buffTypesByName["clot"].basePow = 0.5
+    Game.buffTypesByName["dragon harvest"].baseDur = 60
+    Game.buffTypesByName["dragon harvest"].basePow = 15
+    Game.buffTypesByName["everything must go"].baseDur = 8
+    Game.buffTypesByName["everything must go"].basePow = 5
+    Game.buffTypesByName["cursed finger"].baseDur = 10
+    Game.buffTypesByName["cursed finger"].basePow = 0
+    Game.buffTypesByName["click frenzy"].baseDur = 13
+    Game.buffTypesByName["click frenzy"].basePow = 777
+    Game.buffTypesByName["dragonflight"].baseDur = 10
+    Game.buffTypesByName["dragonflight"].basePow = 1111
+    Game.buffTypesByName["cookie storm"].baseDur = 7
+    Game.buffTypesByName["cookie storm"].basePow = 7
+    Game.buffTypesByName["building buff"].baseDur = 30
+    Game.buffTypesByName["building buff"].basePow = 0
+    Game.buffTypesByName["building debuff"].baseDur = 30
+    Game.buffTypesByName["building debuff"].basePow = 0
+    Game.buffTypesByName["sugar blessing"].baseDur = 60*60*24
+    Game.buffTypesByName["sugar blessing"].basePow = 1
+    Game.buffTypesByName["haggler luck"].baseDur = 60
+    Game.buffTypesByName["haggler luck"].basePow = 2
+    Game.buffTypesByName["haggler misery"].baseDur = 60*60
+    Game.buffTypesByName["haggler misery"].basePow = 2
+    Game.buffTypesByName["pixie luck"].baseDur = 60
+    Game.buffTypesByName["pixie luck"].basePow = 2
+    Game.buffTypesByName["pixie misery"].baseDur = 60*60
+    Game.buffTypesByName["pixie misery"].basePow = 2
+    Game.buffTypesByName["magic adept"].baseDur = 60*5
+    Game.buffTypesByName["magic adept"].basePow = 10
+    Game.buffTypesByName["magic inept"].baseDur = 60*10
+    Game.buffTypesByName["magic inept"].basePow = 5
+    Game.buffTypesByName["devastation"].baseDur = 10
+    Game.buffTypesByName["devastation"].basePow = 1
+    Game.buffTypesByName["sugar frenzy"].baseDur = 60*60
+    Game.buffTypesByName["sugar frenzy"].basePow = 3
+    Game.buffTypesByName["loan 1"].baseDur = Game.ObjectsById[5].minigame.loanTypes[0][2]
+    Game.buffTypesByName["loan 1"].basePow = Game.ObjectsById[5].minigame.loanTypes[0][1]
+    Game.buffTypesByName["loan 1 interest"].baseDur = Game.ObjectsById[5].minigame.loanTypes[0][4]
+    Game.buffTypesByName["loan 1 interest"].basePow = Game.ObjectsById[5].minigame.loanTypes[0][3]
+    Game.buffTypesByName["loan 2"].baseDur = Game.ObjectsById[5].minigame.loanTypes[1][2]
+    Game.buffTypesByName["loan 2"].basePow = Game.ObjectsById[5].minigame.loanTypes[1][1]
+    Game.buffTypesByName["loan 2 interest"].baseDur = Game.ObjectsById[5].minigame.loanTypes[1][4]
+    Game.buffTypesByName["loan 2 interest"].basePow = Game.ObjectsById[5].minigame.loanTypes[1][3]
+    Game.buffTypesByName["loan 3"].baseDur = Game.ObjectsById[5].minigame.loanTypes[2][2]
+    Game.buffTypesByName["loan 3"].basePow = Game.ObjectsById[5].minigame.loanTypes[2][1]
+    Game.buffTypesByName["loan 3 interest"].baseDur = Game.ObjectsById[5].minigame.loanTypes[2][4]
+    Game.buffTypesByName["loan 3 interest"].basePow = Game.ObjectsById[5].minigame.loanTypes[2][3]
+    Game.buffTypesByName["gifted out"].baseDur = 60*60
+    Game.buffTypesByName["gifted out"].basePow = 1
+  };
+
 function AutoScoreCorrect() {
   iniRaw=Game.cookiesPsRaw
   SetBuildings(iniBC)
@@ -888,46 +949,8 @@ function pushStoredGameSettings() {
   let p = Game.prefs;
   let strs = gameSettings;
   p.altDraw = strs[0]; p.askLumps = strs[1]; p.autosave = strs[2]; p.autoupdate = strs[3]; p.bgMusic = strs[4]; p.cloudSave = strs[5]; p.cookiesound = strs[6]; p.crates = strs[7]; p.cursors = strs[8]; p.customGrandmas = strs[9]; p.discordPresence = strs[10]; if(p.extraButtons != strs[11]) { p.extraButtons = strs[11]; Game.ToggleExtraButtons(); } if(p.fancy != strs[12]) { p.fancy = strs[12]; Game.ToggleFancy(); } p.filters = strs[13]; p.focus = strs[14]; p.milk = strs[15]; p.monospace = strs[16]; p.notif = strs[17]; p.notScary = strs[18]; p.numbers = strs[19]; p.particles = strs[20]; p.screenreader = strs[21]; p.showBackupWarning = strs[22]; p.wobbly = strs[23]; Game.volume = strs[24]; Game.volumeMusic = strs[25];
-}
-    
-function getSettingsCodeOld() { 
-	let str = ">>CCCEMContainerTop<<";
-    const s = '/';
-    const p = Game.prefs;
-    
-    str += CCCEMVer + s
-    str += iniSeed + s
-    str += iniC + s
-    str += iniCE + s
-    str += iniP + s
-    str += iniLumps + s
-    str += iniBC + s
-    for (let j = 0; j < 20; j++) {
-      str += manualBuildings[j] + s
-    }
-    str += forceFtHoF + s
-    str += wizCount + s
-    str += wizLevel + s
-    str += forcedCastCount[0] + s + forcedCastCount[1] + s
-    str += toNextTick + s
-    
-    str += chooseLump + s + d1Aura + s + d2Aura + s + seedNats + s + seedTicker + s + gardenSeed + s + gardenP1[0] + s + gardenP1[1] + s + gardenP2[0] + s + gardenP2[1] + s + setGardenR + s + officeL + s + spirit1 + s + spirit2 + s + spirit3 + s + iniGC + s + iniGC2 + s + iniGC3 + s + iniDO + s + iniDEoRL + s + iniF + s + iniDH + s + iniDHdur + s + iniBSCount + s + iniBSdur + s + iniSB + s + buyOption1 + s + buyOption2 + s + forceFortune + s
-      
-    str += GCCount + s + iniRein + s + iniSpawn + s + iniTimer + s + iniFdur + s + fortuneG + s + boughtSF + s + boughtCE + s + setSeason + s + setPledge + s
-    for (let j = 0; j < 20; j++) {
-      str += muteBuildings[j] + s
-    }
-    str += unmuteMinigames + s
-    str += useEB + s + useRebuy + s
-    
-    str += p.altDraw + s + p.askLumps + s + p.autosave + s + p.autoupdate + s + p.bgMusic + s + p.cloudSave + s + p.cookiesound + s + p.crates + s + p.cursors + s + p.customGrandmas + s + p.discordPresence + s + p.extraButtons + s + p.fancy + s + p.filters + s + p.focus + s + p.milk + s + p.monospace + s + p.notif + s + p.notScary + s + p.numbers + s + p.particles + s + p.screenreader + s + p.showBackupWarning + s + p.wobbly + s
-    str += Game.volume + s + Game.volumeMusic + s
-    str += autoSaveCCCEM + s + DFChanceMult + s + gcRateMult + s + clickWait + s + gardenLevel + s + ((initCastFindSeason == null)?'n':initCastFindSeason) + s;
-    str += scoreCorVal + s + scoreCorNotify
-    str += ">>ContainerEnd<<"
-    
-    return str;
-}
+  };
+
 function getSettingsCode() {
   let str = '>>CCCEMContainerTop:'+CCCEMVer+'<<';
   let obj = {};
@@ -951,7 +974,7 @@ function getSettingsCode() {
 function setSettings(str) { 
   if (str.startsWith('>>CCCEMContainerTop<<')) {
       oldLoadFunc(str);
-      return; 
+      return;
     }
 	CCCEMContainerModObj.applyLoad(CCCEMContainerModObj.trimLoad(str), true);
 }
@@ -1036,12 +1059,6 @@ var oldLoadFunc = function(str, noNotify) {
 
         CCCEMButtons['iniDO'].changeState(Boolean(strs[51]));
         CCCEMButtons['iniDEoRL'].changeState(Boolean(strs[52]));
-        CCCEMButtons['iniF'].changeState(Boolean(strs[53]));
-        CCCEMButtons['iniDH'].changeState(Boolean(strs[54]));
-        CCCEMButtons['iniDHdur'].changeState(strs[55]);
-        CCCEMButtons['iniBSCount'].changeState(strs[56]);
-        CCCEMButtons['iniBSdur'].changeState(strs[57]);
-        CCCEMButtons['iniSB'].changeState(Boolean(strs[58]));
         CCCEMButtons['buyOption1'].changeState(strs[59]);
         CCCEMButtons['buyOption2'].changeState(strs[60]);
 
@@ -1058,7 +1075,6 @@ var oldLoadFunc = function(str, noNotify) {
         CCCEMButtons['reindeerCount'].changeState(strs[63]);
         CCCEMButtons['iniSpawn'].changeState(Boolean(strs[64]));
         CCCEMButtons['iniSpawnTimer'].changeState(strs[65]);
-        CCCEMButtons['iniFdur'].changeState(strs[66]);
         CCCEMButtons['fortuneClaim'].changeState(Boolean(strs[67]));
         CCCEMButtons['boughtSF'].changeState(Boolean(strs[68]));
         CCCEMButtons['boughtCE'].changeState(Boolean(strs[69]));
@@ -1113,10 +1129,9 @@ var oldLoadFunc = function(str, noNotify) {
         spirit1 = strs[45]; spirit2 = strs[46]; spirit3 = strs[47]; 
         iniGC = strs[48]; iniGC2 = strs[49]; iniGC3 = strs[50]; 
         iniDO = strs[51]; iniDEoRL = strs[52]; 
-        iniF = strs[53]; iniDH = strs[54]; iniDHdur = strs[55]; iniBSCount = strs[56]; iniBSdur = strs[57]; 
-        iniSB = strs[58]; buyOption1 = strs[59]; buyOption2 = strs[60]; forceFortune = strs[61];
+        buyOption1 = strs[59]; buyOption2 = strs[60]; forceFortune = strs[61];
         
-        GCCount = strs[62]; iniRein = strs[63]; iniSpawn = strs[64]; iniTimer = strs[65]; iniFdur = strs[66]; 
+        GCCount = strs[62]; iniRein = strs[63]; iniSpawn = strs[64]; iniTimer = strs[65];
         fortuneG = strs[67]; boughtSF = strs[68]; boughtCE = strs[69]; setSeason = strs[70]; setPledge = strs[71]; 
         for (let j = 0; j < 20; j++) {
           muteBuildings[j] = strs[72+j]
@@ -1239,6 +1254,7 @@ Game.registerMod('CCCEMContainer', {
 var modDataSlotsYetToBeLoaded = new Map();
 
 var cccemDir = window.locally_hosted?'./':'https://cursedsliver.github.io/CCCEM/';
+
 if (Game.ready && !l('topbarFrenzy')) {
   pureWriteSave=false;
   for (let i in Game.Objects) { 
@@ -1247,16 +1263,18 @@ if (Game.ready && !l('topbarFrenzy')) {
   Game.LoadMinigames();
   if (Game.Objects.Farm.minigameLoaded) { 
     Game.LoadMod(cccemDir+"cccemInterface.js"); 
-    initializeMod();
+    InitializeMod();
   } else { 
     const interval = setInterval(function() { if (Game.Objects.Farm.minigameLoaded) { Game.LoadMod(cccemDir+"cccemInterface.js"); clearInterval(interval); } }, 100);
   }
-  const interval2 = setInterval(function() { if (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded) { initializeMod(); clearInterval(interval2); } }, 50); 
+  const interval2 = setInterval(function() { if (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded) { InitializeMod(); clearInterval(interval2); } }, 50); 
 
   setTimeout(CheckModLoaded, 1900);
 } else if (!l('topbarFrenzy')) {console.log("mod launch halted, game not loaded")};
-function initializeMod() {
-  if (Game.chimeType==0 && !hasSettingsSet) {PresetSettingsConsist(); ResetGame(1); PresetSettingsGrail();} else if (hasSettingsSet) {IntegratedSettingsConsist(); ResetGame(1); IntegratedSettingsGrail(); } else {ResetGame(1);};
+
+function InitializeMod() {
+  InitBuffMod()
+  if (hasSettingsSet) {IntegratedSettingsConsist(); ResetGame(1); IntegratedSettingsGrail()} else {PresetSettingsConsist(); ResetGame(1); PresetSettingsGrail();}
   var prev=Game.prefs.notifs
   Game.prefs.notifs=0
   if (!hasSettingsSet) { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Your save will return upon closing the game.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [18, 6]) } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [19, 6]) }
@@ -1264,7 +1282,7 @@ function initializeMod() {
   Game.prefs.autosave=0
   Game.bakeryNameSet('grail moments');
   setTimeout(ResetAll, 2000); 
-    
+
   Game.Reset();
 }
 
@@ -1285,6 +1303,7 @@ if (typeof Macadamia != 'undefined' && Macadamia) {
                 window.DO_NOT_RPC = true;
                 ResetMinigames();
                 SpawnGoldenCookies(true);
+                ImportBuffs(get('buffs'));
                 overrideBuildings();
                 window.DO_NOT_RPC = false;
                 limitedReset = false;
