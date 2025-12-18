@@ -17,31 +17,6 @@ var exceptions = null;
 //api: every item must be an array of two items. The first one contains the code. The second contains the url
 var instructions = [];
 
-//Time to rip off CCCEM code
-function GetPromptN(input) {
-    if (input==0) {
-    	Game.Prompt('<id ImportSave><noClose><h3>'+"Input code"+'</h3><div class="block">'+loc("Input or modify instructions for the Cast Finder to execute.")+'<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:256px;">'+'</textarea></div>',[['', '', 'display: none;'], [loc("Save"),';Game.ClosePrompt();code=(l(\'textareaPrompt\').value); codes = compile(code);'],loc("Cancel"),[loc("Info"),'; linking();']]);
-    	l('textareaPrompt').focus();
-    	l('textareaPrompt').value = code;
-        Game.promptOptionFocus = 0;
-    }
-    if (input==1) {
-    	Game.Prompt('<id ImportSave><noClose><h3>'+"Input code"+'</h3><div class="block">'+loc("Modify the amount of backup seeds to preload. (whole numbers only!)")+'<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:64px;">'+'</textarea></div>',[['', '', 'display: none;'], [loc("Save"),';Game.ClosePrompt(); preLoadAmountPerSequence=parseInt(l(\'textareaPrompt\').value); updateFinder();'],loc("Cancel"),[loc("Info"),'; linking();']]);
-    	l('textareaPrompt').focus();
-        l('textareaPrompt').value = preLoadAmountPerSequence;
-        Game.promptOptionFocus = 0;
-    }
-    if (input==2) {
-    	Game.Prompt('<id ImportSave><noClose><h3>'+"Import preload"+'</h3><div class="block">'+loc("Import preloaded save here.")+'<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;">'+'</textarea></div>',[['', '', 'display: none;'], [loc("Save"),';Game.ClosePrompt(); preLoadedSeeds=stringToArray(l(\'textareaPrompt\').value); usingPreload=true;updateFinder();'],loc("Cancel"),[loc("Info"),'; linking();']]);
-    	l('textareaPrompt').focus();
-        Game.promptOptionFocus = 0;
-    }
-    if (input==3) {
-        let temp = arrayToString(preLoadedSeeds);
-    	Game.Prompt('<id ExportSave><h3>'+loc("Export preload")+'</h3><div class="block">'+loc("This is your current preload code.<br>Input it with import preload to load.")+'</div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;" readonly>'+temp.slice(0,temp.length-1)+'</textarea></div>',[loc("All done!")])
-    }
-};
-
 function linking(link) {
     window.open('https://pastebin.com/Ej1QSF1S', '_blank');
 }
@@ -648,24 +623,6 @@ function CCCEMIntegratedExecute() {
 Game.registerHook('check', function() { Game.Unlock('Open Cast Finder');});
 
 if (typeof CCCEMUILoaded !== 'undefined') { 
-	function updateFinder() {
-    	castFinderButtons = [];
-        moreButtonsPlus[1] = [];
-        castFinderButtons.push('<div class="line"></div>');
-        castFinderButtons.push('<a class="option neatocyan" '+Game.clickStr+'="isShifting()?info(55):GetPromptN(0);RedrawCCCEM();">'+'Open Cast Finder'+'</a>');
-        castFinderButtons.push('<a class="option neato" '+Game.clickStr+'="isShifting()?info(56):linking();">'+'Documentation'+'</a>');
-        castFinderButtons.push('<a class="option neato" '+Game.clickStr+'="isShifting()?info(66):CCCEMIntegratedExecute()">'+'Execute'+'</a>');
-        castFinderButtons.push('<a class="option neato'+(autoExecute?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(57):(autoExecute=!autoExecute);updateFinder();RedrawCCCEM();">'+'Auto execute '+(boolConvert[autoExecute])+'</a><br>');
-        castFinderButtons.push('<a class="option neato" '+Game.clickStr+'="isShifting()?info(67):preLoad();usingPreload=true;updateFinder();RedrawCCCEM();">'+'Pre-Load</a>'); 
-        castFinderButtons.push('<a class="option neato'+(usingPreload?'orange':'yellow')+'" '+Game.clickStr+'="isShifting()?info(68):(usingPreload=!usingPreload);updateFinder();RedrawCCCEM();">'+'Use Preload '+(boolConvert[usingPreload])+'</a>'); 
-        castFinderButtons.push('<a class="option neatocyan" '+Game.clickStr+'="isShifting()?info(69):GetPromptN(1);RedrawCCCEM();">'+'Preload backups '+preLoadAmountPerSequence+'</a><br>');
-        castFinderButtons.push('<a class="option neatocyan" '+Game.clickStr+'="isShifting()?info(70):GetPromptN(2);RedrawCCCEM();">'+'Import preload</a>');
-        castFinderButtons.push('<a class="option neato" '+Game.clickStr+'="isShifting()?info(71):GetPromptN(3);RedrawCCCEM();">'+'Export current preload</a>');
-        
-        for (var i in castFinderButtons) {moreButtonsPlus[1].push(castFinderButtons[i])}; 
-        moreButtonsPlus[0] = [];
-        RedrawCCCEM();
-    }
     new CCCEMExternalCategory('CastFinder', 'Cast Finder', [
         new CCCEMButton('cfCode', 'Open Cast Finder', 
             new stringInputButton(),
