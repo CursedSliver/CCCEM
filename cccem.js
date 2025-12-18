@@ -41,11 +41,12 @@
 //version 2.62: made CCCEM version popup persist, to give more time to read the information it gives.
 //version 2.7: Refactor nonsense stuffs
 //version 2.8: Added new starting buff logic
+//version 2.81: Bugfix and made initialization faster
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.8';
-var CCCEMVerReal = 'v2.8';
+var CCCEMVerReal = 'v2.81';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -1279,10 +1280,7 @@ function InitializeMod() {
   if (!hasSettingsSet) { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Your save will return upon closing the game.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [18, 6]) } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [19, 6]) }
   Game.prefs.notifs=prev
   Game.prefs.autosave=0
-  Game.bakeryNameSet('grail moments');
-  setTimeout(ResetAll, 2000); 
-
-  Game.Reset();
+  ResetAll();
 }
 
 var hasHarbor = false; 
