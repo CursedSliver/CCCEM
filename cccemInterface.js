@@ -31,6 +31,7 @@
 //version 2.7: added new starting buff handling logic
 //version 2.71: RIP dot
 //version 2.72: Made the triggerSetVar tied to button type
+//version 2.721: Removed a wee info function
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -1639,15 +1640,8 @@ CCCEMCategories['gcSettings'].hidden = true;
 CCCEMButtons['buffType'].updateVarFunc(get('buffType'));
 CCCEMButtons['buffObj'].changeState(-1);
 
-var infogot = 0;
-function info(num) {
-  infogot = 1;
-  //Game.Notify(Messages[num][0], Messages[num][1], [Messages[num][2], Messages[num][3]])
-}
-
 function RedrawCCCEM(noinvalidate) {
   if (hasHarbor) { MacadamiaModList.cccem.mod.syncSettingsRPC.send({ code: getSettingsCode() }); }
-  if (infogot) { infogot = false; return true; }
   var str='';
   str+='<div class="icon" style="position:absolute;left:-9px;top:-6px;background-position:'+(-28*48)+'px '+(-12*48)+'px;"></div>';
   
