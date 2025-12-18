@@ -28,11 +28,12 @@
 //version 2.511: minor bugfix for krumblor aura cycling
 //version 2.6: refactor or some shit idk we love writing changelogs
 //version 2.61: restructuring the onclick function
+//version 2.7: added new starting buff handling logic
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
 Game.sesame=0 //this prevents a crash if opensesame is open, but doesn't get rid of the fps counter. Not sure what to do about that
-var FtHoFOutcomes=['random','blood frenzy','click frenzy','building special','frenzy','cursed finger','multiply cookies','cookie storm','free sugar lump','cookie storm drop','blab']
+var FtHoFOutcomes= ['random','blood frenzy','click frenzy','building special','frenzy','cursed finger','multiply cookies','cookie storm','free sugar lump','cookie storm drop','blab']
 var promptN=0
 var maxComboPow=1
 var relComboPow=1
@@ -50,13 +51,6 @@ var autoSaveCCCEM=false;
 var hasSetSettings=false;
 var pForPausePath = cccemDir+'PForPause.js';
 var castFinderPath = cccemDir+'castFinder.js';
-var testButton='<a class="option neato" '+Game.clickStr+'="for (var i in moreButtons) {if (moreButtons[i].indexOf(testButton)!=-1) {moreButtons[i].splice(moreButtons[i].indexOf(testButton),1)}}; RedrawCCCEM();">Remove test buttons?</a>'
-var iniTimerButton='<a class="option neatocyan" '+Game.clickStr+'="promptN=12; isShifting()?info(58):GetPrompt();">Nat Spawn Timer '+iniTimer+' frames</a><br>'
-if (typeof pForPauseButtons === 'undefined') {var pForPauseButtons=['<a class="option neato" '+Game.clickStr+'="isShifting()?info(5):(Game.LoadMod(`'+pForPausePath+'`)); if (hasHarbor && !isShifting()) { MacadamiaModList.cccem.mod.loadModRPC.send({ path: `'+pForPausePath+'` }); }">Load P for Pause</a>']}
-if (typeof castFinderButtons === 'undefined') {var castFinderButtons=['<a class="option neato" '+Game.clickStr+'="isShifting()?info(55):setupFinderIntegration(); if (hasHarbor && !isShifting()) { MacadamiaModList.cccem.mod.loadCastFinderRPC.send(); }">Load Cast Finder</a><br>']}
-if (typeof moreButtons === 'undefined') {var moreButtons=[[],[],[]]}
-if (typeof moreButtonsPlus === 'undefined') {var moreButtonsPlus=[[],[]]}
-var hiding = [true,true,true,true,false,false]
 var invalidateScore=0
 
 if (typeof CCCEMUILoaded === 'undefined') {
@@ -219,9 +213,9 @@ function ConsistentBuffs(buffName, bsCount) {
   var icBuffs=['dragonflight','blood frenzy','click frenzy','frenzy','dragon harvest']
   for (var i=0; i<bsCount; i++) {icBuffs.push('building special')}
   index=icBuffs.indexOf(forceFtHoF); if (forceFtHoF && index!=-1) icBuffs.splice(index, 1);
-  index=icBuffs.indexOf('frenzy'); if (iniF && index!=-1) icBuffs.splice(index, 1);
-  index=icBuffs.indexOf('dragon harvest'); if (iniDH && index!=-1) icBuffs.splice(index, 1);
-  for (var i=0; i<iniBSCount; i++) {index=icBuffs.indexOf('building special'); if (index!=-1) icBuffs.splice(index, 1)};
+  index=icBuffs.indexOf('frenzy'); if (HasStartBuff(0) && index!=-1) icBuffs.splice(index, 1);
+  index=icBuffs.indexOf('dragon harvest'); if (HasStartBuff(3) && index!=-1) icBuffs.splice(index, 1);
+  for (var i=0; i<BuffCount(9); i++) {index=icBuffs.indexOf('building special'); if (index!=-1) icBuffs.splice(index, 1)};
   if (iniSpawn && iniGC!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
   if (iniDO && iniGC2!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC2].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
   if (iniDEoRL && iniGC3!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC3].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
@@ -234,12 +228,12 @@ function AllConsistentBuffsPow() {
   var cBuffs=[];
   var cBuffsPow=1
   if (forceFtHoF!='random') {cBuffs.push(forceFtHoF)};
-  if (iniF && !(cBuffs.includes('frenzy'))) {cBuffs.push('frenzy')};
-  if (iniDH && !(cBuffs.includes('dragon harvest'))) {cBuffs.push('dragon harvest')};
+  if (HasStartBuff(0) && !(cBuffs.includes('frenzy'))) {cBuffs.push('frenzy')};
+  if (HasStartBuff(3) && !(cBuffs.includes('dragon harvest'))) {cBuffs.push('dragon harvest')};
   if (iniSpawn && iniGC!='R' && (!(cBuffs.includes(Game.goldenCookieChoices[iniGC].toLowerCase())) || Game.goldenCookieChoices[iniGC].toLowerCase()=='building special')) {cBuffs.push(Game.goldenCookieChoices[iniGC].toLowerCase())}
   if (iniDO && iniGC2!='R' && (!(cBuffs.includes(Game.goldenCookieChoices[iniGC2].toLowerCase())) || Game.goldenCookieChoices[iniGC2].toLowerCase()=='building special')) {cBuffs.push(Game.goldenCookieChoices[iniGC2].toLowerCase())}
   if (iniDEoRL && iniGC3!='R' && (!(cBuffs.includes(Game.goldenCookieChoices[iniGC3].toLowerCase())) || Game.goldenCookieChoices[iniGC3].toLowerCase()=='building special')) {cBuffs.push(Game.goldenCookieChoices[iniGC3].toLowerCase())}
-  for (var i=0; i<iniBSCount; i++) {cBuffs.push('building special')};
+  for (var i=0; i<BuffCount(9); i++) {cBuffs.push('building special')};
   for (var i in cBuffs) {
     buff=cBuffs[i]
     if (buff=='frenzy') {cBuffsPow*=7}
@@ -328,78 +322,110 @@ function PrintScore() {
   if (scoreCorNotify && clickScore && incorrectEBwarn>0) {Game.Notify('EB setting fault','EB setting not matching usage of Elder Battalion',[1,7]);}
   };
 
-function CycleFtHoF(reverse) {
-  let index = FtHoFOutcomes.indexOf(forceFtHoF);
-  if (index==-1) { return FtHoFOutcomes[0]; }
-  if (reverse) { index--; } else { index++; }
-  if (index >= FtHoFOutcomes.length) { index = 0; }
-  else if (index < 0) { index = FtHoFOutcomes.length - 1; }
-  return FtHoFOutcomes[index];
-};
-
-function GetPrompt() {
-  Game.Prompt('<id ImportSave><h3>'+"Input to variable"+'</h3><div class="block">'+loc("Please paste what you want the variable to be equal to.")+'<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;">'+'</textarea></div>',[[loc("Load"),`;Game.ClosePrompt(); 
-    switch (promptN) {
-    case 0: iniLoadSave=(l(\'textareaPrompt\').value); if (iniLoadSave.length<100) {iniLoadSave=false};break;
-    case 1: iniSeed=(l(\'textareaPrompt\').value.trim()); if (iniSeed.length!=5) {iniSeed=\'R\'};break;
-    case 2: iniC=Number(l(\'textareaPrompt\').value);break;
-    case 3: iniCE=Number(l(\'textareaPrompt\').value);break;
-    case 4: iniP=Number(l(\'textareaPrompt\').value);break;
-    case 5: iniLumps=Number(l(\'textareaPrompt\').value);break;
-    case 6: iniBC=Number(l(\'textareaPrompt\').value);break;
-    case 7: wizCount=Number(l(\'textareaPrompt\').value);break;
-    case 8: wizLevel=Number(l(\'textareaPrompt\').value);break;
-    case 9: iniDHdur=Number(l(\'textareaPrompt\').value.replace("s",""));break;
-    case 10: iniBSdur=Number(l(\'textareaPrompt\').value.replace("s",""));break;
-    case 11: toNextTick=Number(l(\'textareaPrompt\').value.replace("s",""));break;
-    case 12: var prev=iniTimer; iniTimer=Number(l(\'textareaPrompt\').value.replace("s",""));UpdateMoreButtons(prev);break;
-    case 13:manualBuildings[buildingSelected]=Number(l(\'textareaPrompt\').value);break;
-    case 14:forcedCastCount[0]=Number(l(\'textareaPrompt\').value);break;
-    case 15:iniFdur=Number(l(\'textareaPrompt\').value);break;
-    case 16:break;
-    case 17:setSettings(l(\'textareaPrompt\').value);hasSetSettings=true;break;
-    case 18:DFChanceMult=Number(l(\'textareaPrompt\').value);break;
-    case 19:gcRateMult=Number(l(\'textareaPrompt\').value);break;
-    case 20:clickWait=Number(l(\'textareaPrompt\').value);break;
-    case 21:gardenLevel=Number(l(\'textareaPrompt\').value);break;
-    case 22:scoreCorVal=Number(l(\'textareaPrompt\').value);break;
+function BuffsDesc(buffsStr) {//give a more readable description of the buff parameters in the prompt
+  let str=''
+  let buffsArr = buffsStr.split(";")
+  for (let i in buffsArr) {
+    if (!buffsArr[i]) {break}
+    let buffArr = buffsArr[i].split(",")
+    str += 'Name: ' + Game.buffTypes[parseInt(buffArr[0])].name + '\n'
+    str += 'Max Time: ' + parseInt(buffArr[1]/Game.fps) + '\n'
+    str += 'Time: ' + parseInt(buffArr[2]/Game.fps) + '\n'
+    if (buffArr[3]) str+='Pow: '+parseInt(buffArr[3]) + '\n'
+		if (typeof buffArr[4]!=='undefined') str+='Obj: '+parseInt(buffArr[4]) + '\n'
+		if (typeof buffArr[5]!=='undefined') str+='Arg 3: '+parseInt(buffArr[5]) + '\n'
+    str += '\n'
     };
-    RedrawCCCEM();`],loc("Nevermind")]);
-	l('textareaPrompt').focus();
+  return str.slice(0, -2)
   };
 
-function UpdateMoreButtons(prev) {
-  iniTimerButton='<a class="option neatocyan" '+Game.clickStr+'="promptN=12; isShifting()?info(58):GetPrompt();">Nat Spawn Timer '+prev+' frames</a><br>'
-  if (moreButtons[2].indexOf(iniTimerButton)!=-1) {moreButtons[2].splice(moreButtons[2].indexOf(iniTimerButton),1)}
-  iniTimerButton='<a class="option neatocyan" '+Game.clickStr+'="promptN=12; isShifting()?info(58):GetPrompt();">Nat Spawn Timer '+iniTimer+' frames</a><br>'
-  moreButtons[2].push(iniTimerButton);
+function MakeBuffsStr(buffsStr) {//returns a buff string, takes buff description as input to convert (thus also multiplies time by fps)
+  buffsStr = buffsStr.toLowerCase().replace(/\s/g,'')
+  buffsStr = buffsStr.replaceAll("name:",';')
+  buffsStr = buffsStr.replaceAll("maxtime:",',')
+  buffsStr = buffsStr.replaceAll("time:",',')
+  buffsStr = buffsStr.replaceAll("pow:",',')
+  buffsStr = buffsStr.replaceAll("obj:",',')
+  buffsStr = buffsStr.replaceAll("arg3:",',')
+  for (var i in Game.buffTypes) {
+    buffsStr = buffsStr.replaceAll(Game.buffTypes[i].name.replace(/\s/g,''), i)
+    };
+  if (!buffsStr) return ""
+  buffsStr = buffsStr.slice(1) + ';'
+  return ModifyBuffTimes(buffsStr)
   };
+
+function ModifyBuffTimes(buffsStr) {//multiplies buff times by Game.fps
+  let buffsArr = buffsStr.split(";")
+  buffsStr=''
+  for (let i in buffsArr) {
+    if (!buffsArr[i]) {continue}
+    let buffArr = buffsArr[i].split(",")
+    buffArr[1] *= Game.fps
+    buffArr[2] *= Game.fps
+    buffsStr+=buffArr.join()+';'
+    };
+  return buffsStr
+}
+
+function AddStartBuff(type, mTime, time, pow, obj, arg3) {//add a buff to the starting buffs. mTime, time, pow, obj will all use default values if not specified
+  let buff=''
+  let isBS = (type == 9 || type == 10)
+  if (!mTime) {mTime = Math.ceil(Game.buffTypes[type].baseDur*GetEffectDurMod())}
+  if (!time) {time = mTime} else {time = Math.min(time, mTime)}
+  if (!pow) {pow = Game.buffTypes[type].basePow}
+  if (!isBS) {obj=0}
+  else if (typeof obj == 'undefined') {obj=-1}
+
+  //remove buff if it already exists in the list. Exception is made for unspecified BSs, up to 20 BSs
+  if (!isBS  ||  obj >= 0  ||  BuffCount(type) > Object.keys(Game.goldenCookieBuildingBuffs).length-1) {RemoveStartBuff(IndexBuff(type, obj))}
   
-function MoreTestButtons() {
-  moreButtons[0].push(testButton)
-  moreButtons[1].push(testButton)
-  moreButtons[2].push(testButton)
-  RedrawCCCEM();
+  buff+= type + ',' + mTime*Game.fps + ',' + time*Game.fps + ',' + pow
+  if (isBS) buff+= ',' + obj
+  if (typeof arg3!=='undefined') buff+= ',' + arg3
+  CCCEMButtons['buffs'].changeState(get('buffs')+buff+';')
   };
 
-function cycleSeason(reverse) {
-  //reverse cycle not implemented
-  setSeason++;
-  if (setSeason == 186) { setSeason = 209; }
-  if (setSeason == 210) { setSeason = 0; }
-  if (setSeason == 1) { setSeason = 182; }
-  return setSeason;
-}
+function BuffCount(type) {//counts the number of buffs of a type in the starting buffs, mainly for counting number of BSs
+  let buffsArr = get('buffs').split(";")
+  let c=0
+  for (let i in buffsArr) {
+    if (!buffsArr[i]) {continue}
+    let buffArr = buffsArr[i].split(",")
+    let bType = buffArr[0]
+    if (bType == type) {c++}
+    };
+  return c
+  };
 
-function cycleCastInitSeason(reverse) {
-  //reverse cycle not implemented
-  initCastFindSeason++;
-  if (initCastFindSeason == 186) { initCastFindSeason = 209; }
-  if (initCastFindSeason == 210) { initCastFindSeason = null; }
-  if (initCastFindSeason == null) { initCastFindSeason = 0; }
-  if (initCastFindSeason == 1) { initCastFindSeason = 182; }
-  return initCastFindSeason;
-}
+function HasStartBuff(type, obj) {//check for matching buff type. type and obj are numbers. If Obj is used as a parameter, check for matching BS type. Return true/false
+  if (typeof IndexBuff(type, obj) == 'number') return true
+  return false
+  };
+
+function IndexBuff(type, obj) {//check for matching starting buff type. type and obj are numbers. If Obj is used as a parameter, check for matching BS type. Return index
+  let buffsArr = get('buffs').split(";")
+  for (let i in buffsArr) {
+    if (!buffsArr[i]) {continue}
+    let buffArr = buffsArr[i].split(",")
+    let bType = buffArr[0]
+    let bObj = buffArr[4]
+    if (bType != type) {continue}
+    if ((bType == 9 || bType == 10) && bObj != obj) {continue};
+    return parseInt(i)
+    };
+  return false
+  };
+
+function RemoveStartBuff(index) {//removes the buff at the target index from the starting buff list
+  if (index === false) {return}
+  if (!index) index=0
+  let str = ''
+  let buffsArr = get('buffs').split(";")
+  buffsArr.splice(index, 1)
+  for (let i in buffsArr) {if (buffsArr[i]) str+=buffsArr[i]+';'}
+  CCCEMButtons['buffs'].changeState(str)
+  };
 
 window.setupFinderIntegration = function() {
     Game.LoadMod(castFinderPath); 
@@ -681,7 +707,7 @@ class stringInputButton extends inputButton {
   }
 }
 class readonlyDisplayButton extends inputButton {
-  //cyan button (string input)
+  //cyan button (no input)
   constructor(autoSet) {
     super();
     if (autoSet) { this.autoSet = autoSet; }
@@ -993,21 +1019,30 @@ new buttonCategory('interfaceBegin', 0, [
 ]);
 
 new buttonCategory('categoryTogglePanel', 1, [
-  new CCCEMButton('optionsBatch1', 'Batch settings options [##]',
-    new categoryToggleButton('batchSettings'),
-    new buttonInfo('Options group: Batch settings', 'Options related to widespread setting changes and preset settings. ', [27, 29])
+  new CCCEMButton('optionsBatch1', 'Save/Load [##]',
+    new categoryToggleButton('savingSettings'),
+    new buttonInfo('Options group: Save/Load settings', 'Options related to saving and loading. ', [27, 29])
+  ),
+  new CCCEMButton('optionsBatch2', 'Presets [##]',
+    new categoryToggleButton('presetSettings'),
+    new buttonInfo('Options group: Presets', 'Options related to wide-spread setting changes. ', [27, 29]),
+    null, true
   ),
   new CCCEMButton('optionsBatch2', 'Game settings options [##]',
     new categoryToggleButton('gameSettings'),
     new buttonInfo('Options group: Game settings', 'Options related to the game\'s core features, including adjusting cookies, buildings, and lumps. ', [28, 29]),
-    null, true
   ),
   new CCCEMButton('optionsBatch3', 'Minigame options [##]',
     new categoryToggleButton('minigameSettings'),
-    new buttonInfo('Options group: Minigames', 'Options related to the four minigames. ', [28, 29])
+    new buttonInfo('Options group: Minigames', 'Options related to the four minigames. ', [28, 29]),
+    null, true
   ),
-  new CCCEMButton('optionsBatch4', 'Buff & GC options [##]',
+  new CCCEMButton('optionsBatch4', 'Buff options [##]',
     new categoryToggleButton('buffSettings'),
+    new buttonInfo('Buff settings', 'Settings related to starting golden cookie buffs', [10, 25])
+  ),
+  new CCCEMButton('optionsBatch5', 'GC options [##]',
+    new categoryToggleButton('gcSettings'),
     new buttonInfo('Options group: Buffs & GC options', 'Options related to buffs and Golden cookies. Also includes many randomness-related options.', [28, 29]),
     null, true
   ),
@@ -1037,7 +1072,28 @@ new buttonCategory('categoryTogglePanel', 1, [
 CCCEMButtons['optionsBatchPForPause'].hidden = true;
 CCCEMButtons['optionsBatchCastFinder'].hidden = true;
 
-new buttonCategory('batchSettings', 2, [
+new buttonCategory('savingSettings', 2, [
+  new CCCEMButton('importSave', 'Import save',
+    new stringInputButton(),
+    new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents.', [24, 7]),
+    function(s) { iniLoadSave = s; this.state = ''; }
+  ),
+  new CCCEMButton('importSettings', 'Import settings',
+    new stringInputButton(),
+    new buttonInfo('Import settings', 'Imports a setting.', [2, 32]),
+    function(s) { if (s) { setSettings(s); hasSetSettings = true; } this.state = ''; }
+  ),
+  new CCCEMButton('exportSettings', 'Export settings',
+    new readonlyDisplayButton(() => {
+      return getSettingsCode();
+    }),
+    new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32])
+  ),
+]);
+CCCEMButtons['exportSettings'].willSave = false;
+CCCEMButtons['importSettings'].willSave = false;
+
+new buttonCategory('presetSettings', 3, [
   new CCCEMButton('defaultPreset', 'Default',
     new triggerButton(),
     new buttonInfo('Default', 'Resets settings to default.', [14, 6]),
@@ -1046,34 +1102,16 @@ new buttonCategory('batchSettings', 2, [
   new CCCEMButton('consistPreset', '100% consistency',
     new triggerButton(),
     new buttonInfo('Default', 'Resets settings to default.', [14, 6]),
-    () => { PresetSettingsConsist(); }, true
+    () => { PresetSettingsConsist(); }
   ),
   new CCCEMButton('bsScryPreset', 'BS scry',
     new triggerButton(),
     new buttonInfo('BS scry', 'Resets settings to a preset setting for a combo with a scried Building Special.', [13, 6]),
     () => { PresetSettingsBSScry(); }
   ),
-  new CCCEMButton('importSave', 'Import save',
-    new stringInputButton(),
-    new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents.', [24, 7]),
-    function(s) { iniLoadSave = s; this.state = ''; }, true
-  ),
-  new CCCEMButton('exportSettings', 'Export settings',
-    new readonlyDisplayButton(() => {
-      return getSettingsCode();
-    }),
-    new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32])
-  ),
-  new CCCEMButton('importSettings', 'Import settings',
-    new stringInputButton(),
-    new buttonInfo('Import settings', 'Imports a setting.', [2, 32]),
-    function(s) { if (s) { setSettings(s); hasSetSettings = true; } this.state = ''; }
-  ),
-]);
-CCCEMButtons['exportSettings'].willSave = false;
-CCCEMButtons['importSettings'].willSave = false;
+]),
 
-new buttonCategory('gameSettings', 3, [
+new buttonCategory('gameSettings', 4, [
   new CCCEMButton('iniSeed', 'Initial seed [##]',
     new stringInputButton(),
     new buttonInfo('Initial seed', 'Seed to determine RNG outcomes, or leave as \'R\' for random. <br>Also requires either toggling on Force cast count or change FtHoF to \'random\'.', [25, 25]),
@@ -1140,7 +1178,7 @@ new buttonCategory('gameSettings', 3, [
     s => useRebuy = s, true
   ),
   new CCCEMButton('buildingSelect', '[##]:',
-    new cycleButton(0, Object.keys(Game.ObjectsById).length - 1, e => Game.ObjectsById[e].name),
+    new cycleButton(0, Object.keys(Game.Objects).length - 1, e => Game.ObjectsById[e].name),
     new buttonInfo('Select building', 'The specific building to override or mute. Once overridden, the anchor will not affect this building.', [35, 33]),
     s => {
       buildingSelected = s;
@@ -1234,7 +1272,7 @@ CCCEMButtons['pledgeStatus'].hidden = true;
 CCCEMButtons['fortuneClaim'].hidden = true;
 CCCEMButtons['gcClickCount'].hidden = true;
 
-new buttonCategory('minigameSettings', 4, [
+new buttonCategory('minigameSettings', 5, [
   new CCCEMButton('forceFtHoF', 'FtHoF [##]',
     new cycleButton(0, FtHoFOutcomes.length - 1, e => FtHoFOutcomes[e]),
     new buttonInfo('FtHoF scry', 'The outcome of the first Force the Hand of Fate cast upon starting an attempt.', [27, 11]),
@@ -1316,42 +1354,100 @@ new buttonCategory('minigameSettings', 4, [
   )
 ]);
 
-new buttonCategory('buffSettings', 5, [
-  new CCCEMButton('iniF', 'Frenzy [##]',
-    new boolButton('On', 'Off'),
-    new buttonInfo('Frenzy toggle', 'Whether Frenzy will be active at the start of each attempt.', [10, 14]),
-    s => { iniF = s; }
+new buttonCategory('buffSettings', 6, [
+  new CCCEMButton('importBuffs','Import Buffs',
+    new stringInputButton(),
+    new buttonInfo("Import Buffs","You can import buffs in the format as the buffs button gives, or ",[24, 7]),
+    s => CCCEMButtons['buffs'].changeState(MakeBuffsStr(s))
   ),
-  new CCCEMButton('iniFdur', 'Frenzy dur [##]s',
+  new CCCEMButton('buffs', 'Buffs',
+    new readonlyDisplayButton(() => {return BuffsDesc(get('buffs'))}),
+    new buttonInfo('Starting buffs', 'The buffs you will start with when you reset.', [10, 25]),
+    s => {let hide = s?false:true
+      let len = s.split(";").length-1
+      CCCEMButtons['removeType'].hidden=hide
+      CCCEMButtons['removeBuff'].hidden=hide
+      CCCEMButtons['clearBuffs'].hidden=hide
+      CCCEMButtons['removeType'].type.max = Math.max(len-1,0)
+      CCCEMButtons['importBuffs'].state = BuffsDesc(get('buffs'))
+      if (len) {
+        CCCEMButtons['removeType'].state = Math.max(0, len-2)
+        CCCEMButtons['removeType'].type.triggerVarFunc()
+      }
+    }
+  ),
+  new CCCEMButton('snapBuffs', 'snapshot buffs',
+    new triggerButton(),
+    new buttonInfo('Snapshot', 'Will alter your starting buff settings to be the buffs you currently have active.', [30, 20]),
+    () => CCCEMButtons['buffs'].changeState(ExportBuffs())
+  ),
+  new CCCEMButton('addBuff', 'Add [##]',
+    new triggerButton(),
+    new buttonInfo('Add starting buff', 'Will add another starting buff based on the subsequent settings (incl type, max time, time, power, BS type)', [33, 25]),
+    () => AddStartBuff(get('buffType'), get('buffMaxTime'), get('buffTime'), get('buffPow'), get('buffObj')),true
+  ),
+  new CCCEMButton('buffType', 'Cycle Buffs',
+    new cycleButton(0, Game.buffTypes.length-1, e => Game.buffTypes[e]),
+    new buttonInfo('Cycle through buffs', 'Which type of buff to add. BS type is selectable after cycling to building buff or building debuff.', [0, 14]),
+    s => {
+      let name=""
+      if ((s==9 || s==10) && get('buffObj') >= 0) {
+        let obj=Game.ObjectsById[get('buffObj')].name; 
+        name=Game.goldenCookieBuildingBuffs[obj][s-9]} 
+      else {
+        name=Game.buffTypes[s].name
+        }
+      CCCEMButtons['buffObj'].hidden = (s==9 || s==10)?false:true
+      CCCEMButtons['addBuff'].state = name
+      RedrawCCCEM();
+      }
+  ),
+  new CCCEMButton('buffObj', 'Cycle BS',
+    new cycleButton(-1, Object.keys(Game.goldenCookieBuildingBuffs).length-1, e => Game.goldenCookieBuildingBuffs[e]),
+    new buttonInfo('Cycle BS type', 'Cycle through BS types. If left at Building Buff or Building Debuff, a random one will be selected', [4, 14]),
+    () => CCCEMButtons['buffType'].updateVarFunc(get('buffType'))
+  ),
+  new CCCEMButton('buffMaxTime', 'Max Time [##]',
     new numberInputButton(),
-    new buttonInfo('Frenzy duration', 'The duration of the Frenzy (in seconds) at the start of each attempt.', [8, 14]),
-    s => { iniFdur = s; }, true
+    new buttonInfo('Maximum buff duration', 'How much maximum time the added buff has, if left at 0 the buff default will be used.', [23, 11]),
   ),
-  new CCCEMButton('iniDH', 'Dragon Harvest [##]',
-    new boolButton('On', 'Off'),
-    new buttonInfo('Dragon Harvest toggle', 'Whether Dragon Harvest will be active at the start of each attempt.', [10, 25]),
-    s => { iniDH = s; }
-  ),
-  new CCCEMButton('iniDHdur', 'Dragon Harvest dur [##]s',
+  new CCCEMButton('buffTime', 'Time [##]',
     new numberInputButton(),
-    new buttonInfo('Dragon Harvest duration', 'The duration of the Dragon Harvest (in seconds) at the start of each attempt.', [8, 25]),
-    s => { iniDHdur = s; }, true
+    new buttonInfo('Buff duration', 'How much remaining time the added buff has, if left at 0 max time will be used.', [23, 11]),
   ),
-  new CCCEMButton('iniBSCount', 'Extra Building Specials: [##]',
-    new cycleButton(0, Object.keys(Game.Objects).length, e => e),
-    new buttonInfo('Extra Building Specials', 'The amount of unique Building Specials at the start of each attempt.', [5, 6]),
-    s => { iniBSCount = s; }
-  ),
-  new CCCEMButton('iniBSdur', 'Building Special dur [##]s',
+  new CCCEMButton('buffPow', 'Power [##]',
     new numberInputButton(),
-    new buttonInfo('Building Special duration', 'The duration of each individual Building Special (in seconds) at the start of each attempt.', [23, 11]),
-    s => { iniBSdur = s; }, true
+    new buttonInfo('Buff power', 'This is used to determine the strength of the added buff, if left at 0 the buff default will be used.', [30, 5]),
+    null,true
   ),
-  new CCCEMButton('iniSB', 'Sugar Blessing [##]',
-    new boolButton('On', 'Off'),
-    new buttonInfo('Sugar Blessing toggle', 'Whether Sugar Blessing (Buff from Golden Sugar lumps) will be active at the start of each attempt.', [29, 16]),
-    s => { iniSB = s; }
+  new CCCEMButton('removeType', 'Cycle remove',
+    new cycleButton(0, 0),
+    new buttonInfo('Cycle current buffs', 'Will cycle through all the buffs you are starting with, so that one can be removed with the remove buff button.', [0, 15]),
+    s => {CCCEMButtons['removeBuff'].state=Game.buffTypes[get('buffs').split(';')[s].split(',')[0]].name; RedrawCCCEM()},
   ),
+  new CCCEMButton('clearBuffs', 'Clear buffs',
+    new triggerButton(),
+    new buttonInfo('Clear starting buffs', 'Will remove all starting buffs, making you have no buffs when resetting', [0, 31]),
+    () => CCCEMButtons['buffs'].changeState(""),
+  ),
+  new CCCEMButton('removeBuff', 'Remove [##]',
+    new triggerButton(),
+    new buttonInfo('Remove starting buff', 'Remove one starting buff. All current starting buffs can be cycled through with the cycle remove button.', [33, 24]),
+    () => RemoveStartBuff(get("removeType"))
+  ),
+]);
+for (let i in CCCEMCategories["buffSettings"].buttons) {
+  CCCEMCategories["buffSettings"].buttons[i].type.willSave=false
+  };
+CCCEMButtons['buffObj'].hidden=true
+CCCEMButtons['removeType'].hidden=true
+CCCEMButtons['removeBuff'].hidden=true
+CCCEMButtons['clearBuffs'].hidden=true
+CCCEMButtons['buffs'].type.willSave=true
+CCCEMButtons['buffs'].type.heading='Buffs'
+CCCEMButtons['buffs'].type.subHeading='Buffs that will be active when you reset'
+
+new buttonCategory('gcSettings', 7, [
   new CCCEMButton('seedNats', 'Seeding GC [##]',
     new boolButton('On', 'Off'),
     new buttonInfo('Seeded natural Golden cookies toggle', 'Whether naturally spawned Golden cookies will have their effects be determined by the current game seed.', [22, 6]),
@@ -1523,10 +1619,14 @@ new buttonCategory('savingControls', 1e6, [
   )
 ]);
 
-CCCEMCategories['batchSettings'].hidden = true;
+CCCEMCategories['savingSettings'].hidden = true;
+CCCEMCategories['presetSettings'].hidden = true;
 CCCEMCategories['gameSettings'].hidden = true;
 CCCEMCategories['minigameSettings'].hidden = true;
 CCCEMCategories['buffSettings'].hidden = true;
+CCCEMCategories['gcSettings'].hidden = true;
+CCCEMButtons['buffType'].updateVarFunc(get('buffType'));
+CCCEMButtons['buffObj'].changeState(-1);
 
 var infogot = 0;
 function info(num) {
@@ -1552,8 +1652,6 @@ function RedrawCCCEM(noinvalidate) {
   l('devConsole').style.maxHeight = 'calc(100vh - '+((App?0:l('topBar').getBoundingClientRect().height) + 18)+'px)';
   l('debug').style.display='block';
   };
-moreButtons[0].push(pForPauseButtons[0])
-moreButtonsPlus[0].push(castFinderButtons[0])
 l('devConsole').classList.add('CCCEMInterface');
 RedrawCCCEM();
 invalidateScore=0;
