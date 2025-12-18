@@ -7,6 +7,7 @@
 //version 2.111 added try catch block
 //version 2.12 fixed issue with the mod removing a button from CCCEMUI
 //version 2.121 reverted changes and changed approach to prevent deletion of other elements
+//version 2.2 fixed new integration with CCCEMUI buttons
 
 var gamePause=0
 var gardenStepDifference=Game.Objects.Farm.minigame?(Game.Objects.Farm.minigame.nextStep-Date.now()):0
@@ -17,10 +18,11 @@ var gfdArr=[]
 var tpsLoop=0
 var tpsSpeed=30
 var pForPause=[[80, "P"], [84, "T"], [82, "R"], [0, 'Never']] //keycodes for pause, step and reset, being p, t, r
-var newKeyBind=0
 var changeKeyBind=0
 var gameSpeedMultTriggerKeybind=0; //never active
 var timeFactorWhenEnabled=1;
+
+function Clamp(val, min, max) {return Math.max(min, Math.min(val, max))}
 
 function HoldVars() {
     var time=Date.now(); 
@@ -45,44 +47,11 @@ function TickStep() {
     HoldVars();
     }
 
-function SetTPS(tps) {
-    if (!gamePause) {PauseGame()}; 
-    if (tpsLoop) {
-        clearTimeout(tpsLoop); 
-        tpsLoop=0}; 
-        if (!(tps<=0)) {tpsSpeed=tps; TPSStep()
-        }
-    }
-
-function PForPBGetPrompt() {
-    Game.Prompt('<id ImportSave><h3>'+"Input to variable"+'</h3><div class="block">'+loc("Please paste what you want the variable to be equal to.")+'<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;">'+'</textarea></div>',[[loc("Load"),';Game.ClosePrompt(); if (!Number.isNaN(parseFloat(l(\'textareaPrompt\').value))) { timeFactorWhenEnabled = Math.max(parseFloat(l(\'textareaPrompt\').value), 0); if (hasPForPausePort) { MacadamiaModList.pForPause.mod.defaultGameSpeedChangeRPC.send({ value: timeFactorWhenEnabled }); } { } if (pForPause[3][0] == -1 || Game.keys[pForPause[3][0]]) { PForPause.changeGameSpeed(timeFactorWhenEnabled); } } UpdatePForPB(); RedrawCCCEM();'],loc("Nevermind")]);
-    l('textareaPrompt').focus();
-}
-
 function TPSStep() {
     if (gamePause) {TickStep()}; 
     tpsLoop=setTimeout(TPSStep,Math.round(1000/tpsSpeed))
     }
 
-function PForPauseButtons() {
-    for (var i in pForPauseButtons) {moreButtons[2].push(pForPauseButtons[i])}; 
-    RedrawCCCEM();
-    }
-
-function NewKeyBind(key, button) {
-    if (key == 27 && button == 3) { key = 0; } //esc
-    if (button == 3 && pForPause[button][0] == -1 && !Game.keys[key]) { PForPause.changeGameSpeed(1); }
-    pForPause[button][0]=key; 
-    if (key > 0) { pForPause[button][1]=String.fromCharCode((96 <= key && key <= 105) ? key-48 : key); }
-    else { 
-        pForPause[button][1]=(key==-1)?('Always'):((key==0)?('Never'):('???'));
-    }
-    changeKeyBind=0
-    if (hasPForPausePort) {
-        MacadamiaModList.pForPause.mod.keybindChangeRPC.send({ key: button, value: key });
-    }
-    UpdatePForPB();
-    }
 function notifyKeyBind(additional) {
     Game.Notify('Press a key to set!'+(additional?('<br>press esc to set as Never, and click button again to set as Always'):''), '', 0);
 }
@@ -169,7 +138,7 @@ Game.registerMod('P for Pause', {
         );
 
         eval('PlaySound='+PlaySound.toString()
-            .replace('sound.volume', 'sound.playbackRate = PForPause.timeFactor; sound.volume')
+            .replace('sound.volume', 'sound.playbackRate = Clamp(PForPause.timeFactor, 0.07, 15); sound.volume')
         );
 
         //kc patched
@@ -411,7 +380,7 @@ if (typeof Macadamia != 'undefined' && Macadamia && !hasPForPausePort) {
             this.defaultGameSpeedChangeRPC.setCallback((mult) => {
                 timeFactorWhenEnabled = parseFloat(mult.value);
                 window.DO_NOT_RPC = true;
-                UpdatePForPB();
+                //UpdatePForPB();
                 RedrawCCCEM();
                 window.DO_NOT_RPC = false;
             });
@@ -420,8 +389,8 @@ if (typeof Macadamia != 'undefined' && Macadamia && !hasPForPausePort) {
             this.keybindChangeRPC.setCallback((keybinds) => {
                 pForPause[keybinds.key][0] = keybinds.value;
                 window.DO_NOT_RPC = true;
-                if (keybinds.key == 3 && pForPause[keybinds.key][0] == -1 || Game.keys[pForPause[keybinds.key][0]]) { PForPause.changeGameSpeed(timeFactorWhenEnabled); }
-                UpdatePForPB();
+                //if (keybinds.key == 3 && pForPause[keybinds.key][0] == -1 || Game.keys[pForPause[keybinds.key][0]]) { PForPause.changeGameSpeed(timeFactorWhenEnabled); }
+                //UpdatePForPB();
                 RedrawCCCEM();
                 window.DO_NOT_RPC = false;
             });
@@ -438,22 +407,6 @@ if (typeof Macadamia != 'undefined' && Macadamia && !hasPForPausePort) {
 
 
 if (!(typeof CCCEMUILoaded === 'undefined')) {
-    UpdatePForPB=function() {
-        for (var i in moreButtons) {for (var ii in pForPauseButtons) {if (moreButtons[i].indexOf(pForPauseButtons[ii])!=-1) {moreButtons[i].splice(moreButtons[i].indexOf(pForPauseButtons[ii]),1)}}}
-        pForPauseButtons[0]='<div class="line"></div>'
-        pForPauseButtons[1]='<a class="option neato'+(gamePause?'orange':'yellow')+'" '+Game.clickStr+'="PauseGame(); UpdatePForPB(); RedrawCCCEM();">'+(gamePause?'Unpause':'Pause')+'</a>'
-        pForPauseButtons[2]='<a class="option neato" '+Game.clickStr+'="TickStep();">Tick step</a><br>'
-        pForPauseButtons[3]='<a class="option neatoblue" '+Game.clickStr+'="changeKeyBind=1; notifyKeyBind();">Pause: '+pForPause[0][1]+'</a>'
-        pForPauseButtons[4]='<a class="option neatoblue" '+Game.clickStr+'="changeKeyBind=2; notifyKeyBind();">Step: '+pForPause[1][1]+'</a>'
-        pForPauseButtons[5]='<a class="option neatoblue" '+Game.clickStr+'="changeKeyBind=3; notifyKeyBind();">Reset: '+pForPause[2][1]+'</a><br>'
-        pForPauseButtons[6]='<a class="option neatocyan" '+Game.clickStr+'="PForPBGetPrompt();">Gamespeed multiplier: '+timeFactorWhenEnabled+'</a>'
-        pForPauseButtons[7]='<a class="option neatoblue" '+Game.clickStr+'="if (pForPause[3][0] == 0) { NewKeyBind(-1, 3); PForPause.changeGameSpeed(timeFactorWhenEnabled); } else { changeKeyBind=4; notifyKeyBind(true); } UpdatePForPB(); RedrawCCCEM();">Trigger method: '+pForPause[3][1]+'</a>'
-
-        PForPauseButtons();
-        RedrawCCCEM();
-        }
-    UpdatePForPB();
-
     class gameSpeedKeySelect extends keySelectButton {
         parseConvert = key => { 
             if (key == -1) {
