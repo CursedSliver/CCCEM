@@ -329,11 +329,11 @@ function BuffsDesc(buffsStr) {//give a more readable description of the buff par
     if (!buffsArr[i]) {break}
     let buffArr = buffsArr[i].split(",")
     str += 'Name: ' + Game.buffTypes[parseInt(buffArr[0])].name + '\n'
-    str += 'Max Time: ' + parseInt(buffArr[1]/Game.fps) + '\n'
-    str += 'Time: ' + parseInt(buffArr[2]/Game.fps) + '\n'
-    if (buffArr[3]) str+='Pow: '+parseInt(buffArr[3]) + '\n'
+    str += 'Max Time: ' + Number(buffArr[1]/Game.fps) + '\n'
+    str += 'Time: ' + Number(buffArr[2]/Game.fps) + '\n'
+    if (buffArr[3]) str+='Pow: '+Number(buffArr[3]) + '\n'
 		if (typeof buffArr[4]!=='undefined') str+='Obj: '+parseInt(buffArr[4]) + '\n'
-		if (typeof buffArr[5]!=='undefined') str+='Arg 3: '+parseInt(buffArr[5]) + '\n'
+		if (typeof buffArr[5]!=='undefined') str+='Arg 3: '+Number(buffArr[5]) + '\n'
     str += '\n'
     };
   return str.slice(0, -2)
@@ -1456,7 +1456,12 @@ new buttonCategory('gcSettings', 7, [
   new CCCEMButton('seedTicker', 'Seeding News [##]',
     new boolButton('On', 'Off'),
     new buttonInfo('Seeded News ticker messages toggle', 'Whether Fortune appearances in the News ticker are seeded by the current game seed.', [29, 8]),
-    s => { seedTicker = s; }, true
+    s => { seedTicker = s; }
+  ),
+  new CCCEMButton('gSwitch', 'Golden Switch [##]',
+    new boolButton('on', 'off'),
+    new buttonInfo('Golden switch state', 'Whether golden switch will start on or off', [20, 10]),
+    null, true
   ),
   new CCCEMButton('iniSpawn', 'Natural GC [##]',
     new boolButton('On', 'Off'),
