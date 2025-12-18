@@ -347,7 +347,7 @@ function MakeBuffsStr(buffsStr) {//returns a buff string, takes buff description
   buffsStr = buffsStr.replaceAll("pow:",',')
   buffsStr = buffsStr.replaceAll("obj:",',')
   buffsStr = buffsStr.replaceAll("arg3:",',')
-  for (var i in Game.buffTypes) {
+  for (let i=Game.buffTypes.length-1; i>=0; i--) {
     buffsStr = buffsStr.replaceAll(Game.buffTypes[i].name.replace(/\s/g,''), i)
     };
   if (!buffsStr) return ""
