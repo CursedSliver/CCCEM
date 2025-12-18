@@ -46,11 +46,12 @@
 //version 2.83: Fixed loading bug
 //version 2.84: Fixed rather improbable scenario of loading mod with only some minigames unlocked but not all
 //version 2.85: golden switch handling
+//version 2.86: made CCCEM settings not reset every time the game is reset
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.85';
-var CCCEMVerReal = 'v2.85';
+var CCCEMVerReal = 'v2.86';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -655,7 +656,7 @@ function ResetMinigames(toFindRaw) {
   
   Game.popups=1;
   };
-    
+
 function setGrimoireCasts() {
   if (typeof hasFinder === 'undefined') {
   for (var i = 0; i < ((forceFtHoF=='random' || forcedCastCount[1])?0:9999); i++) {
@@ -988,7 +989,7 @@ function getSettingsCode() {
 
 function setSettings(str) {
   str = str.replace(/\s/g,'')
-  if (!str) {return}
+  if (!str || noLoadCCCEMData) {return}
   if (str.startsWith('>>CCCEMContainerTop<<')) {
       oldLoadFunc(str);
       return;
@@ -1186,6 +1187,7 @@ Game.registerMod('CCCEMContainer', {
     return '';
   },
   load:function(str, noNotify) {
+    if (!noLoadCCCEMData) {return}
     hasSettingsSet = true;
     const TOP = '>>CCCEMContainerTop:';
     const BOTTOM = '>>ContainerEnd<<';
@@ -1247,7 +1249,7 @@ Game.registerMod('CCCEMContainer', {
     return str;
   },
   applyLoad: function(str) {
-    if (!str) {return}
+    if (!str || noLoadCCCEMData) {return}
     let strs = str.split('|--+--+--|');
     try { let obj = JSON.parse(strs[0]);
     for (let i in obj) {
