@@ -32,6 +32,7 @@
 //version 2.71: RIP dot
 //version 2.72: Made the triggerSetVar tied to button type
 //version 2.721: Removed a wee info function
+//version 2.8: Made it possible to change contents of inputButtons on click for stability
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -341,28 +342,31 @@ function BuffsDesc(buffsStr) {//give a more readable description of the buff par
   return str.slice(0, -2)
   };
 
-function MakeBuffsStr(buffsStr) {//returns a buff string, takes buff description as input to convert (thus also multiplies time by fps)
+function MakeBuffsStr(buffsStr) {//returns a buff string, takes buff description or buffsStr as input and returns buffsStr. If description, also multiply time by fps
   buffsStr = buffsStr.toLowerCase().replace(/\s/g,'')
-  buffsStr = buffsStr.replaceAll("name:",';')
-  buffsStr = buffsStr.replaceAll("maxtime:",',')
-  buffsStr = buffsStr.replaceAll("time:",',')
-  buffsStr = buffsStr.replaceAll("pow:",',')
-  buffsStr = buffsStr.replaceAll("obj:",',')
-  buffsStr = buffsStr.replaceAll("arg3:",',')
+  buffsStr = buffsStr.replaceAll('name:',';')
+  buffsStr = buffsStr.replaceAll('maxtime:',',')
+  buffsStr = buffsStr.replaceAll('time:',',')
+  buffsStr = buffsStr.replaceAll('pow:',',')
+  buffsStr = buffsStr.replaceAll('obj:',',')
+  buffsStr = buffsStr.replaceAll('arg3:',',')
   for (let i=Game.buffTypes.length-1; i>=0; i--) {
     buffsStr = buffsStr.replaceAll(Game.buffTypes[i].name.replace(/\s/g,''), i)
     };
-  if (!buffsStr) return ""
-  buffsStr = buffsStr.slice(1) + ';'
-  return ModifyBuffTimes(buffsStr)
+  if (!buffsStr) return ''
+  if (buffsStr[0] == ';') {
+    buffsStr = buffsStr.slice(1) + ';'
+    buffsStr = ModifyBuffTimes(buffsStr)
+    };
+  return buffsStr
   };
 
 function ModifyBuffTimes(buffsStr) {//multiplies buff times by Game.fps
-  let buffsArr = buffsStr.split(";")
+  let buffsArr = buffsStr.split(';')
   buffsStr=''
   for (let i in buffsArr) {
     if (!buffsArr[i]) {continue}
-    let buffArr = buffsArr[i].split(",")
+    let buffArr = buffsArr[i].split(',')
     buffArr[1] *= Game.fps
     buffArr[2] *= Game.fps
     buffsStr+=buffArr.join()+';'
@@ -621,8 +625,9 @@ class limeButton extends buttonType {
 }
 class inputButton extends buttonType {
   //base class, should never be used in practice
-  constructor() {
+  constructor(autoSet) {
     super();
+    if (autoSet) { this.autoSet = autoSet; }
   }
   heading = 'Input variable'
   subHeading = 'Please input what you want the variable to be set to.'
@@ -631,6 +636,7 @@ class inputButton extends buttonType {
     return [[loc("Load"),`Game.ClosePrompt(); \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value.trim());\nRedrawCCCEM();`],[loc("Nevermind")]]
   }
   afterCall() {
+    if (this.autoSet) { l('textareaPrompt').value = this.autoSet.call(this) }
     l('textareaPrompt').focus();
     l('textareaPrompt').select();
   }
@@ -674,9 +680,10 @@ class inputButton extends buttonType {
 }
 class numberInputButton extends inputButton {
   //cyan button (number input)
-  constructor(precision) {
+  constructor(precision, autoSet) {
     super();
     if (precision) { this.precision = precision; }
+    if (autoSet) { this.autoSet = autoSet; }
   }
   precision = 3
   heading = 'Input number'
@@ -704,9 +711,10 @@ class numberInputButton extends inputButton {
 }
 class stringInputButton extends inputButton {
   //cyan button (string input)
-  constructor(parseConvert) {
+  constructor(parseConvert, autoSet) {
     super();
     if (parseConvert) { this.parseConvert = parseConvert; }
+    if (autoSet) { this.autoSet = autoSet; }
   }
   parseConvert = e => e;
   parse(names, state) {
@@ -715,18 +723,8 @@ class stringInputButton extends inputButton {
 }
 class readonlyDisplayButton extends inputButton {
   //cyan button (no input)
-  constructor(autoSet) {
-    super();
-    if (autoSet) { this.autoSet = autoSet; }
-  }
-  autoSet = () => ''
   getOptions() {
     return [loc("All done!")]
-  }
-  afterCall() {
-    l('textareaPrompt').value = this.autoSet.call(this);
-    l('textareaPrompt').focus();
-    l('textareaPrompt').select();
   }
   heading = 'Export variable'
   subHeading = 'Copy the contents of the box below to export it.'
@@ -1078,17 +1076,16 @@ new buttonCategory('categoryTogglePanel', 1, [
 ]);
 CCCEMButtons['optionsBatchPForPause'].hidden = true;
 CCCEMButtons['optionsBatchCastFinder'].hidden = true;
-
 new buttonCategory('savingSettings', 2, [
   new CCCEMButton('importSave', 'Import save',
-    new stringInputButton(),
-    new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents.', [24, 7]),
-    function(s) { iniLoadSave = s; this.state = ''; }
+    new stringInputButton(null, ()=> {return ""}),
+    new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents. Input lock to make the exported settings force non-save usage.', [24, 7]),
+    s => iniLoadSave = s
   ),
   new CCCEMButton('importSettings', 'Import settings',
-    new stringInputButton(),
+    new stringInputButton(null, ()=> {return ""}),
     new buttonInfo('Import settings', 'Imports a setting.', [2, 32]),
-    function(s) { setSettings(s); this.state = ''; }
+    s => setSettings(s)
   ),
   new CCCEMButton('exportSettings', 'Export settings',
     new readonlyDisplayButton(() => {
@@ -1097,8 +1094,8 @@ new buttonCategory('savingSettings', 2, [
     new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32])
   ),
 ]);
-CCCEMButtons['exportSettings'].willSave = false;
-CCCEMButtons['importSettings'].willSave = false;
+CCCEMButtons['exportSettings'].type.willSave = false;
+CCCEMButtons['importSettings'].type.willSave = false;
 
 new buttonCategory('presetSettings', 3, [
   new CCCEMButton('defaultPreset', 'Default',
@@ -1362,21 +1359,19 @@ new buttonCategory('minigameSettings', 5, [
 ]);
 
 new buttonCategory('buffSettings', 6, [
-  new CCCEMButton('importBuffs','Import Buffs',
-    new stringInputButton(),
-    new buttonInfo("Import Buffs","You can import buffs in the format as the buffs button gives, or ",[24, 7]),
-    s => CCCEMButtons['buffs'].changeState(MakeBuffsStr(s))
-  ),
   new CCCEMButton('buffs', 'Buffs',
-    new readonlyDisplayButton(() => {return BuffsDesc(get('buffs'))}),
-    new buttonInfo('Starting buffs', 'The buffs you will start with when you reset.', [10, 25]),
-    s => {let hide = s?false:true
+    new stringInputButton(null, () => {
+      return BuffsDesc(get('buffs'))
+    }),
+    new buttonInfo('Starting buffs', 'The buffs you will start with when you reset. Can import/export in both the format the textbox gives and the collapsed format (which saving uses)', [10, 25]),
+    s => {s = MakeBuffsStr(s)
+      let hide = s?false:true
       let len = s.split(";").length-1
+      CCCEMButtons['buffs'].state = s
       CCCEMButtons['removeType'].hidden=hide
       CCCEMButtons['removeBuff'].hidden=hide
       CCCEMButtons['clearBuffs'].hidden=hide
       CCCEMButtons['removeType'].type.max = Math.max(len-1,0)
-      CCCEMButtons['importBuffs'].state = BuffsDesc(get('buffs'))
       if (len) {
         CCCEMButtons['removeType'].state = Math.max(0, len-2)
         CCCEMButtons['removeType'].triggerSetVar()
