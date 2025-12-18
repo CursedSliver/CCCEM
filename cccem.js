@@ -45,11 +45,12 @@
 //version 2.82: Clicking cookie with enter bugfix
 //version 2.83: Fixed loading bug
 //version 2.84: Fixed rather improbable scenario of loading mod with only some minigames unlocked but not all
+//version 2.85: golden switch handling
 
 if (typeof CCCEMLoaded === 'undefined') {
 
-var CCCEMVer = 'v2.8';
-var CCCEMVerReal = 'v2.84';
+var CCCEMVer = 'v2.85';
+var CCCEMVerReal = 'v2.85';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -260,6 +261,7 @@ function PresetSettingsGrail() {
     CCCEMButtons['useRebuy'].changeState(0);
     CCCEMButtons['seedNats'].changeState(true);
     CCCEMButtons['seedTicker'].changeState(true);
+    CCCEMButtons['gSwitch'].changeState(false);
     CCCEMButtons['clickCooldown'].changeState(20);
     CCCEMButtons['gcClickCount'].changeState(77777);
     CCCEMButtons['reindeerCount'].changeState(0);
@@ -562,7 +564,11 @@ function ResetGame(toFindRaw) {
   Game.popups=0
   if (setSeason!=0) Game.UpgradesById[setSeason].earn(); else { Game.UpgradesById[182].clickFunction();Game.UpgradesById[183].clickFunction();Game.UpgradesById[184].clickFunction();Game.UpgradesById[185].clickFunction();Game.UpgradesById[209].clickFunction(); Game.season = ""; }
   if (setPledge!=false) Game.UpgradesById[85].earn(); Game.UpgradesById[74].earn();
-  if (!Game.Has('Golden switch [on]')) {Game.UpgradesById[332].earn();Game.UpgradesById[331].bought = 0;}
+  var gs = get('gSwitch')
+  if (Game.Has('Golden switch')) {
+    Game.UpgradesById[gs?331:332].earn(); 
+    Game.UpgradesById[gs?332:331].bought = 0;
+    };
   Game.seasonUses=0;
   Game.upgradesToRebuild=1;
   Game.recalculateGains=1;
@@ -1266,7 +1272,6 @@ Game.registerMod('CCCEMContainer', {
 var modDataSlotsYetToBeLoaded = new Map();
 
 var cccemDir = window.locally_hosted?'./':'https://cursedsliver.github.io/CCCEM/';
-
 if (Game.ready && !l('topbarFrenzy')) {
   pureWriteSave=false;
   for (let i in Game.Objects) { 
