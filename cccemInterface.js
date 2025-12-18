@@ -1372,7 +1372,7 @@ new buttonCategory('buffSettings', 6, [
       CCCEMButtons['importBuffs'].state = BuffsDesc(get('buffs'))
       if (len) {
         CCCEMButtons['removeType'].state = Math.max(0, len-2)
-        CCCEMButtons['removeType'].type.triggerVarFunc()
+        CCCEMButtons['removeType'].triggerSetVar()
       }
     }
   ),
