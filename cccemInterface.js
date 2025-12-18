@@ -29,6 +29,7 @@
 //version 2.6: refactor or some shit idk we love writing changelogs
 //version 2.61: restructuring the onclick function
 //version 2.7: added new starting buff handling logic
+//version 2.71: RIP dot
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -48,7 +49,6 @@ var tickerCount=0
 var buildingSelected=0;
 var isClickedGC=false;
 var autoSaveCCCEM=false;
-var hasSetSettings=false;
 var pForPausePath = cccemDir+'PForPause.js';
 var castFinderPath = cccemDir+'castFinder.js';
 var invalidateScore=0
@@ -315,7 +315,7 @@ function PrintScore() {
   logStr=''
   for (i in logArr) logStr+=logArr[i].replace("<br>","\n").replace(z,"");
   console.log(logStr, invalidateScore)
-  if (invalidateScore==0) {Game.Notify(logArr[0],logArr[1]+logArr[2]+logArr[3]+logArr[4]+logArr[5].replace('<br>','')+(hasSetSettings?'.':''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
+  if (invalidateScore==0) {Game.Notify(logArr[0],logArr[1]+logArr[2]+logArr[3]+logArr[4]+logArr[5].replace('<br>',''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
   if (scoreCorNotify && clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
     Game.Notify('Large score fault',logArr[logArr.length-4]+logArr[logArr.length-3]+logArr[logArr.length-2]+logArr[logArr.length-1],[1,7]);
     };
@@ -1081,7 +1081,7 @@ new buttonCategory('savingSettings', 2, [
   new CCCEMButton('importSettings', 'Import settings',
     new stringInputButton(),
     new buttonInfo('Import settings', 'Imports a setting.', [2, 32]),
-    function(s) { if (s) { setSettings(s); hasSetSettings = true; } this.state = ''; }
+    function(s) { setSettings(s); this.state = ''; }
   ),
   new CCCEMButton('exportSettings', 'Export settings',
     new readonlyDisplayButton(() => {
