@@ -43,11 +43,12 @@
 //version 2.8: Added new starting buff logic
 //version 2.81: Bugfix and made initialization faster
 //version 2.82: Clicking cookie with enter bugfix
+//version 2.83: Fixed loading bug
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.8';
-var CCCEMVerReal = 'v2.82';
+var CCCEMVerReal = 'v2.83';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -973,12 +974,14 @@ function getSettingsCode() {
   return str + '>>ContainerEnd<<';
 }
 
-function setSettings(str) { 
+function setSettings(str) {
+  str = str.replace(/\s/g,'')
+  if (!str) {return}
   if (str.startsWith('>>CCCEMContainerTop<<')) {
       oldLoadFunc(str);
       return;
     }
-	CCCEMContainerModObj.applyLoad(CCCEMContainerModObj.trimLoad(str), true);
+  CCCEMContainerModObj.applyLoad(CCCEMContainerModObj.trimLoad(str), true);
 }
 
 var oldLoadFunc = function(str, noNotify) {
@@ -1232,7 +1235,8 @@ Game.registerMod('CCCEMContainer', {
     return str;
   },
   applyLoad: function(str) {
-    strs = str.split('|--+--+--|');
+    if (!str) {return}
+    let strs = str.split('|--+--+--|');
     try { let obj = JSON.parse(strs[0]);
     for (let i in obj) {
       if (!CCCEMButtons[i]) { continue; }
