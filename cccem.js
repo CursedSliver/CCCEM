@@ -44,11 +44,12 @@
 //version 2.81: Bugfix and made initialization faster
 //version 2.82: Clicking cookie with enter bugfix
 //version 2.83: Fixed loading bug
+//version 2.84: Fixed rather improbable scenario of loading mod with only some minigames unlocked but not all
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.8';
-var CCCEMVerReal = 'v2.83';
+var CCCEMVerReal = 'v2.84';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -943,8 +944,13 @@ function AutoScoreCorrect() {
   return iniRaw/raw2
   };
 
+function CheckMinigamesLoaded() {
+  for (let i in Game.Objects) if (Game.Objects[i].minigameUrl && !Game.Objects[i].minigameLoaded) {return false}
+  return true
+  };
+
 function CheckModLoaded() {
-  if (typeof CCCEMUILoaded === "undefined" && Game.Objects.Farm.minigameLoaded) {var keepNotifs=Game.prefs.notifs; Game.prefs.notifs=0; Game.Notify('Mod partially not loaded','Try reloading and clearing mod data, and maybe try later',[15, 5]); Game.prefs.notifs=keepNotifs};
+  if (typeof CCCEMUILoaded === "undefined" && CheckMinigamesLoaded()) {var keepNotifs=Game.prefs.notifs; Game.prefs.notifs=0; Game.Notify('Mod partially not loaded','Try reloading and clearing mod data, and maybe try later',[15, 5]); Game.prefs.notifs=keepNotifs};
   };
 
 var gameSettings = [];
@@ -1267,10 +1273,10 @@ if (Game.ready && !l('topbarFrenzy')) {
     Game.Objects[i].level = Math.max(Game.Objects[i].level, 1);
   }
   Game.LoadMinigames();
-  if (Game.Objects.Farm.minigameLoaded) { 
+  if (CheckMinigamesLoaded()) { 
     Game.LoadMod(cccemDir+"cccemInterface.js"); 
   } else { 
-    const interval = setInterval(function() { if (Game.Objects.Farm.minigameLoaded) { Game.LoadMod(cccemDir+"cccemInterface.js"); clearInterval(interval); } }, 100);
+    const interval = setInterval(function() { if (CheckMinigamesLoaded()) { Game.LoadMod(cccemDir+"cccemInterface.js"); clearInterval(interval); } }, 100);
   }
   const interval2 = setInterval(function() { if (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded) { InitializeMod(); clearInterval(interval2); } }, 50); 
 
