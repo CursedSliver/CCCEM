@@ -30,6 +30,7 @@
 //version 2.61: restructuring the onclick function
 //version 2.7: added new starting buff handling logic
 //version 2.71: RIP dot
+//version 2.72: Made the triggerSetVar tied to button type
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -495,13 +496,9 @@ class CCCEMButton {
   load(str) {
     return this.type.load(str);
   }
-
   triggerSetVar() {
-    this.type.onClick();
-    this.type.triggerVarFunc();
-    RedrawCCCEM();
+    this.type.triggerSetVar();
   }
-
   updateStateFromWatch() {
     if (!this.watch) { return; }
 
@@ -566,6 +563,11 @@ class buttonCategory {
 class buttonType {
   constructor() {
     //this.parent = button owning this type
+  }
+  triggerSetVar() {
+    this.onClick();
+    this.triggerVarFunc();
+    RedrawCCCEM();
   }
   getColorStr() {
     return 'neato';
@@ -642,6 +644,10 @@ class inputButton extends buttonType {
   }
   parse(names, state) {
     return names[0].replace('[##]', state);
+  }
+  triggerSetVar() {
+    this.onClick();
+    RedrawCCCEM();
   }
   onClick() {
     invalidateScore = 1;
