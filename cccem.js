@@ -1263,7 +1263,6 @@ if (Game.ready && !l('topbarFrenzy')) {
   Game.LoadMinigames();
   if (Game.Objects.Farm.minigameLoaded) { 
     Game.LoadMod(cccemDir+"cccemInterface.js"); 
-    InitializeMod();
   } else { 
     const interval = setInterval(function() { if (Game.Objects.Farm.minigameLoaded) { Game.LoadMod(cccemDir+"cccemInterface.js"); clearInterval(interval); } }, 100);
   }
