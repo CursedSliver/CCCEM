@@ -47,11 +47,12 @@
 //version 2.84: Fixed rather improbable scenario of loading mod with only some minigames unlocked but not all
 //version 2.85: golden switch handling
 //version 2.86: made CCCEM settings not reset every time the game is reset
+//version 2.9: Fixed issue with save being cleared when loading settings
 
 if (typeof CCCEMLoaded === 'undefined') {
 
-var CCCEMVer = 'v2.85';
-var CCCEMVerReal = 'v2.86';
+var CCCEMVer = 'v2.9';
+var CCCEMVerReal = 'v2.9';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -515,7 +516,7 @@ var noLoadCCCEMData = false;
 function ResetGame(toFindRaw) {
   Game.popups=0;
   if (!(typeof Game.Objects.Temple.minigame === "undefined")){Game.Objects.Temple.minigame.slot=[Game.Objects.Temple.minigame.slot[0],Game.Objects.Temple.minigame.slot[1],Game.Objects.Temple.minigame.slot[2]]}; //fixes import corruption before importing the save
-  if (iniLoadSave!=false) {
+  if (iniLoadSave!=false && iniLoadSave!="lock") {
     var isSpecialTab=Game.specialTab
     noLoadCCCEMData=true;
     Game.ImportSaveCode(iniLoadSave); 
@@ -988,13 +989,16 @@ function getSettingsCode() {
 }
 
 function setSettings(str) {
+  if (!str || noLoadCCCEMData) return
   str = str.replace(/\s/g,'')
-  if (!str || noLoadCCCEMData) {return}
+  if (!str) return
   if (str.startsWith('>>CCCEMContainerTop<<')) {
       oldLoadFunc(str);
       return;
     }
+  let preSave = get('importSave')
   CCCEMContainerModObj.applyLoad(CCCEMContainerModObj.trimLoad(str), true);
+  if (!get('importSave')) CCCEMButtons['importSave'].changeState(preSave)
 }
 
 var oldLoadFunc = function(str, noNotify) {
