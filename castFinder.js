@@ -663,12 +663,6 @@ if (typeof CCCEMUILoaded !== 'undefined') {
             new buttonInfo('Preload backups', 'Set the amount of seeds to compute for each sequence.<br>Useful for simulating the other elements of rng that cannot normally be replicated with preloading.', [17, 20]),
             s => preLoadAmountPerSequence = s, true
         ),
-        new CCCEMButton('cfExportPreload','Export current preload',
-            new readonlyDisplayButton(() => {
-                return arrayToString(preLoadedSeeds);
-            }),
-            new buttonInfo('Export preload','Exports preload code.',[17,2])
-        ),
         new CCCEMButton('cfImportPreload','Import preload',
             new stringInputButton(),
             new buttonInfo('Import preload','Imports preload code.',[17,1]),
@@ -679,7 +673,13 @@ if (typeof CCCEMUILoaded !== 'undefined') {
                     usingPreload = true;
                 }
             }
-        )
+        ),
+        new CCCEMButton('cfExportPreload','Export current preload',
+            new readonlyDisplayButton(() => {
+                return arrayToString(preLoadedSeeds);
+            }),
+            new buttonInfo('Export preload','Exports preload code.',[17,2])
+        ),
     ]);
     CCCEMButtons['cfAutoExec'].changeState(true);
     CCCEMButtons['cfPreloadNum'].changeState(1);
