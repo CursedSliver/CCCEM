@@ -425,15 +425,15 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
             } 
 
             window.toChangeKeyBind = this.parent.key;
-            Game.Notify('Press a key to set!<br>press esc to set as Never, and click button again to set as Always', '', 0);
+            Game.Notify('Press a key to set!<br>press esc to set as Never, and click button again to set as Always', '');
         }
 
         onKeyConfirmation(e) {
             if (e.keyCode == 27) {
-                Game.Notify('Key cleared!', '', 0);
+                Game.Notify('Key cleared!', '');
                 this.parent.state = 0;
             } else {
-                Game.Notify('Key set: '+e.key.toUpperCase(), '', 0);
+                Game.Notify('Key set: '+e.key.toUpperCase(), '');
                 this.parent.state = e.keyCode;
             }
             window.toChangeKeyBind = null;
