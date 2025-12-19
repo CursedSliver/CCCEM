@@ -320,7 +320,7 @@ function PrintScore() {
   logStr=''
   for (i in logArr) logStr+=logArr[i].replace("<br>","\n").replace(z,"");
   console.log(logStr, invalidateScore)
-  if (invalidateScore==0) {Game.Notify(logArr[0],logArr[1]+logArr[2]+logArr[3]+logArr[4]+logArr[5].replace('<br>',''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6],16,0,1); invalidateScore=0};
+  if (invalidateScore==0) {Game.Notify(logArr[0],logArr[1]+logArr[2]+logArr[3]+logArr[4]+logArr[5].replace('<br>',''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6]); invalidateScore=0};
   if (scoreCorNotify && clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
     Game.Notify('Large score fault',logArr[logArr.length-4]+logArr[logArr.length-3]+logArr[logArr.length-2]+logArr[logArr.length-1],[1,7]);
     };
@@ -855,7 +855,7 @@ class keySelectButton extends buttonType {
   }
   onClick() {
     window.toChangeKeyBind = this.parent.key;
-    Game.Notify('Press a key to set!', '', 0);
+    Game.Notify('Press a key to set!', '');
   }
   default() {
     window.keyBindEvents.push(this.parent);
@@ -874,7 +874,7 @@ class keySelectButton extends buttonType {
   onKeyConfirmation(e) {
     this.parent.state = e.keyCode;
     window.toChangeKeyBind = null;
-    Game.Notify('Key set: '+e.key.toUpperCase(), '', 0);
+    Game.Notify('Key set: '+e.key.toUpperCase(), '');
   }
 }
 AddEvent(window, 'keydown', function (e) {
