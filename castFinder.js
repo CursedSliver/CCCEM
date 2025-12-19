@@ -72,9 +72,9 @@ class cfExcep {
         if (cfExcep.msgs.hasOwnProperty(this.id)) {
         	this.message=this.fill(cfExcep.msgs[this.id][1],this.values);
             this.title=cfExcep.msgs[this.id][0];
-            Game.Notify('Error: '+this.title,this.message,[15,5],20,0,1);
+            Game.Notify('Error: '+this.title,this.message,[15,5],' ');
         } else {
-        	Game.Notify('Error: '+this.id,'',[15,5],20,0,1);
+        	Game.Notify('Error: '+this.id,'',[15,5],' ');
         }
     }
     
@@ -157,7 +157,7 @@ function interpret(minimumCastCount,f,findMult,tolog) {
         	if (parseModifier(f[c], 1)) { continue; }
             if (!found) {
         		searchHead = scoutOutcomes(f[c][f[c].length - 1], searchHead+1, minimumCastCount, findMult);
-            	if (!searchHead) { if (!tolog) { Game.Notify('Unable to find cast! Try increasing limit.', '', 0, 0); } return false; }
+            	if (!searchHead) { if (!tolog) { Game.Notify('Unable to find cast! Try increasing limit.', ''); } return false; }
                 attempted = 1;
                 if (!Array.isArray(f[c][0])) {
                     parseModifier(['mod',f[c][0]], 2);
@@ -182,8 +182,8 @@ function interpret(minimumCastCount,f,findMult,tolog) {
                 found = 0; break;
             }
     	} 
-        if (found) { if (!tolog) { Game.Notify('Cast sequence found!', 'At: ' + anchor, 0, 0); } return anchor; }
-        if (!attempted) { Game.Notify('No casts present!', '', 0, 0); return false; }
+        if (found) { if (!tolog) { Game.Notify('Cast sequence found!', 'At: ' + anchor); } return anchor; }
+        if (!attempted) { Game.Notify('No casts present!', ''); return false; }
     }
     return false;
 }
@@ -547,7 +547,7 @@ function treatStr(codef) {
 }
 
 /*async function asyncInterpret(minimumCastCount) {
-	Game.Notify('Running code...','',0);
+	Game.Notify('Running code...','');
     let result = await interpret(minimumCastCount);
     return result;
 }*/
@@ -578,7 +578,7 @@ function preLoad() {
     	}
         preLoadedSeeds.push(toPush);
     }
-    Game.Notify('Cast preloading complete!',failed+' sequence'+((failed-1)?'':'s')+' failed.',[17,18],10000,0,1); 
+    Game.Notify('Cast preloading complete!',failed+' sequence'+((failed-1)?'':'s')+' failed.',[17,18],' '); 
 }
 
 function loadPreLoadedSeeds() {
