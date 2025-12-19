@@ -48,14 +48,15 @@
 //version 2.85: golden switch handling
 //version 2.86: made CCCEM settings not reset every time the game is reset
 //version 2.9: Fixed issue with save being cleared when loading settings
+//version 2.9: Improved how save loading is handled
 
 if (typeof CCCEMLoaded === 'undefined') {
 
-var CCCEMVer = 'v2.9';
-var CCCEMVerReal = 'v2.9';
+var CCCEMVer = 'v2.91';
+var CCCEMVerReal = 'v2.91';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
-var iniLoadSave=false //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
+var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
 var iniC=4e69 //initial cookie count
 var iniCE=1e78 //cookies earned count
 var iniHM=iniCE //cookies handmade
@@ -232,7 +233,7 @@ function customSave() {
 
 function IntegratedSettingsGrail() {
   Game.bakeryNameSet('grail moments')
-  iniLoadSave=false 
+  iniLoadSave=''
   buildingRelList=  [[-8, -33, -17, -17, -17, -26, -13, -20, -19, -19, -14, -23, -20, -12, -16, -32, -47, -39, -24],0,
                     [-18, -22, -17, -17, -17, -19, -21, -18, -24, -16, -13, -27, -12, -15, -17, -34, -46, -33, -31],0]
   buildingRelListEB=[[-4, -36, -17, -17, -18, -22, -17, -19, -19, -11, -25, -20, -20, -15, -16, -26, -51, -39, -28],-2,
@@ -307,7 +308,7 @@ function PresetSettingsGrail() {
   } else {
     // Fallback assignments if CCCEMButtons not initialized yet
     iniSeed='R';
-    iniLoadSave=false;
+    iniLoadSave='';
     iniC=4e69;
     iniCE=1e78;
     iniP=1e22;
@@ -515,8 +516,8 @@ var noLoadCCCEMData = false;
 
 function ResetGame(toFindRaw) {
   Game.popups=0;
-  if (!(typeof Game.Objects.Temple.minigame === "undefined")){Game.Objects.Temple.minigame.slot=[Game.Objects.Temple.minigame.slot[0],Game.Objects.Temple.minigame.slot[1],Game.Objects.Temple.minigame.slot[2]]}; //fixes import corruption before importing the save
-  if (iniLoadSave!=false && iniLoadSave!="lock") {
+  if (Game.Objects.Temple.minigameLoaded){Game.Objects.Temple.minigame.slot=[Game.Objects.Temple.minigame.slot[0],Game.Objects.Temple.minigame.slot[1],Game.Objects.Temple.minigame.slot[2]]}; //fixes import corruption before importing the save
+  if (iniLoadSave) {
     var isSpecialTab=Game.specialTab
     noLoadCCCEMData=true;
     Game.ImportSaveCode(iniLoadSave); 
@@ -936,7 +937,7 @@ function AutoScoreCorrect() {
   spirit3=6
   ResetGame();
   iniP=Game.prestige
-  iniLoadSave=false
+  iniLoadSave=''
   ResetMinigames();
   gardenP1=[15, 0]
   gardenP2=[15, 0]
@@ -996,9 +997,7 @@ function setSettings(str) {
       oldLoadFunc(str);
       return;
     }
-  let preSave = get('importSave')
   CCCEMContainerModObj.applyLoad(CCCEMContainerModObj.trimLoad(str), true);
-  if (!get('importSave')) CCCEMButtons['importSave'].changeState(preSave)
 }
 
 var oldLoadFunc = function(str, noNotify) {
