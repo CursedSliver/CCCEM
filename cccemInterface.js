@@ -34,6 +34,7 @@
 //version 2.721: Removed a wee info function
 //version 2.8: Made it possible to change contents of inputButtons on click for stability
 //version 2.9: improved logic for save handling
+//version 2.91: incorporated stripping CCCEM data from imported saves to save space and increase stability
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -1081,7 +1082,9 @@ new buttonCategory('savingSettings', 2, [
   new CCCEMButton('importSave', 'Import save',
     new stringInputButton(null, ()=> {return ""}),
     new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents.', [24, 7]),
-    s => iniLoadSave = s
+    s => {s = StripCCCEMData(s);
+      CCCEMButtons['importSave'].state = s
+      iniLoadSave = s}
   ),
   new CCCEMButton('importSettings', 'Import settings',
     new stringInputButton(null, ()=> {return ""}),
