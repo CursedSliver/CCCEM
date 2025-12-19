@@ -33,6 +33,7 @@
 //version 2.72: Made the triggerSetVar tied to button type
 //version 2.721: Removed a wee info function
 //version 2.8: Made it possible to change contents of inputButtons on click for stability
+//version 2.9: improved logic for save handling
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -1079,7 +1080,7 @@ CCCEMButtons['optionsBatchCastFinder'].hidden = true;
 new buttonCategory('savingSettings', 2, [
   new CCCEMButton('importSave', 'Import save',
     new stringInputButton(null, ()=> {return ""}),
-    new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents. Input lock to make the exported settings force non-save usage.', [24, 7]),
+    new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents.', [24, 7]),
     s => iniLoadSave = s
   ),
   new CCCEMButton('importSettings', 'Import settings',
@@ -1093,6 +1094,11 @@ new buttonCategory('savingSettings', 2, [
     }),
     new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32])
   ),
+  new CCCEMButton('saveSave','[##] save',
+    new boolButton('incl.', 'excl.'),
+    new buttonInfo('Export save', 'Whether the save currently used will be exported together with settings', [16, 5]),
+    s => CCCEMButtons['importSave'].type.willSave = s
+  )
 ]);
 CCCEMButtons['exportSettings'].type.willSave = false;
 CCCEMButtons['importSettings'].type.willSave = false;
@@ -1461,7 +1467,7 @@ new buttonCategory('gcSettings', 7, [
     s => { seedTicker = s; }
   ),
   new CCCEMButton('gSwitch', 'Golden Switch [##]',
-    new boolButton('on', 'off'),
+    new boolButton('On', 'Off'),
     new buttonInfo('Golden switch state', 'Whether golden switch will start on or off', [20, 10]),
     null, true
   ),
