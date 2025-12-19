@@ -48,12 +48,13 @@
 //version 2.85: golden switch handling
 //version 2.86: made CCCEM settings not reset every time the game is reset
 //version 2.9: Fixed issue with save being cleared when loading settings
-//version 2.9: Improved how save loading is handled
+//version 2.91: Improved how save loading is handled
+//version 2.92: Fixed bugs with importing settings, added ability to strip away CCCEM moddata from saves (as imported saves shouldn't load any CCCEM data)
 
 if (typeof CCCEMLoaded === 'undefined') {
 
-var CCCEMVer = 'v2.91';
-var CCCEMVerReal = 'v2.91';
+var CCCEMVer = 'v2.92';
+var CCCEMVerReal = 'v2.92';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -233,7 +234,6 @@ function customSave() {
 
 function IntegratedSettingsGrail() {
   Game.bakeryNameSet('grail moments')
-  iniLoadSave=''
   buildingRelList=  [[-8, -33, -17, -17, -17, -26, -13, -20, -19, -19, -14, -23, -20, -12, -16, -32, -47, -39, -24],0,
                     [-18, -22, -17, -17, -17, -19, -21, -18, -24, -16, -13, -27, -12, -15, -17, -34, -46, -33, -31],0]
   buildingRelListEB=[[-4, -36, -17, -17, -18, -22, -17, -19, -19, -11, -25, -20, -20, -15, -16, -26, -51, -39, -28],-2,
@@ -247,7 +247,7 @@ function PresetSettingsGrail() {
 
   if (typeof CCCEMButtons !== 'undefined') {
     CCCEMButtons['iniSeed'].changeState('R');
-    CCCEMButtons['importSave'].changeState(false);
+    CCCEMButtons['importSave'].changeState('');
     CCCEMButtons['cookies'].changeState(4e69);
     CCCEMButtons['cookiesBTA'].changeState(1e78);
     CCCEMButtons['prestige'].changeState(1e22);
@@ -1000,7 +1000,31 @@ function setSettings(str) {
   CCCEMContainerModObj.applyLoad(CCCEMContainerModObj.trimLoad(str), true);
 }
 
-var oldLoadFunc = function(str, noNotify) {
+function StripCCCEMData(data) {
+  var str='';
+  var spl=[];
+  str=unescape(data)
+  if (!str)  return ''
+  str=str.split('!END!')[0];
+	str=b64_to_utf8(str);
+  if (!str)  return ''
+  str=str.split('|');
+  spl=(str[9]||'').split(';');
+  for (var i in spl) {
+		if (spl[i]) {
+			var data=spl[i].split(':');
+			var modId=data[0];
+			if (modId=='CCCEMContainer') {spl.splice(i, 1)}
+		  }
+    }
+  str[9] = spl.join(';')
+  str = str.join('|')
+  str = utf8_to_b64(str)+'!END!';
+  str = escape(str)
+  return str
+  };
+
+function oldLoadFunc(str, noNotify) {
     if (noLoadCCCEMData) { return; }
     str = str.replace('>>CCCEMContainerTop<<', ''); str = str.replace('>>ContainerEnd<<', '');
     console.log(str)
@@ -1190,7 +1214,7 @@ Game.registerMod('CCCEMContainer', {
     return '';
   },
   load:function(str, noNotify) {
-    if (!noLoadCCCEMData) {return}
+    if (noLoadCCCEMData) {return}
     hasSettingsSet = true;
     const TOP = '>>CCCEMContainerTop:';
     const BOTTOM = '>>ContainerEnd<<';
@@ -1295,10 +1319,26 @@ if (Game.ready && !l('topbarFrenzy')) {
 
 function InitializeMod() {
   InitBuffMod()
-  if (hasSettingsSet) {IntegratedSettingsConsist(); ResetGame(1); IntegratedSettingsGrail()} else {PresetSettingsConsist(); ResetGame(1); PresetSettingsGrail();}
+  console.log(hasSettingsSet)
+  if (hasSettingsSet && get('importSave')) {
+    ResetGame(1); 
+    IntegratedSettingsGrail();
+  } else if (hasSettingsSet) {
+    IntegratedSettingsConsist(); 
+    ResetGame(1); 
+    IntegratedSettingsGrail(); 
+    CCCEMButtons['importSave'].changeState('');
+  } else {
+    PresetSettingsConsist(); 
+    ResetGame(1); 
+    PresetSettingsGrail(); 
+    CCCEMButtons['importSave'].changeState('');
+  }
   var prev=Game.prefs.notifs
   Game.prefs.notifs=0
-  if (!hasSettingsSet) { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Your save will return upon closing the game.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [18, 6]) } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [19, 6]) }
+  if (!hasSettingsSet) { 
+    Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Your save will return upon closing the game.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [18, 6]) 
+  } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [19, 6]) }
   Game.prefs.notifs=prev
   Game.prefs.autosave=0
   ResetAll();
