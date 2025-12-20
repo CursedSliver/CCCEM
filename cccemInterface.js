@@ -220,7 +220,7 @@ function ConsistentBuffs(buffName, bsCount) {
   index=icBuffs.indexOf(forceFtHoF); if (forceFtHoF && index!=-1) icBuffs.splice(index, 1);
   index=icBuffs.indexOf('frenzy'); if (HasStartBuff(0) && index!=-1) icBuffs.splice(index, 1);
   index=icBuffs.indexOf('dragon harvest'); if (HasStartBuff(3) && index!=-1) icBuffs.splice(index, 1);
-  for (var i=0; i<BuffCount(9); i++) {index=icBuffs.indexOf('building special'); if (index!=-1) icBuffs.splice(index, 1)};
+  for (var i=0; i<bsCount; i++) {index=icBuffs.indexOf('building special'); if (index!=-1) icBuffs.splice(index, 1)};
   if (iniSpawn && iniGC!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
   if (iniDO && iniGC2!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC2].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
   if (iniDEoRL && iniGC3!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC3].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
@@ -262,13 +262,15 @@ function PrintScore() {
   var icon=[12,8]
   var originalScore = score;
   score/=1.333e6;
-  if (score>3) {icon=[1,7]}
-  else if (score>2.5) {icon=[1,1,cccemSpritesheet]}
-  else if (score>2) {icon=[33,4]}
+  if (score>2.75) {icon=[1,7]}
+  else if (score>2.5) {icon=[3,1,cccemSpritesheet]}
+  else if (score>2.25) {icon=[2,1,cccemSpritesheet]}
+  else if (score>2) {icon=[1,1,cccemSpritesheet]}
+  else if (score>1.75) {icon=[33,4]}
   else if (score>1.5) {icon=[32,4]}
-  else if (score>1) {icon=[0,1,cccemSpritesheet]}
-  else if (score>0.9) {icon=[14,5]}
-  else if (score>0.8) {icon=[13,5]}
+  else if (score>1.25) {icon=[0,1,cccemSpritesheet]}
+  else if (score>1) {icon=[14,5]}
+  else if (score>0.85) {icon=[13,5]}
   else if (score>0.7) {icon=[12,5]}
   else if (score>0.6) {icon=[3,0,cccemSpritesheet]}
   else if (score>0.5) {icon=[2,0,cccemSpritesheet]}
