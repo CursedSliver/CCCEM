@@ -53,11 +53,12 @@
 //version 2.93: Removed eval for Game.Notifs, now instead string with space in quick parameter to made a permanent notif
 //version 2.94: Me when I get tricked into thinking (added back a Game.Notify eval)
 //version 2.95: spooky tulips
+//version 2.96: initial golden cookie spawning bugfix
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v2.95';
+var CCCEMVerReal = 'v2.96';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -769,20 +770,20 @@ function SpawnGoldenCookies(noSpawn) {
   if (!noSpawn) {
     if (iniDO==true) 
     {
-    var newShimmer=new Game.shimmer('golden',{noWrath:setPledge});
-    if (iniGC2!='R') newShimmer.force=Game.goldenCookieChoices[iniGC2].toLowerCase();
+      var newShimmer=new Game.shimmer('golden',{noWrath:setPledge});
+      if (iniGC2 >= 0) newShimmer.force=Game.goldenCookieChoices[iniGC2+1];
     };
-  if (iniSpawn==true) 
+    if (iniSpawn==true) 
     {
-    var newShimmer=new Game.shimmer('golden',{noWrath:setPledge}); 
-    newShimmer.spawnLead=1; 
-    Game.shimmerTypes.golden.spawned=1;
-    if (iniGC!='R') newShimmer.force=Game.goldenCookieChoices[iniGC].toLowerCase();
+      var newShimmer=new Game.shimmer('golden',{noWrath:setPledge}); 
+      newShimmer.spawnLead=1; 
+      Game.shimmerTypes.golden.spawned=1;
+      if (iniGC >= 0) newShimmer.force=Game.goldenCookieChoices[iniGC+1];
     };
-  if (iniDEoRL==true) 
+    if (iniDEoRL==true) 
     {
-    var newShimmer=new Game.shimmer('golden',{noWrath:setPledge});
-    if (iniGC3!='R') newShimmer.force=Game.goldenCookieChoices[iniGC3].toLowerCase();
+      var newShimmer=new Game.shimmer('golden',{noWrath:setPledge});
+      if (iniGC3 >= 0) newShimmer.force=Game.goldenCookieChoices[iniGC3+1];
     };
   }
   for (var i in Game.shimmerTypes) {me=Game.shimmerTypes[i]; me.time=iniTimer};
