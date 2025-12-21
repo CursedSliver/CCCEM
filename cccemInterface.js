@@ -37,6 +37,7 @@
 //version 2.91: incorporated stripping CCCEM data from imported saves to save space and increase stability
 //version 2.92: spooky tulips
 //version 2.93: BS score hotfix
+//version 2.94: made iniGC true value fully numeric
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -1508,17 +1509,17 @@ new buttonCategory('gcSettings', 7, [
   new CCCEMButton('iniGC', 'GC1 [##]',
     new twoStepCycle(-2, 27, e => (e === -2 ? 'R' : Game.goldenCookieChoices[e])),
     new buttonInfo('First Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial natural Golden cookie spawn.', [0, 10]),
-    s => { iniGC = (s === -2 ? 'R' : (s)); }
+    s => { iniGC = s }
   ),
   new CCCEMButton('iniGC2', 'GC2 [##]',
     new twoStepCycle(-2, 27, e => (e === -2 ? 'R' : Game.goldenCookieChoices[e])),
     new buttonInfo('Second Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial Dragon Orbs Golden cookie spawn.', [1, 10]),
-    s => { iniGC2 = (s === -2 ? 'R' : (s)); }
+    s => { iniGC2 = s }
   ),
   new CCCEMButton('iniGC3', 'GC3 [##]',
     new twoStepCycle(-2, 27, e => (e === -2 ? 'R' : Game.goldenCookieChoices[e])),
     new buttonInfo('Third Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial, successful invoke of DEoRL.', [2, 10]),
-    s => { iniGC3 = (s === -2 ? 'R' : (s)); }, true
+    s => { iniGC3 = s }, true
   ),
   new CCCEMButton('boughtSF', 'Sugar frenzy [##]',
     new boolButton('used', 'unused'),
