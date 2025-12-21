@@ -36,6 +36,7 @@
 //version 2.9: improved logic for save handling
 //version 2.91: incorporated stripping CCCEM data from imported saves to save space and increase stability
 //version 2.92: spooky tulips
+//version 2.93: BS score hotfix
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -216,16 +217,16 @@ function FindMaxComboPow() {
 
 //Returns true if buffName can be gotten consistently, otherwise return false
 function ConsistentBuffs(buffName, bsCount) {
-  var icBuffs=['dragonflight','blood frenzy','click frenzy','frenzy','dragon harvest']
-  for (var i=0; i<bsCount; i++) {icBuffs.push('building special')}
+  let icBuffs=['dragonflight','blood frenzy','click frenzy','frenzy','dragon harvest']
+  for (let i=0; i<bsCount; i++) {icBuffs.push('building special')}
   index=icBuffs.indexOf(forceFtHoF); if (forceFtHoF && index!=-1) icBuffs.splice(index, 1);
   index=icBuffs.indexOf('frenzy'); if (HasStartBuff(0) && index!=-1) icBuffs.splice(index, 1);
   index=icBuffs.indexOf('dragon harvest'); if (HasStartBuff(3) && index!=-1) icBuffs.splice(index, 1);
-  for (var i=0; i<bsCount; i++) {index=icBuffs.indexOf('building special'); if (index!=-1) icBuffs.splice(index, 1)};
+  for (var i=0; i<BuffCount(9); i++) {index=icBuffs.indexOf('building special'); if (index!=-1) icBuffs.splice(index, 1)};
   if (iniSpawn && iniGC!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
   if (iniDO && iniGC2!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC2].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
   if (iniDEoRL && iniGC3!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC3].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
-  for (var i in icBuffs) {if (icBuffs[i] == buffName) {return false}};
+  for (let i in icBuffs) {if (icBuffs[i] == buffName) {return false}};
   return true
   };
 
