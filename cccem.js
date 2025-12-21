@@ -52,11 +52,12 @@
 //version 2.92: Fixed bugs with importing settings, added ability to strip away CCCEM moddata from saves (as imported saves shouldn't load any CCCEM data)
 //version 2.93: Removed eval for Game.Notifs, now instead string with space in quick parameter to made a permanent notif
 //version 2.94: Me when I get tricked into thinking (added back a Game.Notify eval)
+//version 2.95: spooky tulips
 
 if (typeof CCCEMLoaded === 'undefined') {
 
-var CCCEMVer = 'v2.92';
-var CCCEMVerReal = 'v2.94';
+var CCCEMVer = 'v2.95';
+var CCCEMVerReal = 'v2.95';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -266,6 +267,7 @@ function PresetSettingsGrail() {
     CCCEMButtons['seedNats'].changeState(true);
     CCCEMButtons['seedTicker'].changeState(true);
     CCCEMButtons['gSwitch'].changeState(false);
+    CCCEMButtons['gTulips'].changeState(false);
     CCCEMButtons['clickCooldown'].changeState(20);
     CCCEMButtons['gcClickCount'].changeState(77777);
     CCCEMButtons['reindeerCount'].changeState(0);
@@ -597,7 +599,7 @@ function ResetGame(toFindRaw) {
   Game.CalculateGains();
   Game.popups=1;
   };
- 
+
 function ResetMinigames(toFindRaw) {
   if (toFindRaw) {Game.popups=0}
   for (var i = 0; i < Object.keys(Game.Objects).length; i++)
@@ -620,19 +622,19 @@ function ResetMinigames(toFindRaw) {
     }
   Game.Objects['Farm'].minigame.freeze=0;
   Game.Objects['Farm'].minigame.soil=2;
-  if (toFindRaw == 1) {Game.Objects['Farm'].minigame.harvestAll(); Game.Objects['Farm'].minigame.computeEffs()}
-  Game.Objects['Farm'].minigame.nextStep=window.PForPause?window.PForPause.cumulativeRealTime:Date.now()
-  if (toFindRaw == 2) {Game.Objects['Farm'].minigame.nextStep+=100000; Game.Objects['Farm'].minigame.computeEffs()}
-  if (!toFindRaw) {Game.Objects['Farm'].minigame.logic(); let nextTick = (window.PForPause?window.PForPause.cumulativeRealTime:Date.now())+(toNextTick?toNextTick:Math.round(Math.random()*900))*1000;
-  if (!limitedReset) { Game.Objects['Farm'].minigame.nextStep=nextTick } else { MacadamiaModList.cccem.mod.nextTickRPC.send({ time: nextTick }); } }
+  Game.Objects['Farm'].minigame.computeStepT();
+  if (toFindRaw == 1) {Game.Objects['Farm'].minigame.harvestAll()}
+  Game.Objects['Farm'].minigame.computeBoostPlot();
+  if (get('gTulips')) GhostTulips(gardenR)
+  Game.Objects['Farm'].minigame.computeEffs();
+  if (!toFindRaw) {let nextTick = (window.PForPause?window.PForPause.cumulativeRealTime:Date.now())+(toNextTick?toNextTick:Math.round(Math.random()*900))*1000;
+    if (!limitedReset) { Game.Objects['Farm'].minigame.nextStep=nextTick } else { MacadamiaModList.cccem.mod.nextTickRPC.send({ time: nextTick }); } }
   Game.Objects['Farm'].minigame.seedSelected=gardenSeed;
   Game.Objects.Farm.minigame.buildPlot();
   Game.Objects.Farm.minigame.buildPanel();
   
   Game.Objects['Bank'].minigame.reset();
   Game.Objects['Bank'].minigame.officeLevel=officeL;
-  
-  if (toFindRaw == 2) {toFindRaw=0}
 
   Game.Objects['Temple'].minigame.reset();
   Game.Objects['Temple'].minigame.dragging=Game.Objects['Temple'].minigame.godsById[(toFindRaw?0:spirit1)];
@@ -659,6 +661,42 @@ function ResetMinigames(toFindRaw) {
   
   Game.popups=1;
   };
+
+function GhostTulips(rot) {
+  if (!rot) rot=Math.floor(Math.random()*4+1)
+  let arr=[]
+  for (var y=0;y<6;y++) {
+    arr.push([])
+    for (var x=0;x<6;x++) {
+      if (!Game.Objects['Farm'].minigame.isTileUnlocked(x,y)) { continue; }
+      arr[y].push(!((rot>=3 && (x+rot)%2) || (rot<3 && (y+rot)%2)))
+      }
+    }
+  let mult = Game.Objects.Farm.minigame.soilsById[Game.Objects.Farm.minigame.soil].effMult
+  for (var y=0;y<arr.length;y++) {
+    for (var x=0;x<arr[y].length;x++) {
+      if (arr[y][x] == true) {EffectOn(x,y,1,[1,1+0.2*mult,1]);}
+      }
+    }
+}
+
+function EffectOn(X,Y,s,mult) //orteil's function he decided not to make a function in the actual minigame object or whatever
+			{
+				for (var y=Math.max(0,Y-s);y<Math.min(6,Y+s+1);y++)
+				{
+					for (var x=Math.max(0,X-s);x<Math.min(6,X+s+1);x++)
+					{
+						if (X==x && Y==y) {}
+						else
+						{
+							for (var i=0;i<mult.length;i++)
+							{
+                Game.Objects.Farm.minigame.plotBoost[y][x][i]*=mult[i];
+							}
+						}
+					}
+				}
+			}
 
 function setGrimoireCasts() {
   if (typeof hasFinder === 'undefined') {
