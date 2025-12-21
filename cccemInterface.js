@@ -38,6 +38,7 @@
 //version 2.92: spooky tulips
 //version 2.93: BS score hotfix
 //version 2.94: made iniGC true value fully numeric
+//version 2.95: iniGC bugfix
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -224,9 +225,9 @@ function ConsistentBuffs(buffName, bsCount) {
   index=icBuffs.indexOf('frenzy'); if (HasStartBuff(0) && index!=-1) icBuffs.splice(index, 1);
   index=icBuffs.indexOf('dragon harvest'); if (HasStartBuff(3) && index!=-1) icBuffs.splice(index, 1);
   for (var i=0; i<BuffCount(9); i++) {index=icBuffs.indexOf('building special'); if (index!=-1) icBuffs.splice(index, 1)};
-  if (iniSpawn && iniGC!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
-  if (iniDO && iniGC2!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC2].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
-  if (iniDEoRL && iniGC3!='R') {index=icBuffs.indexOf(Game.goldenCookieChoices[iniGC3].toLowerCase()); if (index!=-1) icBuffs.splice(index, 1)};
+  if (iniSpawn && get('iniGC')>=0) {index=icBuffs.indexOf(Game.goldenCookieChoices[get('iniGC')]); if (index!=-1) icBuffs.splice(index, 1)};
+  if (iniDO && get('iniGC2')>=0) {index=icBuffs.indexOf(Game.goldenCookieChoices[get('iniGC2')]); if (index!=-1) icBuffs.splice(index, 1)};
+  if (iniDEoRL && get('iniGC3')>=0) {index=icBuffs.indexOf(Game.goldenCookieChoices[get('iniGC3')]); if (index!=-1) icBuffs.splice(index, 1)};
   for (let i in icBuffs) {if (icBuffs[i] == buffName) {return false}};
   return true
   };
@@ -238,9 +239,9 @@ function AllConsistentBuffsPow() {
   if (forceFtHoF!='random') {cBuffs.push(forceFtHoF)};
   if (HasStartBuff(0) && !(cBuffs.includes('frenzy'))) {cBuffs.push('frenzy')};
   if (HasStartBuff(3) && !(cBuffs.includes('dragon harvest'))) {cBuffs.push('dragon harvest')};
-  if (iniSpawn && iniGC!='R' && (!(cBuffs.includes(Game.goldenCookieChoices[iniGC].toLowerCase())) || Game.goldenCookieChoices[iniGC].toLowerCase()=='building special')) {cBuffs.push(Game.goldenCookieChoices[iniGC].toLowerCase())}
-  if (iniDO && iniGC2!='R' && (!(cBuffs.includes(Game.goldenCookieChoices[iniGC2].toLowerCase())) || Game.goldenCookieChoices[iniGC2].toLowerCase()=='building special')) {cBuffs.push(Game.goldenCookieChoices[iniGC2].toLowerCase())}
-  if (iniDEoRL && iniGC3!='R' && (!(cBuffs.includes(Game.goldenCookieChoices[iniGC3].toLowerCase())) || Game.goldenCookieChoices[iniGC3].toLowerCase()=='building special')) {cBuffs.push(Game.goldenCookieChoices[iniGC3].toLowerCase())}
+  if (iniSpawn && get('iniGC')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC')])) || Game.goldenCookieChoices[get('iniGC')]=='building buff')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC')])}
+  if (iniDO && get('iniGC2')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC2')])) || Game.goldenCookieChoices[get('iniGC2')]=='building buff')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC2')])}
+  if (iniDEoRL && get('iniGC3')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC3')])) || Game.goldenCookieChoices[get('iniGC3')]=='building buff')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC3')])}
   for (var i=0; i<BuffCount(9); i++) {cBuffs.push('building special')};
   for (var i in cBuffs) {
     buff=cBuffs[i]
@@ -774,7 +775,7 @@ class twoStepCycle extends cycleButton {
     if (this.parent.state > this.max) this.parent.state = this.min;
     if (this.parent.state < this.min) this.parent.state = this.max;
   }
-  parseConvert = e => (e <= -1 ? 'R' : Game.goldenCookieChoices[e]);
+  parseConvert = e => (e <= -1 ? 'R' : Game.goldenCookieChoices[e-1]);
 }
 class seasonalCycleButton extends cycleButton {
   constructor() {
@@ -1507,19 +1508,22 @@ new buttonCategory('gcSettings', 7, [
     s => { iniDEoRL = s; }, true
   ),
   new CCCEMButton('iniGC', 'GC1 [##]',
-    new twoStepCycle(-2, 27, e => (e === -2 ? 'R' : Game.goldenCookieChoices[e])),
+    new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
     new buttonInfo('First Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial natural Golden cookie spawn.', [0, 10]),
-    s => { iniGC = s }
+    s => { s=(s%2 === 0)?s-1:s;
+      CCCEMButtons['iniGC'].state=s}
   ),
   new CCCEMButton('iniGC2', 'GC2 [##]',
-    new twoStepCycle(-2, 27, e => (e === -2 ? 'R' : Game.goldenCookieChoices[e])),
+    new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
     new buttonInfo('Second Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial Dragon Orbs Golden cookie spawn.', [1, 10]),
-    s => { iniGC2 = s }
+    s => { s=(s%2 === 0)?s-1:s;
+      CCCEMButtons['iniGC2'].state=s}
   ),
   new CCCEMButton('iniGC3', 'GC3 [##]',
-    new twoStepCycle(-2, 27, e => (e === -2 ? 'R' : Game.goldenCookieChoices[e])),
+    new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
     new buttonInfo('Third Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial, successful invoke of DEoRL.', [2, 10]),
-    s => { iniGC3 = s }, true
+    s => { s=(s%2 === 0)?s-1:s;
+      CCCEMButtons['iniGC3'].state=s}, true
   ),
   new CCCEMButton('boughtSF', 'Sugar frenzy [##]',
     new boolButton('used', 'unused'),
