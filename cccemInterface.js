@@ -239,9 +239,9 @@ function AllConsistentBuffsPow() {
   if (forceFtHoF!='random') {cBuffs.push(forceFtHoF)};
   if (HasStartBuff(0) && !(cBuffs.includes('frenzy'))) {cBuffs.push('frenzy')};
   if (HasStartBuff(3) && !(cBuffs.includes('dragon harvest'))) {cBuffs.push('dragon harvest')};
-  if (iniSpawn && get('iniGC')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC')])) || Game.goldenCookieChoices[get('iniGC')]=='building buff')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC')])}
-  if (iniDO && get('iniGC2')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC2')])) || Game.goldenCookieChoices[get('iniGC2')]=='building buff')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC2')])}
-  if (iniDEoRL && get('iniGC3')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC3')])) || Game.goldenCookieChoices[get('iniGC3')]=='building buff')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC3')])}
+  if (iniSpawn && get('iniGC')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC')])) || Game.goldenCookieChoices[get('iniGC')]=='building special')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC')])}
+  if (iniDO && get('iniGC2')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC2')])) || Game.goldenCookieChoices[get('iniGC2')]=='building special')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC2')])}
+  if (iniDEoRL && get('iniGC3')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC3')])) || Game.goldenCookieChoices[get('iniGC3')]=='building special')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC3')])}
   for (var i=0; i<BuffCount(9); i++) {cBuffs.push('building special')};
   for (var i in cBuffs) {
     buff=cBuffs[i]
