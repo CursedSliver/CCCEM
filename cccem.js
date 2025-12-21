@@ -54,11 +54,12 @@
 //version 2.94: Me when I get tricked into thinking (added back a Game.Notify eval)
 //version 2.95: spooky tulips
 //version 2.96: initial golden cookie spawning bugfix
+//version 2.97: additional bugfix of iniGC
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v2.96';
+var CCCEMVerReal = 'v2.97';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -97,11 +98,8 @@ var spirit1=1 //1 is vomitrax
 var spirit2=4 //4 is selebrak
 var spirit3=6 //6 is muridal
 var iniSpawn=true //true to have a regular golden cookie spawn immediately
-var iniGC=19 //what first GC gives, 'R' for random
 var iniDO=false //true to treat get an extra golden cookie at the start as if from DO, functionally equivalent to DEoRL
-var iniGC2=21 //what DO GC gives, 'R' for random
 var iniDEoRL=false //set to true to get an extra golden cookie at the start as if from DEoRL
-var iniGC3=1 //what DEoRL GC gives, 'R' for random
 var iniTimer=0 //set to a number of frames indicate how long since the last Golden cookie was spawned
 var fortuneG=0 //0 to make GC fortune unclicked
 var forceFortune=1 //set to value between 0 and 1 for probability of getting a fortune
@@ -292,12 +290,12 @@ function PresetSettingsGrail() {
     CCCEMButtons['buffs'].changeState("0,18000,18000,7;3,18000,18000,15;");
     CCCEMButtons['iniSpawn'].changeState(true);
     CCCEMButtons['iniSpawnTimer'].changeState(0);
-    CCCEMButtons['iniGC'].changeState(18);
+    CCCEMButtons['iniGC'].changeState(19);
     CCCEMButtons['iniDO'].changeState(false);
     CCCEMButtons['iniDEoRL'].changeState(false);
     // iniGC2 / iniGC3
-    CCCEMButtons['iniGC2'].changeState(20);
-    CCCEMButtons['iniGC3'].changeState(0);
+    CCCEMButtons['iniGC2'].changeState(21);
+    CCCEMButtons['iniGC3'].changeState(1);
     // iniTimer has an iniTimerButton in moreButtons but not a CCCEM button; handled below as fallback variable
     CCCEMButtons['fortuneChance'].changeState(4);
     CCCEMButtons['fortuneClaim'].changeState(false);
@@ -339,11 +337,8 @@ function PresetSettingsGrail() {
     spirit2=4;
     spirit3=6;
     iniSpawn=true;
-    iniGC=19;
     iniDO=false;
     iniDEoRL=false;
-    iniGC2=21;
-    iniGC3=1;
     iniTimer=0;
     fortuneG=0;
     forceFortune=0.04;
@@ -385,7 +380,7 @@ function PresetSettingsConsist() {
     CCCEMButtons['jadeGod'].changeState(6);
     CCCEMButtons['iniSpawn'].changeState(true);
     CCCEMButtons['iniSpawnTimer'].changeState(0);
-    CCCEMButtons['iniGC'].changeState(18);
+    CCCEMButtons['iniGC'].changeState(19);
     CCCEMButtons['iniDO'].changeState(false);
     CCCEMButtons['iniDEoRL'].changeState(false);
     CCCEMButtons['fortuneChance'].changeState(4);
@@ -412,7 +407,6 @@ function PresetSettingsConsist() {
     spirit2 = 8;
     spirit3 = 6;
     iniSpawn = true;
-    iniGC = 19;
     iniDO = false;
     iniDEoRL = false;
     iniTimer = 0;
@@ -472,7 +466,7 @@ function PresetSettingsBSScry() {
     CCCEMButtons['jadeGod'].changeState(6);
     CCCEMButtons['iniSpawn'].changeState(true);
     CCCEMButtons['iniSpawnTimer'].changeState(0);
-    CCCEMButtons['iniGC'].changeState(18);
+    CCCEMButtons['iniGC'].changeState(19);
     CCCEMButtons['iniDO'].changeState(false);
     CCCEMButtons['iniDEoRL'].changeState(false);
     CCCEMButtons['fortuneChance'].changeState(4);
@@ -498,7 +492,6 @@ function PresetSettingsBSScry() {
     spirit2 = 4;
     spirit3 = 6;
     iniSpawn = true;
-    iniGC = 19;
     iniDO = false;
     iniDEoRL = false;
     iniTimer = 0;
@@ -771,19 +764,19 @@ function SpawnGoldenCookies(noSpawn) {
     if (iniDO==true) 
     {
       var newShimmer=new Game.shimmer('golden',{noWrath:setPledge});
-      if (iniGC2 >= 0) newShimmer.force=Game.goldenCookieChoices[iniGC2+1];
+      if (get('iniGC2') >= 0) newShimmer.force=Game.goldenCookieChoices[get('iniGC2')];
     };
     if (iniSpawn==true) 
     {
       var newShimmer=new Game.shimmer('golden',{noWrath:setPledge}); 
       newShimmer.spawnLead=1; 
       Game.shimmerTypes.golden.spawned=1;
-      if (iniGC >= 0) newShimmer.force=Game.goldenCookieChoices[iniGC+1];
+      if (get('iniGC') >= 0) newShimmer.force=Game.goldenCookieChoices[get('iniGC')];
     };
     if (iniDEoRL==true) 
     {
       var newShimmer=new Game.shimmer('golden',{noWrath:setPledge});
-      if (iniGC3 >= 0) newShimmer.force=Game.goldenCookieChoices[iniGC3+1];
+      if (get('iniGC3') >= 0) newShimmer.force=Game.goldenCookieChoices[get('iniGC3')];
     };
   }
   for (var i in Game.shimmerTypes) {me=Game.shimmerTypes[i]; me.time=iniTimer};
@@ -1212,7 +1205,6 @@ function oldLoadFunc(str, noNotify) {
         seedTicker = strs[37]; gardenSeed = strs[38]; gardenP1[0] = strs[39]; gardenP1[1] = strs[40]; 
         gardenP2[0] = strs[41]; gardenP2[1] = strs[42]; setGardenR = strs[43]; officeL = strs[44]; 
         spirit1 = strs[45]; spirit2 = strs[46]; spirit3 = strs[47]; 
-        iniGC = strs[48]; iniGC2 = strs[49]; iniGC3 = strs[50]; 
         iniDO = strs[51]; iniDEoRL = strs[52]; 
         buyOption1 = strs[59]; buyOption2 = strs[60]; forceFortune = strs[61];
         
