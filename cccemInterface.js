@@ -1340,7 +1340,7 @@ new buttonCategory('minigameSettings', 5, [
   ),
   new CCCEMButton('gTulips', '[##] Ghost Tulips',
     new boolButton('Add', 'No'),
-    new buttonInfo('Ghost Tulips', 'Adds ghost tulips in addition to other specified plants. Useful for starting an attempt in the middle of a combo, after would already have replanted', [26, 20])
+    new buttonInfo('Ghost Tulips', 'Adds ghost tulips in addition to other specified plants. Useful for starting an attempt in the middle of a combo, after you would already have replanted.', [26, 20])
   ),
   new CCCEMButton('plant2', 'Plant 2 [##]',
     new cycleButton(1, 34, e => Game.Objects['Farm'].minigame.plantsById[e - 1].name),
