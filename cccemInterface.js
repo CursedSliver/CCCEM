@@ -35,6 +35,7 @@
 //version 2.8: Made it possible to change contents of inputButtons on click for stability
 //version 2.9: improved logic for save handling
 //version 2.91: incorporated stripping CCCEM data from imported saves to save space and increase stability
+//version 2.92: spooky tulips
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -1336,6 +1337,10 @@ new buttonCategory('minigameSettings', 5, [
     new numberInputButton(),
     new buttonInfo('Plant 1 age', 'The age of the first plant (percentage to death).', [25, 20]),
     s => { gardenP1[1] = s; }, true
+  ),
+  new CCCEMButton('gTulips', '[##] Ghost Tulips',
+    new boolButton('Add', 'No'),
+    new buttonInfo('Ghost Tulips', 'Adds ghost tulips in addition to other specified plants. Useful for starting an attempt in the middle of a combo, after would already have replanted', [26, 20])
   ),
   new CCCEMButton('plant2', 'Plant 2 [##]',
     new cycleButton(1, 34, e => Game.Objects['Farm'].minigame.plantsById[e - 1].name),
