@@ -1748,9 +1748,6 @@ function RedrawCCCEM(noinvalidate) {
 
   str+='</div>';
   l('devConsole').innerHTML=str;
-  l('devConsole').style.minWidth='24px'
-  l('devConsole').style.width='auto'
-  l('devConsole').style.maxHeight = 'calc(100vh - '+((App?0:l('topBar').getBoundingClientRect().height) + 18)+'px)';
   l('debug').style.display='block';
   devConsoleL = l('devConsole');
   };
@@ -1763,6 +1760,9 @@ var customStyles = [];
 customStyles.push(`
   .CCCEMInterface {
     scrollbar-width: thin; overflow-y:auto;
+    minWidth: 24px;
+    width: auto;
+    calc(100vh - ${((App?0:l('topBar').getBoundingClientRect().height) + 18)}px);
   }
   .CCCEMInterface::-webkit-scrollbar {
     width: 5px;
