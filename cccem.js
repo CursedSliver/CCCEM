@@ -55,11 +55,12 @@
 //version 2.95: spooky tulips
 //version 2.96: initial golden cookie spawning bugfix
 //version 2.97: additional bugfix of iniGC
+//version 3.0: updated info display for buttons, are now proper tooltips
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v2.97';
+var CCCEMVerReal = 'v3';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.

@@ -39,6 +39,7 @@
 //version 2.93: BS score hotfix
 //version 2.94: made iniGC true value fully numeric
 //version 2.95: iniGC bugfix
+//version 3.0: updated info display for buttons, are now proper tooltips
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
