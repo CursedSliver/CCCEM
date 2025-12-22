@@ -1478,12 +1478,7 @@ new buttonCategory('buffSettings', 6, [
   new CCCEMButton('snapBuffs', 'snapshot buffs',
     new triggerButton(),
     new buttonInfo('Snapshot', 'Will alter your starting buff settings to be the buffs you currently have active.', [30, 20]),
-    () => CCCEMButtons['buffs'].changeState(ExportBuffs())
-  ),
-  new CCCEMButton('addBuff', 'Add [##]',
-    new triggerButton(),
-    new buttonInfo('Add starting buff', 'Will add another starting buff based on the subsequent settings (incl type, max time, time, power, BS type)', [33, 25]),
-    () => AddStartBuff(get('buffType'), get('buffMaxTime'), get('buffTime'), get('buffPow'), get('buffObj')),true
+    () => CCCEMButtons['buffs'].changeState(ExportBuffs()), true
   ),
   new CCCEMButton('buffType', 'Cycle Buffs',
     new cycleButton(0, Game.buffTypes.length-1, e => Game.buffTypes[e]),
@@ -1506,6 +1501,11 @@ new buttonCategory('buffSettings', 6, [
     new buttonInfo('Cycle BS type', 'Cycle through BS types. If left at Building Buff or Building Debuff, a random one will be selected', [4, 14]),
     () => CCCEMButtons['buffType'].updateVarFunc(get('buffType'))
   ),
+  new CCCEMButton('addBuff', 'Add [##]',
+    new triggerButton(),
+    new buttonInfo('Add starting buff', 'Will add another starting buff based on the subsequent settings (incl type, max time, time, power, BS type)', [33, 25]),
+    () => AddStartBuff(get('buffType'), get('buffMaxTime'), get('buffTime'), get('buffPow'), get('buffObj')), true
+  ),
   new CCCEMButton('buffMaxTime', 'Max Time [##]',
     new numberInputButton(),
     new buttonInfo('Maximum buff duration', 'How much maximum time the added buff has, if left at 0 the buff default will be used.', [23, 11]),
@@ -1524,16 +1524,16 @@ new buttonCategory('buffSettings', 6, [
     new buttonInfo('Cycle current buffs', 'Will cycle through all the buffs you are starting with, so that one can be removed with the remove buff button.', [0, 15]),
     s => {CCCEMButtons['removeBuff'].state=Game.buffTypes[get('buffs').split(';')[s].split(',')[0]].name; RedrawCCCEM()},
   ),
-  new CCCEMButton('clearBuffs', 'Clear buffs',
-    new triggerButton(),
-    new buttonInfo('Clear starting buffs', 'Will remove all starting buffs, making you have no buffs when resetting', [0, 31]),
-    () => CCCEMButtons['buffs'].changeState(""),
-  ),
   new CCCEMButton('removeBuff', 'Remove [##]',
     new triggerButton(),
     new buttonInfo('Remove starting buff', 'Remove one starting buff. All current starting buffs can be cycled through with the cycle remove button.', [33, 24]),
     () => RemoveStartBuff(get("removeType"))
   ),
+  new CCCEMButton('clearBuffs', 'Clear buffs',
+    new triggerButton(),
+    new buttonInfo('Clear starting buffs', 'Will remove all starting buffs, making you have no buffs when resetting', [0, 31]),
+    () => CCCEMButtons['buffs'].changeState(""),
+  )
 ]);
 for (let i in CCCEMCategories["buffSettings"].buttons) {
   CCCEMCategories["buffSettings"].buttons[i].type.willSave=false
