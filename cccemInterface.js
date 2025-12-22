@@ -1475,7 +1475,7 @@ new buttonCategory('buffSettings', 6, [
       }
     }
   ),
-  new CCCEMButton('snapBuffs', 'snapshot buffs',
+  new CCCEMButton('snapBuffs', 'Snapshot buffs',
     new triggerButton(),
     new buttonInfo('Snapshot', 'Will alter your starting buff settings to be the buffs you currently have active.', [30, 20]),
     () => CCCEMButtons['buffs'].changeState(ExportBuffs()), true
