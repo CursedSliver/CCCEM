@@ -41,7 +41,6 @@
 //version 2.95: iniGC bugfix
 //version 3.0: updated info display for buttons, are now proper tooltips
 //version 3.01: fixing a couple of tooltips (featuring lie)
-s
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
