@@ -40,6 +40,7 @@
 //version 2.94: made iniGC true value fully numeric
 //version 2.95: iniGC bugfix
 //version 3.0: updated info display for buttons, are now proper tooltips
+//versoin 3.01: fixing a couple of tooltips (featuring lie)
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -1095,11 +1096,11 @@ new buttonCategory('categoryTogglePanel', 1, [
   ),
   new CCCEMButton('optionsBatch4', 'Buff options [##]',
     new categoryToggleButton('buffSettings'),
-    new buttonInfo('Buff settings', 'Settings related to starting golden cookie buffs', [10, 25])
+    new buttonInfo('Options group: Buffs', 'Settings related to starting golden cookie buffs', [28, 29])
   ),
   new CCCEMButton('optionsBatch5', 'GC options [##]',
     new categoryToggleButton('gcSettings'),
-    new buttonInfo('Options group: Buffs & GC options', 'Options related to buffs and Golden cookies. Also includes many randomness-related options.', [28, 29]),
+    new buttonInfo('Options group: GCs', 'Options related to buffs and Golden cookies. Also includes many randomness-related options.', [28, 29]),
     null, true
   ),
   new CCCEMButton('loadPForPause', 'Load P for Pause', 
@@ -1201,7 +1202,7 @@ new buttonCategory('gameSettings', 4, [
   ),
   new CCCEMButton('scoreMultVerify', 'Score info [##]',
     new boolButton(),
-    new buttonInfo('Score correction notifications', 'Whether to notify when the score does not conform to the baseline. Will only be given if most of your cookies are made from clicking', [1, 7]),
+    new buttonInfo('Score correction notifications', 'Whether to notify when the score does not conform to the baseline.', [1, 7]),
     s => scoreCorNotify = s
   ),
   new CCCEMButton('lumps', 'Lumps [##]',
