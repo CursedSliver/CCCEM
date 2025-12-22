@@ -56,11 +56,12 @@
 //version 2.96: initial golden cookie spawning bugfix
 //version 2.97: additional bugfix of iniGC
 //version 3.0: updated info display for buttons, are now proper tooltips
+//version 3.02: added keyword for garden plant setting, fixed version typo
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3';
+var CCCEMVerReal = 'v3.02';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -280,9 +281,9 @@ function PresetSettingsGrail() {
     CCCEMButtons['gardenSeed'].changeState(14);
     CCCEMButtons['gardenLevel'].changeState(10);
     CCCEMButtons['plant1'].changeState(6);
-    CCCEMButtons['plant1Age'].changeState(60);
+    CCCEMButtons['plant1Age'].changeState('mature');
     CCCEMButtons['plant2'].changeState(17);
-    CCCEMButtons['plant2Age'].changeState(60);
+    CCCEMButtons['plant2Age'].changeState('mature');
     CCCEMButtons['gardenRotation'].changeState(0);
     CCCEMButtons['office'].changeState(5);
     CCCEMButtons['diamondGod'].changeState(1);
@@ -371,9 +372,9 @@ function PresetSettingsConsist() {
     CCCEMButtons['forceFtHoF'].changeState(FtHoFOutcomes.indexOf('click frenzy') !== -1 ? FtHoFOutcomes.indexOf('click frenzy') : 0);
     CCCEMButtons['gardenSeed'].changeState(14);
     CCCEMButtons['plant1'].changeState(6);
-    CCCEMButtons['plant1Age'].changeState(60);
+    CCCEMButtons['plant1Age'].changeState('mature');
     CCCEMButtons['plant2'].changeState(17);
-    CCCEMButtons['plant2Age'].changeState(60);
+    CCCEMButtons['plant2Age'].changeState('mature');
     CCCEMButtons['gardenLevel'].changeState(7);
     CCCEMButtons['office'].changeState(5);
     CCCEMButtons['diamondGod'].changeState(2);
@@ -457,9 +458,9 @@ function PresetSettingsBSScry() {
     CCCEMButtons['forceFtHoF'].changeState(FtHoFOutcomes.indexOf('building special') !== -1 ? FtHoFOutcomes.indexOf('building special') : 0);
     CCCEMButtons['gardenSeed'].changeState(14);
     CCCEMButtons['plant1'].changeState(17);
-    CCCEMButtons['plant1Age'].changeState(60);
+    CCCEMButtons['plant1Age'].changeState('mature');
     CCCEMButtons['plant2'].changeState(6);
-    CCCEMButtons['plant2Age'].changeState(60);
+    CCCEMButtons['plant2Age'].changeState('mature');
     CCCEMButtons['gardenLevel'].changeState(8);
     CCCEMButtons['office'].changeState(4);
     CCCEMButtons['diamondGod'].changeState(1);
@@ -595,6 +596,23 @@ function ResetGame(toFindRaw) {
   Game.popups=1;
   };
 
+function parsePlantAge(plant, age) {
+  const M = Game.Objects.Farm.minigame;
+  if (typeof age !== 'number') {
+    if (age == 'budding') {
+      age = 0;
+    } else if (age == 'sprouting') {
+      age = M.plantsById[plant - 1].mature * 0.33 + 1;
+    } else if (age == 'bloom') {
+      age = M.plantsById[plant - 1].mature * 0.67 + 1;
+    } else if (age == 'mature') {
+      age = M.plantsById[plant - 1].mature;
+    } else if (age == 'decaying') {
+      age = 101 - M.plantsById[plant - 1].ageTick - M.plantsById[plant - 1].ageTickR / 2;
+    }
+  }
+  return [plant, age];
+}
 function ResetMinigames(toFindRaw) {
   if (toFindRaw) {Game.popups=0}
   for (var i = 0; i < Object.keys(Game.Objects).length; i++)
@@ -612,7 +630,7 @@ function ResetMinigames(toFindRaw) {
   for (var y=0;y<6;y++) {
     for (var x=0;x<6;x++) {
       if (!Game.Objects['Farm'].minigame.isTileUnlocked(x,y)) { Game.Objects['Farm'].minigame.plot[y][x]=[0,0]; continue; }
-      if ((gardenR>=3 && (x+gardenR)%2) || (gardenR<3 && (y+gardenR)%2)) {Game.Objects['Farm'].minigame.plot[y][x]=[gardenP1[0], gardenP1[1]]} else {Game.Objects['Farm'].minigame.plot[y][x]=[gardenP2[0], gardenP2[1]]}
+      if ((gardenR>=3 && (x+gardenR)%2) || (gardenR<3 && (y+gardenR)%2)) {Game.Objects['Farm'].minigame.plot[y][x]=[...parsePlantAge(...gardenP1)]} else {Game.Objects['Farm'].minigame.plot[y][x]=[...parsePlantAge(...gardenP2)]}
       }
     }
   Game.Objects['Farm'].minigame.freeze=0;

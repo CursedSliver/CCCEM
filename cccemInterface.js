@@ -40,7 +40,8 @@
 //version 2.94: made iniGC true value fully numeric
 //version 2.95: iniGC bugfix
 //version 3.0: updated info display for buttons, are now proper tooltips
-//versoin 3.01: fixing a couple of tooltips (featuring lie)
+//version 3.01: fixing a couple of tooltips (featuring lie)
+s
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -755,6 +756,38 @@ class readonlyDisplayButton extends inputButton {
   subHeading = 'Copy the contents of the box below to export it.'
   readonly = true
 }
+class gardenPlantAgeSetButton extends inputButton {
+  header = 'Input plant ages'
+  subHeading = 'Input percentage, decimal, or words for plant stages (e.g. "mature" or "budding")'
+  getTip() {
+    return 'Click to input plant age.';
+  }
+  onInputConfirmation(content) {
+    content = content.toLowerCase();
+    const map = {
+      'bud': 'budding',
+      'budding': 'budding',
+      'sprout': 'sprouting',
+      'sprouting': 'sprouting',
+      'bloom': 'bloom',
+      'blooming': 'bloom',
+      'mature': 'mature',
+      'maturity': 'mature',
+      'maturing': 'mature',
+      'decay': 'decaying',
+      'decaying': 'decaying',
+      'dying': 'decaying',
+      'fading': 'decaying'
+    }
+    if (map[content]) { content = map[content]; }
+    if (content.endsWith('%')) { content = content.slice(0, content.length - 1); }
+    if (!isNaN(parseFloat(content))) { content = parseFloat(content); if (content < 1 && content >= 0) { content = content * 100; } }
+    this.parent.state = content;
+    if (this.parent.updateVarFunc) {
+      this.parent.updateVarFunc.call(this.parent, this.parent.state);
+    }
+  }
+}
 class cycleButton extends buttonType {
   //blue button
   constructor(min, max, parseConvert) {
@@ -914,6 +947,8 @@ class keySelectButton extends buttonType {
   }
 }
 AddEvent(window, 'keydown', function (e) {
+  if (Game.promptOn) { return; }
+
   if (window.toChangeKeyBind) {
     CCCEMButtons[window.toChangeKeyBind].type.onKeyConfirmation(e);
     RedrawCCCEM();
@@ -1381,8 +1416,8 @@ new buttonCategory('minigameSettings', 5, [
     s => { gardenP1[0] = s; }
   ),
   new CCCEMButton('plant1Age', 'Plant 1 age [##]',
-    new numberInputButton(),
-    new buttonInfo('Plant 1 age', 'The age of the first plant (percentage to death).', [25, 20]),
+    new gardenPlantAgeSetButton(),
+    new buttonInfo('Plant 1 age', 'The age of the first plant at the start of each attempt.', [25, 20]),
     s => { gardenP1[1] = s; }, true
   ),
   new CCCEMButton('gTulips', '[##] Ghost Tulips',
@@ -1395,8 +1430,8 @@ new buttonCategory('minigameSettings', 5, [
     s => { gardenP2[0] = s; }
   ),
   new CCCEMButton('plant2Age', 'Plant 2 age [##]',
-    new numberInputButton(),
-    new buttonInfo('Plant 2 age', 'The age of the second plant (in terms of a percentage of its way to death) at the start of each attempt.', [25, 20]),
+    new gardenPlantAgeSetButton(),
+    new buttonInfo('Plant 2 age', 'The age of the second plant at the start of each attempt.', [25, 20]),
     s => { gardenP2[1] = s; }, true
   ),
   new CCCEMButton('office', 'Office [##]',
