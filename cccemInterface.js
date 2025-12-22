@@ -1759,9 +1759,9 @@ var customStyles = [];
 customStyles.push(`
   .CCCEMInterface {
     scrollbar-width: thin; overflow-y:auto;
-    minWidth: 24px;
-    width: auto;
-    calc(100vh - ${((App?0:l('topBar').getBoundingClientRect().height) + 18)}px);
+    min-width: 24px;
+    width: auto !important;
+    max-height: calc(100vh - ${((App?0:l('topBar').getBoundingClientRect().height) + 18)}px);
   }
   .CCCEMInterface::-webkit-scrollbar {
     width: 5px;
