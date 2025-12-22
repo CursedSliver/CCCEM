@@ -1190,7 +1190,7 @@ new buttonCategory('gameSettings', 4, [
   ),
   new CCCEMButton('prestige', 'Prestige [##]',
     new numberInputButton(),
-    new buttonInfo('Prestige', 'idk what this is for tbh tbh', [0, 0]),
+    new buttonInfo('Prestige', 'Sets the amount of prestige you have.', [20, 7]),
     s => iniP = s, true
   ),
   new CCCEMButton('scoreMult', 'Score mult x[##]',
