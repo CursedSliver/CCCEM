@@ -1371,8 +1371,8 @@ function InitializeMod() {
     CCCEMButtons['importSave'].changeState('');
   }
   if (!hasSettingsSet) { 
-    Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Your save will return upon closing the game.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [18, 6], " ") 
-  } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.<br><b>Shift+click on interface buttons to view more information!</b><br>You can also cycle through options in the opposite direction by Ctrl+clicking.", [19, 6], " ") }
+    Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Your save will return upon closing the game.", [18, 6], " ") 
+  } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.", [19, 6], " ") }
   Game.prefs.autosave=0
   ResetAll();
 }

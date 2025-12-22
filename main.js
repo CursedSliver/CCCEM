@@ -16879,7 +16879,6 @@ window.onload=function()
 						window.locally_hosted = true;
 						setTimeout(() => { 
 							Game.LoadMod('./cccem.js');
-							Game.LoadMod('./testFile.js');
 						}, 500);
 					}
 					if (App && App.loadMods) App.loadMods(launch);

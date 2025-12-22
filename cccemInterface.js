@@ -493,7 +493,7 @@ class CCCEMButton {
 
   getLStr() {
     if (this.hidden) { return ''; }
-    return '<a class="option '+this.type.getColorStr()+'" '+Game.clickStr+'="isShifting()?(CCCEMButtonsList['+this.id+'].info.getInfo()):(CCCEMButtonsList['+this.id+'].triggerSetVar());">'+this.type.parse(this.namesList, this.state)+'</a>'+this.newLine;
+    return '<a class="option '+this.type.getColorStr()+'" '+this.info.getTooltip(this)+' '+Game.clickStr+'="(CCCEMButtonsList['+this.id+'].triggerSetVar());">'+this.type.parse(this.namesList, this.state)+'</a>'+this.newLine;
   }
 
   changeState(value, update) {
@@ -599,6 +599,9 @@ class buttonType {
     }
     //makes it overridable
   }
+  getTip() {
+    return '';
+  }
   willSave = true
   save() {
     return this.parent.state;
@@ -618,6 +621,9 @@ class buttonType {
 class triggerButton extends buttonType {
   //default green buttons that does something on click
   willSave = false
+  getTip() {
+    return 'Click to activate.';
+  }
 }
 class limeButton extends buttonType {
   //alternate color signifying something important
@@ -625,6 +631,9 @@ class limeButton extends buttonType {
   constructor() { super(); }
   getColorStr() {
     return 'neatolime';
+  }
+  getTip() {
+    return 'Click to activate. Will not invalidate score.';
   }
   onClick() {
 
@@ -642,6 +651,9 @@ class inputButton extends buttonType {
   readonly = false
   getOptions() {
     return [[loc("Load"),`Game.ClosePrompt(); \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value.trim());\nRedrawCCCEM();`],[loc("Nevermind")]]
+  }
+  getTip() {
+    return 'Click to input value.';
   }
   afterCall() {
     if (this.autoSet) { l('textareaPrompt').value = this.autoSet.call(this) }
@@ -734,6 +746,9 @@ class readonlyDisplayButton extends inputButton {
   getOptions() {
     return [loc("All done!")]
   }
+  getTip() {
+    return 'Click to export value.';
+  }
   heading = 'Export variable'
   subHeading = 'Copy the contents of the box below to export it.'
   readonly = true
@@ -747,6 +762,9 @@ class cycleButton extends buttonType {
     if (parseConvert) { this.parseConvert = parseConvert; }
   }
   parseConvert = e => e;
+  getTip() {
+    return 'Click to cycle. Ctrl-click to cycle in reverse.';
+  }
   getColorStr() { 
     return 'neatoblue';
   }
@@ -808,6 +826,9 @@ class boolButton extends buttonType {
   getColorStr() {
     return this.parent.state?'neatoorange':'neatoyellow';
   }
+  getTip() {
+    return 'Click to toggle.';
+  }
   parse(names, state) {
     return names[0].replace('[##]', state?this.truthy:this.falsy);
   }
@@ -831,6 +852,9 @@ class categoryToggleButton extends buttonType {
     super();
     this.categoryToToggle = category;
   }
+  getTip() {
+    return 'Click to hide/unhide category.';
+  }
   getColorStr() {
     if (!CCCEMCategories[this.categoryToToggle]) { return ''; }
     return CCCEMCategories[this.categoryToToggle].hidden?'neatogray':'neatowhite';
@@ -853,8 +877,12 @@ class keySelectButton extends buttonType {
   }
   parseConvert = key => { return String.fromCharCode((96 <= key && key <= 105) ? key - 48 : key).toUpperCase(); }
   defaultKey = 0
+  
   parse(names, state) {
     return names[0].replace('[##]', this.parseConvert(state));
+  }
+  getTip() {
+    return 'Click to make the next key press set the key.';
   }
   getColorStr() {
     return 'neatopurple';
@@ -929,10 +957,24 @@ class buttonInfo {
     this.icon = icon;
   }
 
-  getInfo() {
-    Game.Notify(this.header, this.content, this.icon);
+  getTooltip(parentButton) {
+    const tip = parentButton.type.getTip();
+    let str = '<div style="position:absolute;left:1px;top:1px;right:1px;bottom:1px;background:linear-gradient(125deg,'+'rgba(50,40,40,1) 0%,rgba(50,40,40,0)'+' 20%);mix-blend-mode:screen;z-index:1;"></div><div style="z-index:10;padding:8px 4px;min-width:350px;position:relative;" id="tooltipCrate">'+
+			'<div class="icon" style="float:left;margin-left:-8px;margin-top:-8px;'+writeIcon(this.icon)+'"></div>'+
+			'<div class="name">'+this.header+'</div>'+
+			'<div class="line"></div><div class="description">'+this.content+'</div></div>'+
+			(tip!=''?('<div class="line"></div><div style="font-size:10px;font-weight:bold;color:#999;text-align:center;padding-bottom:4px;line-height:100%;" class="crateTip">'+tip+'</div>'):'');
+    return Game.getTooltip(str, 'cccemMenu', true);
   }
 }
+let devConsoleL = l('devConsole')
+eval('Game.tooltip.update='+Game.tooltip.update.toString().replace('else', `else if (this.origin == 'cccemMenu') {
+  if (!devConsoleL) { return false; } 
+  X = devConsoleL.getBoundingClientRect().width;
+  Y = Game.mouseY - 32;
+  if (Game.onCrate) Y = Game.onCrate.getBounds().top-42;
+  Y = Math.max(0,Math.min(Game.windowH-height-44,Y));
+} else`));
 
 class CCCEMExternalCategory extends buttonCategory {
   constructor(modCategoryName, modName, buttonsList, categoryToggleInfo) {
@@ -1120,12 +1162,12 @@ new buttonCategory('presetSettings', 3, [
   ),
   new CCCEMButton('consistPreset', '100% consistency',
     new triggerButton(),
-    new buttonInfo('Default', 'Resets settings to default.', [14, 6]),
+    new buttonInfo('100% consistency', 'Resets settings to a preset setting for a combo with a scried Click frenzy.', [14, 6]),
     () => { PresetSettingsConsist(); }
   ),
   new CCCEMButton('bsScryPreset', 'BS scry',
     new triggerButton(),
-    new buttonInfo('BS scry', 'Resets settings to a preset setting for a combo with a scried Building Special.', [13, 6]),
+    new buttonInfo('BS scry', 'Resets settings to a preset setting for a combo with a scried Building special.', [13, 6]),
     () => { PresetSettingsBSScry(); }
   ),
 ]),
@@ -1673,6 +1715,7 @@ function RedrawCCCEM(noinvalidate) {
   l('devConsole').style.width='auto'
   l('devConsole').style.maxHeight = 'calc(100vh - '+((App?0:l('topBar').getBoundingClientRect().height) + 18)+'px)';
   l('debug').style.display='block';
+  devConsoleL = l('devConsole');
   };
 l('devConsole').classList.add('CCCEMInterface');
 RedrawCCCEM();
