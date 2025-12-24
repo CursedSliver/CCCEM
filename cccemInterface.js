@@ -41,6 +41,7 @@
 //version 2.95: iniGC bugfix
 //version 3.0: updated info display for buttons, are now proper tooltips
 //version 3.01: fixing a couple of tooltips (featuring lie)
+//version 3.02: fixing muteBuildings
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -1291,7 +1292,7 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('muteBuilding', '[##]',
     new boolButton('Muted', 'Unmuted'),
     new buttonInfo('Mute', 'Whether a building should start muted. Minigames will always unmute unless that option is disabled.', [28, 6]),
-    s => { muteBuildings[buildingSelected] = s; }
+    s => { muteBuildings[buildingSelected] = s?1:0; }
   ),
   new CCCEMButton('unmuteMinigames', 'Minigame [##]',
     new boolButton('Unmuted', 'Muteable'),
