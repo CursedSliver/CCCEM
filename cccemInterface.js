@@ -42,6 +42,7 @@
 //version 3.0: updated info display for buttons, are now proper tooltips
 //version 3.01: fixing a couple of tooltips (featuring lie)
 //version 3.02: fixing muteBuildings
+//version 3.03: Made building muting and overriding selectors not save
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
@@ -58,7 +59,6 @@ var maxUndevastated=0
 var incorrectEBwarn=0
 var iniRaw=1
 var tickerCount=0
-var buildingSelected=0;
 var isClickedGC=false;
 var autoSaveCCCEM=false;
 var pForPausePath = cccemDir+'PForPause.js';
@@ -1279,7 +1279,6 @@ new buttonCategory('gameSettings', 4, [
     new cycleButton(0, Object.keys(Game.Objects).length - 1, e => Game.ObjectsById[e].name),
     new buttonInfo('Select building', 'The specific building to override or mute. Once overridden, the anchor will not affect this building.', [35, 33]),
     s => {
-      buildingSelected = s;
       CCCEMButtons['overridingNumber'].changeState(manualBuildings[s]);
       CCCEMButtons['muteBuilding'].changeState(muteBuildings[s]);
     }
@@ -1287,12 +1286,12 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('overridingNumber', 'Overriding number [##]',
     new numberInputButton(),
     new buttonInfo('Overriding count', 'The number of that building you start with each attempt. An assignment of 0 disables override.', [29, 21]),
-    s => { manualBuildings[buildingSelected] = s; }
+    s => { manualBuildings[get('buildingSelect')] = s; }
   ),
   new CCCEMButton('muteBuilding', '[##]',
     new boolButton('Muted', 'Unmuted'),
     new buttonInfo('Mute', 'Whether a building should start muted. Minigames will always unmute unless that option is disabled.', [28, 6]),
-    s => { muteBuildings[buildingSelected] = s?1:0; }
+    s => { muteBuildings[get('buildingSelect')] = s?1:0; }
   ),
   new CCCEMButton('unmuteMinigames', 'Minigame [##]',
     new boolButton('Unmuted', 'Muteable'),
@@ -1365,6 +1364,9 @@ new buttonCategory('gameSettings', 4, [
     s => { setPledge = s; }
   )
 ]);
+CCCEMButtons['buildingSelect'].type.willSave = false;
+CCCEMButtons['overridingNumber'].type.willSave = false;
+CCCEMButtons['muteBuilding'].type.willSave = false;
 CCCEMButtons['reindeerCount'].hidden = true;
 CCCEMButtons['pledgeStatus'].hidden = true;
 CCCEMButtons['fortuneClaim'].hidden = true;
@@ -1653,6 +1655,7 @@ new buttonCategory('savingControls', 1e6, [
       for (let i in mutes) {
         muteBuildings[i] = parseInt(mutes[i]);
       }
+      CCCEMButtons['buildingSelect'].changeState(get('buildingSelect'), 1);
     }), new buttonInfo('Building related info save', 'Saves building override and mute related information (hidden button)', [0, 0])
   ),
   new CCCEMButton('gamePrefsSaveData', '',
