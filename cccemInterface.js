@@ -848,6 +848,24 @@ class seasonalCycleButton extends cycleButton {
     }
   }
 }
+class multiSelectButton extends buttonType {
+  constructor(selection) {
+    this.selection = selection; //array, object, or function returning those
+    //this.parent.state is the index in the selection
+  }
+  onClick() {
+    
+  }
+  triggerSetVar() {
+
+  }
+  getTip() {
+    return 'Click to select options.';
+  }
+  getColorStr() { 
+    return 'neatoblue';
+  }
+}
 class boolButton extends buttonType {
   //yellow/orange button
   constructor(truthy, falsy) {
