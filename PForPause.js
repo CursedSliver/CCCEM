@@ -99,8 +99,11 @@ Game.registerMod('P for Pause', {
         PForPause = this;
         originalFpsE = this.originalFps;
         eval('Game.Loop='+Game.Loop.toString().replaceAll('1000/Game.fps', '1000/PForPause.originalFps'));
-        Game.realT = Game.T;
         Game.animT = Game.T;
+        if (typeof Game.realT === 'number') { Game.registerHook('logic', function() {
+            //is v2.058+
+            Game.realT = Game.animT;
+        }); }
         Game.isNewAnimTick = true; //utility for stuff that triggers per x ticks
         Game.lastAnimT = Math.floor(Game.animT);
         Game.lastAnimTExact = Game.animT;
@@ -120,7 +123,7 @@ Game.registerMod('P for Pause', {
         }
 
         eval('Game.Logic='+Game.Logic.toString()
-            .replace('Game.T++;', 'Game.T++; Game.realT++; Game.animT += PForPause.timeFactor; Game.isNewAnimTick = false; if (Math.floor(Game.animT) > Game.lastAnimT) { Game.isNewAnimTick = true; } Game.lastAnimTExact = Game.lastAnimT; Game.lastAnimT = Game.animT;')
+            .replace('Game.T++;', 'Game.T++; Game.animT += PForPause.timeFactor; Game.isNewAnimTick = false; if (Math.floor(Game.animT) > Game.lastAnimT) { Game.isNewAnimTick = true; } Game.lastAnimTExact = Game.lastAnimT; Game.lastAnimT = Game.animT;')
             .replace('Game.researchT--;', 'Game.researchT -= PForPause.timeFactor;')
             .replace('Game.researchT==0', 'Game.researchT<=0')
             .replace('Game.T%Math.ceil(Game.fps/Math.min(10,Game.cookiesPs))==0', 'PForPause.checkAnimTWasAMultipleOf(Math.ceil(Game.fps/Math.min(10,Game.cookiesPs)))')
@@ -216,7 +219,7 @@ Game.registerMod('P for Pause', {
         });
 
         Game.registerHook('logic', function() {
-            const now = Date.now();
+            const now = PForPause.realDate();
             PForPause.cumulativeRealTime += (now - PForPause.lastFrame) * PForPause.timeFactor;
             PForPause.lastFrame = now;
         });
@@ -230,8 +233,10 @@ Game.registerMod('P for Pause', {
             eval('M.logic='+M.logic.toString()
                 .replace('M.magic+=M.magicPS', 'M.magic+=M.magicPS * PForPause.timeFactor')
             );
-            eval('M.draw='+M.draw.toString().replace('-Game.T*', '-Game.animT*'));
+            //PForPause.fallbackReplace('M.draw', '-Game.animT*', '-Game.realT*', '-Game.T*');
         });
+
+        this.patchDate();
     },
     changeGameSpeed: function(mult, noCSSUpdates) {
         if (typeof mult != 'number' || mult < 0) { return; }
@@ -316,12 +321,6 @@ Game.registerMod('P for Pause', {
     changeMinigame: function(building, additionalFunctions, func) {
         const change = function() {
             const M = Game.Objects[building].minigame;
-            if (M.reset && M.reset.toString().includes('Date.now()')) {
-                eval('M.reset='+M.reset.toString().replaceAll('Date.now()', 'PForPause.cumulativeRealTime'));
-            }
-            for (let i in additionalFunctions) {
-                eval('M["'+additionalFunctions[i]+'"]='+M[additionalFunctions[i]].toString().replaceAll('Date.now()', 'PForPause.cumulativeRealTime'));
-            }
             func && func(M);
         }
         if (Game.Objects[building].minigameLoaded) {
@@ -333,6 +332,53 @@ Game.registerMod('P for Pause', {
                     clearInterval(interval);
                 }
             }, 10);
+        }
+    },
+    realDate: Date.now,
+    dateUnsecure: false,
+    patchDate: function() {
+        try {
+            const nowStr = Date.now && Date.now.toString ? Date.now.toString() : '';
+            const looksNative = /\[native code\]/.test(nowStr);
+            const desc = Object.getOwnPropertyDescriptor(Date, 'now');
+
+            const plainWritableValue = desc && typeof desc.value === 'function' && desc.writable === true && !desc.get && !desc.set;
+
+            if (!looksNative || !plainWritableValue) {
+                this.dateUnsecure = true;
+            }
+        } catch (err) {
+            this.dateUnsecure = true;
+        }
+
+        //still replace anyways
+        this.realDate = Date.now; //replace again in case race condition
+        if (true) {
+            Date.now = function() {
+                return Math.floor(PForPause.cumulativeRealTime);
+            };
+        }
+
+        eval('Game.Loop='+Game.Loop.toString().replaceAll('Date.now()', 'PForPause.realDate()'));
+    },
+    fallbackReplace: function(func, toBeReplacedBy, ...toBeReplaced) {
+        //func: string
+        if (func.includes('<MContext=')) {
+            const tag = '<MContext=';
+            const start = func.indexOf(tag) + tag.length;
+            const end = func.indexOf('>', start);
+            if (end !== -1) {
+                const expr = func.substring(start, end);
+                var M = eval(expr);
+                func = func.substring(0, func.indexOf(tag)) + func.substring(end + 1);
+            }
+        }
+        const str = eval(func + '.toString()');
+        for (let i = 2; i < arguments.length; i++) {
+            if (func.includes(arguments[i])) { 
+                eval(func + '=' + str.replace(arguments[i], toBeReplacedBy));
+                return;
+            }
         }
     },
     checkAnimTWasAMultipleOf: function(int) {
