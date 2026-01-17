@@ -17357,4 +17357,6 @@ window.onload=function()
 		else if (!lang) {loadLangAndLaunch('EN',true);}
 		else loadLangAndLaunch(lang);
 	}
+
+	window.PRESETMODS = ['cccemWrapper.js'];
 };
