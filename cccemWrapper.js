@@ -1,4 +1,5 @@
 (function() { 
+    window.locally_hosted = true;
     const interval = setInterval(() => { 
         if (Game.ready) { 
             Game.LoadMod('cccem.js');

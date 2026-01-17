@@ -1032,7 +1032,7 @@ eval('Game.tooltip.update='+Game.tooltip.update.toString().replace('else', `else
 } else`));
 
 class CCCEMExternalCategory extends buttonCategory {
-  constructor(modCategoryName, modName, buttonsList, categoryToggleInfo) {
+  constructor(modCategoryName, modName, buttonsList, categoryToggleInfo, defaults) {
     const modKey = modCategoryName;
     super(modKey, 1000 + Object.keys(CCCEMCategories).length, buttonsList);
 
@@ -1043,6 +1043,11 @@ class CCCEMExternalCategory extends buttonCategory {
         new categoryToggleButton(modKey),
         categoryToggleInfo
       ));
+    }
+
+    console.log(defaults);
+    if (defaults) {
+      defaults.call(this);
     }
 
     if (modDataSlotsYetToBeLoaded.has(modCategoryName)) {
@@ -1324,7 +1329,7 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('wizLevel', 'Tower Level [##]',
     new numberInputButton(),
     new buttonInfo('Tower Level', 'The level of Wizard towers you start with each attempt.', [17, 26]),
-    s => { wizLevel = s; }
+    s => { wizLevel = s; }, true
   ),
   new CCCEMButton('buyOption1', '[##]',
     new cycleButton(0, 1, e => e ? 'Sell' : 'Buy'),
@@ -1334,12 +1339,17 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('buyOption2', '[##]',
     new cycleButton(2, 5, e => (e > 4 ? 'All' : String(Math.pow(10, e - 2)))),
     new buttonInfo('Sell/Buy amount', 'Selects the bulk-buying amount you are selecting at the start of each attempt.', [1, 6]),
-    s => { buyOption2 = s; }, true
+    s => { buyOption2 = s; }
   ),
-  new CCCEMButton('heralds', 'Heralds [##]',
-    new boolButton('100', '41'),
-    new buttonInfo('Heralds', 'Changes the amount of Heralds you have.', [21, 29]),
-    s => { Game.heralds = s ? 100 : 41; Game.externalDataLoaded = true; }
+  new CCCEMButton('heraldsOverride', 'Herald override [##]', 
+    new boolButton(),
+    new buttonInfo('Heralds override', 'Whether or not to override the amount of heralds to a fixed value.', [21, 29]),
+    s => { if (!CCCEMButtons['heraldsOverride'].hidden) { CCCEMButtons['heraldsN'].hidden = !s; if ((!s) && Game.realExternalDataLoaded) { Game.UpdateHeralds(); } else if (s) { Game.heralds = get('heraldsN'); } } }
+  ),
+  new CCCEMButton('heraldsN', 'Heralds [##]',
+    new numberInputButton(),
+    new buttonInfo('Heralds', 'Changes the amount of Heralds you have.<br>Max 100, usually around 100.', [21, 29]),
+    s => { if (get('heraldsOverride') || !Game.realExternalDataLoaded) { Game.heralds = s; l('heraldsAmount').textContent = s; Game.recalculateGains = 1; } }, true
   ),
   new CCCEMButton('leftAura', 'Left Aura [##]',
     new cycleButton(0, 21, e => Game.dragonAuras[e].name),
@@ -1380,6 +1390,13 @@ new buttonCategory('gameSettings', 4, [
     new boolButton(),
     new buttonInfo('Elder Pledge activity', 'Whether of not Elder Pledge is active.', [9, 9]),
     s => { setPledge = s; }
+  ),
+  new CCCEMButton('prefsRecord', 'Record game settings', 
+    new triggerButton(),
+    new buttonInfo('Record game settings in options', 'Makes all subsequent resets set the game settings (as in the options in the options menu) to be the options at the time of clicking.', [11, 10]),
+    s => {
+      CCCEMButtons['prefsRecord'].state = getPrefsCompilation();
+    }
   )
 ]);
 CCCEMButtons['buildingSelect'].type.willSave = false;
@@ -1389,6 +1406,25 @@ CCCEMButtons['reindeerCount'].hidden = true;
 CCCEMButtons['pledgeStatus'].hidden = true;
 CCCEMButtons['fortuneClaim'].hidden = true;
 CCCEMButtons['gcClickCount'].hidden = true;
+CCCEMButtons['heraldsOverride'].hidden = true;
+CCCEMButtons['prefsRecord'].state = {};
+
+var dataLoaded = Game.externalDataLoaded;
+if (dataLoaded) { 
+  CCCEMButtons['heraldsOverride'].hidden = false;
+  CCCEMButtons['heraldsN'].hidden = true;
+}
+Game.registerHook('check', function() {
+  if (Game.realExternalDataLoaded && !dataLoaded) { 
+    CCCEMButtons['heraldsOverride'].hidden = false;
+    if (!get('heraldsOverride')) { CCCEMButtons['heraldsN'].hidden = true; }
+    dataLoaded = true;
+  }
+});
+Game.realExternalDataLoaded = Game.externalDataLoaded;
+eval('Game.UpdateHeralds='+Game.UpdateHeralds.toString().replaceAll('Game.externalDataLoaded=true;', 'Game.externalDataLoaded=true; Game.realExternalDataLoaded=true;'));
+Game.externalDataLoaded = true;
+Game.UpdateHeralds();
 
 new buttonCategory('minigameSettings', 5, [
   new CCCEMButton('forceFtHoF', 'FtHoF [##]',
@@ -1678,62 +1714,64 @@ new buttonCategory('savingControls', 1e6, [
   ),
   new CCCEMButton('gamePrefsSaveData', '',
     new savingModule(() => {
-      return (Game.prefs.particles ? '1' : '0') +
-        (Game.prefs.numbers ? '1' : '0') +
-        (Game.prefs.autosave ? '1' : '0') +
-        (Game.prefs.autoupdate ? '1' : '0') +
-        (Game.prefs.milk ? '1' : '0') +
-        (Game.prefs.fancy ? '1' : '0') +
-        (Game.prefs.warn ? '1' : '0') +
-        (Game.prefs.cursors ? '1' : '0') +
-        (Game.prefs.focus ? '1' : '0') +
-        (Game.prefs.format ? '1' : '0') +
-        (Game.prefs.notifs ? '1' : '0') +
-        (Game.prefs.wobbly ? '1' : '0') +
-        (Game.prefs.monospace ? '1' : '0') +
-        (Game.prefs.filters ? '1' : '0') +
-        (Game.prefs.cookiesound ? '1' : '0') +
-        (Game.prefs.crates ? '1' : '0') +
-        (Game.prefs.showBackupWarning ? '1' : '0') +
-        (Game.prefs.extraButtons ? '1' : '0') +
-        (Game.prefs.askLumps ? '1' : '0') +
-        (Game.prefs.customGrandmas ? '1' : '0') +
-        (Game.prefs.timeout ? '1' : '0') +
-        (Game.prefs.cloudSave ? '1' : '0') +
-        (Game.prefs.bgMusic ? '1' : '0') +
-        (Game.prefs.notScary ? '1' : '0') +
-        (Game.prefs.fullscreen ? '1' : '0') +
-        (Game.prefs.screenreader ? '1' : '0') +
-        (Game.prefs.discordPresence ? '1' : '0'); //copy pasted from Game.WriteSave
+      const src = get('prefsRecord');
+      return (src.particles ? '1' : '0') +
+        (src.numbers ? '1' : '0') +
+        (src.autosave ? '1' : '0') +
+        (src.autoupdate ? '1' : '0') +
+        (src.milk ? '1' : '0') +
+        (src.fancy ? '1' : '0') +
+        (src.warn ? '1' : '0') +
+        (src.cursors ? '1' : '0') +
+        (src.focus ? '1' : '0') +
+        (src.format ? '1' : '0') +
+        (src.notifs ? '1' : '0') +
+        (src.wobbly ? '1' : '0') +
+        (src.monospace ? '1' : '0') +
+        (src.filters ? '1' : '0') +
+        (src.cookiesound ? '1' : '0') +
+        (src.crates ? '1' : '0') +
+        (src.showBackupWarning ? '1' : '0') +
+        (src.extraButtons ? '1' : '0') +
+        (src.askLumps ? '1' : '0') +
+        (src.customGrandmas ? '1' : '0') +
+        (src.timeout ? '1' : '0') +
+        (src.cloudSave ? '1' : '0') +
+        (src.bgMusic ? '1' : '0') +
+        (src.notScary ? '1' : '0') +
+        (src.fullscreen ? '1' : '0') +
+        (src.screenreader ? '1' : '0') +
+        (src.discordPresence ? '1' : '0'); //copy pasted from Game.WriteSave
     }, str => {
       const spl = str.split('');
-      Game.prefs.particles = parseInt(spl[0]);
-      Game.prefs.numbers = parseInt(spl[1]);
-      Game.prefs.autosave = parseInt(spl[2]);
-      Game.prefs.autoupdate = spl[3] ? parseInt(spl[3]) : 1;
-      Game.prefs.milk = spl[4] ? parseInt(spl[4]) : 1;
-      Game.prefs.fancy = parseInt(spl[5]); if (Game.prefs.fancy) Game.removeClass('noFancy'); else if (!Game.prefs.fancy) Game.addClass('noFancy');
-      Game.prefs.warn = spl[6] ? parseInt(spl[6]) : 0;
-      Game.prefs.cursors = spl[7] ? parseInt(spl[7]) : 0;
-      Game.prefs.focus = spl[8] ? parseInt(spl[8]) : 0;
-      Game.prefs.format = spl[9] ? parseInt(spl[9]) : 0;
-      Game.prefs.notifs = spl[10] ? parseInt(spl[10]) : 0;
-      Game.prefs.wobbly = spl[11] ? parseInt(spl[11]) : 0;
-      Game.prefs.monospace = spl[12] ? parseInt(spl[12]) : 0;
-      Game.prefs.filters = spl[13] ? parseInt(spl[13]) : 1; if (Game.prefs.filters) Game.removeClass('noFilters'); else if (!Game.prefs.filters) Game.addClass('noFilters');
-      Game.prefs.cookiesound = spl[14] ? parseInt(spl[14]) : 1;
-      Game.prefs.crates = spl[15] ? parseInt(spl[15]) : 0;
-      Game.prefs.showBackupWarning = spl[16] ? parseInt(spl[16]) : 1;
-      Game.prefs.extraButtons = spl[17] ? parseInt(spl[17]) : 1; if (!Game.prefs.extraButtons) Game.removeClass('extraButtons'); else if (Game.prefs.extraButtons) Game.addClass('extraButtons');
-      Game.prefs.askLumps = spl[18] ? parseInt(spl[18]) : 0;
-      Game.prefs.customGrandmas = spl[19] ? parseInt(spl[19]) : 1;
-      Game.prefs.timeout = spl[20] ? parseInt(spl[20]) : 0;
-      Game.prefs.cloudSave = spl[21] ? parseInt(spl[21]) : 1;
-      Game.prefs.bgMusic = spl[22] ? parseInt(spl[22]) : 1;
-      Game.prefs.notScary = spl[23] ? parseInt(spl[23]) : 0;
-      Game.prefs.fullscreen = spl[24] ? parseInt(spl[24]) : 0; if (App) App.setFullscreen(Game.prefs.fullscreen);
-      Game.prefs.screenreader = spl[25] ? parseInt(spl[25]) : 0;
-      Game.prefs.discordPresence = spl[26] ? parseInt(spl[26]) : 1;
+      const src = get('prefsRecord');
+      src.particles = parseInt(spl[0]);
+      src.numbers = parseInt(spl[1]);
+      src.autosave = parseInt(spl[2]);
+      src.autoupdate = spl[3] ? parseInt(spl[3]) : 1;
+      src.milk = spl[4] ? parseInt(spl[4]) : 1;
+      src.fancy = parseInt(spl[5]); if (src.fancy) Game.removeClass('noFancy'); else if (!src.fancy) Game.addClass('noFancy');
+      src.warn = spl[6] ? parseInt(spl[6]) : 0;
+      src.cursors = spl[7] ? parseInt(spl[7]) : 0;
+      src.focus = spl[8] ? parseInt(spl[8]) : 0;
+      src.format = spl[9] ? parseInt(spl[9]) : 0;
+      src.notifs = spl[10] ? parseInt(spl[10]) : 0;
+      src.wobbly = spl[11] ? parseInt(spl[11]) : 0;
+      src.monospace = spl[12] ? parseInt(spl[12]) : 0;
+      src.filters = spl[13] ? parseInt(spl[13]) : 1; if (src.filters) Game.removeClass('noFilters'); else if (!src.filters) Game.addClass('noFilters');
+      src.cookiesound = spl[14] ? parseInt(spl[14]) : 1;
+      src.crates = spl[15] ? parseInt(spl[15]) : 0;
+      src.showBackupWarning = spl[16] ? parseInt(spl[16]) : 1;
+      src.extraButtons = spl[17] ? parseInt(spl[17]) : 1; if (!src.extraButtons) Game.removeClass('extraButtons'); else if (src.extraButtons) Game.addClass('extraButtons');
+      src.askLumps = spl[18] ? parseInt(spl[18]) : 0;
+      src.customGrandmas = spl[19] ? parseInt(spl[19]) : 1;
+      src.timeout = spl[20] ? parseInt(spl[20]) : 0;
+      src.cloudSave = spl[21] ? parseInt(spl[21]) : 1;
+      src.bgMusic = spl[22] ? parseInt(spl[22]) : 1;
+      src.notScary = spl[23] ? parseInt(spl[23]) : 0;
+      src.fullscreen = spl[24] ? parseInt(spl[24]) : 0; if (App) App.setFullscreen(src.fullscreen);
+      src.screenreader = spl[25] ? parseInt(spl[25]) : 0;
+      src.discordPresence = spl[26] ? parseInt(spl[26]) : 1;
     }), new buttonInfo('Game prefs save', 'Saves game prefs (hidden button)', [0, 0])
   ),
   new CCCEMButton('miscSaveData', '',

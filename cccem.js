@@ -57,11 +57,12 @@
 //version 2.97: additional bugfix of iniGC
 //version 3.0: updated info display for buttons, are now proper tooltips
 //version 3.02: added keyword for garden plant setting, fixed version typo
+//version 3.1: adapted to v2.058, added the ability to record game options and now auto resets to the recorded options on trying again
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3.02';
+var CCCEMVerReal = 'v3.1';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -184,7 +185,7 @@ var currentSave = retrieveSave();
 function customSave() {
     Game.toSave = false;
     let str = currentSave.replace('!END!', '');
-    str = str.replace(/\|\|(.*)/, str.match(/\|\|.*?\|\|/))
+    str = str.replace(/\|\|(.*)/, str.match(/\|\|.*?\|\|/));
     str+=Game.saveModData();
     if (Game.useLocalStorage)
 				{
@@ -275,7 +276,8 @@ function PresetSettingsGrail() {
     CCCEMButtons['lumpType'].changeState(0);
     CCCEMButtons['leftAura'].changeState(13);
     CCCEMButtons['rightAura'].changeState(4);
-    CCCEMButtons['startingSeason'].changeState(183);
+    CCCEMButtons['heraldsN'].changeState(100);
+    CCCEMButtons['startingSeason'].changeState(182);
     CCCEMButtons['scriedSeason'].changeState(0);
     CCCEMButtons['forceFtHoF'].changeState(FtHoFOutcomes.indexOf('blood frenzy') !== -1 ? FtHoFOutcomes.indexOf('blood frenzy') : 0);
     CCCEMButtons['gardenSeed'].changeState(14);
@@ -309,6 +311,7 @@ function PresetSettingsGrail() {
     CCCEMButtons['scoreMult'].changeState(1);
     CCCEMButtons['DFChanceMult'].changeState(1);
     CCCEMButtons['gcRateMult'].changeState(1);
+    CCCEMButtons['prefsRecord'].type.triggerVarFunc();
   } else {
     // Fallback assignments if CCCEMButtons not initialized yet
     iniSeed='R';
@@ -390,8 +393,9 @@ function PresetSettingsConsist() {
     CCCEMButtons['pledgeStatus'].changeState(true);
     CCCEMButtons['boughtSF'].changeState(false);
     CCCEMButtons['boughtCE'].changeState(false);
-    CCCEMButtons['startingSeason'].changeState(183);
+    CCCEMButtons['startingSeason'].changeState(182);
     CCCEMButtons['scriedSeason'].changeState(0);
+    CCCEMButtons['prefsRecord'].type.triggerVarFunc();
   } else {
     // fallback assignments
     iniSeed = 'R';
@@ -476,8 +480,9 @@ function PresetSettingsBSScry() {
     CCCEMButtons['pledgeStatus'].changeState(true);
     CCCEMButtons['boughtSF'].changeState(false);
     CCCEMButtons['boughtCE'].changeState(false);
-    CCCEMButtons['startingSeason'].changeState(183);
+    CCCEMButtons['startingSeason'].changeState(182);
     CCCEMButtons['scriedSeason'].changeState(0);
+    CCCEMButtons['prefsRecord'].type.triggerVarFunc();
   } else {
     iniSeed = 'R';
     iniLumps = 103;
@@ -591,8 +596,14 @@ function ResetGame(toFindRaw) {
   Game.dragonAura=(toFindRaw?0:d1Aura)
   Game.dragonAura2=(toFindRaw?0:d2Aura)
   Game.TickerAge=0;
+
+  const prefsToSet = get('prefsRecord');
+  for (let i in prefsToSet) {
+    Game.prefs[i] = prefsToSet[i];
+  }
   
   Game.CalculateGains();
+  Game.UpdateMenu();
   Game.popups=1;
   };
 
@@ -915,6 +926,14 @@ function GetEffectDurMod() {
   };
   return effectDurMod
 };
+
+function getPrefsCompilation() {
+  let obj = {};
+  for (let i in Game.prefs) {
+    obj[i] = Game.prefs[i];
+  }
+  return obj;
+}
 
 function InitBuffMod() {
     Game.buffTypesByName["frenzy"].baseDur = 77
@@ -1389,6 +1408,7 @@ function InitializeMod() {
     PresetSettingsGrail(); 
     CCCEMButtons['importSave'].changeState('');
   }
+  CCCEMButtons['prefsRecord'].type.triggerVarFunc();
   if (!hasSettingsSet) { 
     Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Your save will return upon closing the game.", [18, 6], " ") 
   } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.", [19, 6], " ") }

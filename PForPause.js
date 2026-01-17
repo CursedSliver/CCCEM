@@ -8,6 +8,7 @@
 //version 2.12 fixed issue with the mod removing a button from CCCEMUI
 //version 2.121 reverted changes and changed approach to prevent deletion of other elements
 //version 2.2 fixed new integration with CCCEMUI buttons
+//version 2.3 integrated into v2.058
 
 var gamePause=0
 var gardenStepDifference=Game.Objects.Farm.minigame?(Game.Objects.Farm.minigame.nextStep-Date.now()):0
@@ -530,7 +531,10 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
             new buttonInfo('Gamespeed trigger method', 'Selects the key that changes the game speed to the specified game speed when held.', [0, 8]),
             down => { if (!down) { PForPause.changeGameSpeed(1); return; } PForPause.changeGameSpeed(timeFactorWhenEnabled); }
         )
-    ]);
+    ], null, function() {
+        CCCEMButtons['gamespeed'].changeState(1);
+        CCCEMButtons['gamespeedKey'].state = 0;
+    });
     CCCEMButtons['gamePause'].type.willSave = false;
     RedrawCCCEM();
 };
