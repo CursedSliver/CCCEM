@@ -1347,7 +1347,8 @@ new buttonCategory('gameSettings', 4, [
     s => { if (!CCCEMButtons['heraldsOverride'].hidden) { 
         CCCEMButtons['heraldsN'].hidden = !s; 
         if ((!s) && Game.realExternalDataLoaded) { Game.UpdateHeralds(); } else if (s) { CCCEMButtons['heraldsN'].type.triggerVarFunc(); } 
-        if (!s) { this.newLine = '<br>'; } else { this.newLine = ''; }
+        if (s) { this.newLine = ''; } else { this.newLine = '<br>'; }
+        RedrawCCCEM();
       } 
     }
   ),
