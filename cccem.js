@@ -277,7 +277,7 @@ function PresetSettingsGrail() {
     CCCEMButtons['leftAura'].changeState(13);
     CCCEMButtons['rightAura'].changeState(4);
     CCCEMButtons['heraldsN'].changeState(100);
-    CCCEMButtons['startingSeason'].changeState(182);
+    CCCEMButtons['startingSeason'].changeState(183);
     CCCEMButtons['scriedSeason'].changeState(0);
     CCCEMButtons['forceFtHoF'].changeState(FtHoFOutcomes.indexOf('blood frenzy') !== -1 ? FtHoFOutcomes.indexOf('blood frenzy') : 0);
     CCCEMButtons['gardenSeed'].changeState(14);
@@ -393,7 +393,7 @@ function PresetSettingsConsist() {
     CCCEMButtons['pledgeStatus'].changeState(true);
     CCCEMButtons['boughtSF'].changeState(false);
     CCCEMButtons['boughtCE'].changeState(false);
-    CCCEMButtons['startingSeason'].changeState(182);
+    CCCEMButtons['startingSeason'].changeState(183);
     CCCEMButtons['scriedSeason'].changeState(0);
     CCCEMButtons['prefsRecord'].type.triggerVarFunc();
   } else {
@@ -480,7 +480,7 @@ function PresetSettingsBSScry() {
     CCCEMButtons['pledgeStatus'].changeState(true);
     CCCEMButtons['boughtSF'].changeState(false);
     CCCEMButtons['boughtCE'].changeState(false);
-    CCCEMButtons['startingSeason'].changeState(182);
+    CCCEMButtons['startingSeason'].changeState(183);
     CCCEMButtons['scriedSeason'].changeState(0);
     CCCEMButtons['prefsRecord'].type.triggerVarFunc();
   } else {
