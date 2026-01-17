@@ -635,7 +635,7 @@ if (typeof CCCEMUILoaded !== 'undefined') {
             () => linking()
         ),
         new CCCEMButton('cfExecute', 'Execute',
-            new triggerButton(),
+            new limeButton(),
             new buttonInfo('Execute Cast Finder', 'Executes the code in the Cast Finder.', [11, 10]),
             () => CCCEMIntegratedExecute()
         ),

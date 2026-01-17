@@ -1344,7 +1344,12 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('heraldsOverride', 'Herald override [##]', 
     new boolButton(),
     new buttonInfo('Heralds override', 'Whether or not to override the amount of heralds to a fixed value.', [21, 29]),
-    s => { if (!CCCEMButtons['heraldsOverride'].hidden) { CCCEMButtons['heraldsN'].hidden = !s; if ((!s) && Game.realExternalDataLoaded) { Game.UpdateHeralds(); } else if (s) { Game.heralds = get('heraldsN'); } } }
+    s => { if (!CCCEMButtons['heraldsOverride'].hidden) { 
+        CCCEMButtons['heraldsN'].hidden = !s; 
+        if ((!s) && Game.realExternalDataLoaded) { Game.UpdateHeralds(); } else if (s) { CCCEMButtons['heraldsN'].type.triggerVarFunc(); } 
+        if (!s) { this.newLine = '<br>'; } else { this.newLine = ''; }
+      } 
+    }
   ),
   new CCCEMButton('heraldsN', 'Heralds [##]',
     new numberInputButton(),
