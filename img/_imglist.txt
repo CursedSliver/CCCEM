@@ -3,6 +3,8 @@ http://orteil.dashnet.org/cookieclicker/img/BGgarden.jpg
 http://orteil.dashnet.org/cookieclicker/img/BGgrimoire.jpg
 http://orteil.dashnet.org/cookieclicker/img/BGmarket.jpg
 http://orteil.dashnet.org/cookieclicker/img/BGpantheon.jpg
+http://orteil.dashnet.org/cookieclicker/img/CookieClickerLogoTiny.png
+http://orteil.dashnet.org/cookieclicker/img/DashnetLogoTiny.png
 http://orteil.dashnet.org/cookieclicker/img/alchemylab.png
 http://orteil.dashnet.org/cookieclicker/img/alchemylabBackground.png
 http://orteil.dashnet.org/cookieclicker/img/alteredGrandma.png
@@ -79,6 +81,7 @@ http://orteil.dashnet.org/cookieclicker/img/dashnetLogo.png
 http://orteil.dashnet.org/cookieclicker/img/discord.png
 http://orteil.dashnet.org/cookieclicker/img/dragon.png
 http://orteil.dashnet.org/cookieclicker/img/dragonBG.png
+http://orteil.dashnet.org/cookieclicker/img/dragonBG2.png
 http://orteil.dashnet.org/cookieclicker/img/dragonFrame.png
 http://orteil.dashnet.org/cookieclicker/img/dungeonDot.png
 http://orteil.dashnet.org/cookieclicker/img/dungeonFactory.png
@@ -88,6 +91,7 @@ http://orteil.dashnet.org/cookieclicker/img/dungeonIcons.png
 http://orteil.dashnet.org/cookieclicker/img/dungeonItems.png
 http://orteil.dashnet.org/cookieclicker/img/dungeonMapFactory.jpg
 http://orteil.dashnet.org/cookieclicker/img/dungeonOverlay.png
+http://orteil.dashnet.org/cookieclicker/img/dungeonPictos.gif
 http://orteil.dashnet.org/cookieclicker/img/dungeonPictos.png
 http://orteil.dashnet.org/cookieclicker/img/dungeonTiles.png
 http://orteil.dashnet.org/cookieclicker/img/easterEggs.png
@@ -96,6 +100,9 @@ http://orteil.dashnet.org/cookieclicker/img/empty.png
 http://orteil.dashnet.org/cookieclicker/img/emptyFrame.png
 http://orteil.dashnet.org/cookieclicker/img/factory.png
 http://orteil.dashnet.org/cookieclicker/img/factoryBackground.png
+http://orteil.dashnet.org/cookieclicker/img/familiars.png
+http://orteil.dashnet.org/cookieclicker/img/fangamerClicker.png
+http://orteil.dashnet.org/cookieclicker/img/fangamerClickerPic.png
 http://orteil.dashnet.org/cookieclicker/img/farm.png
 http://orteil.dashnet.org/cookieclicker/img/farmBackground.png
 http://orteil.dashnet.org/cookieclicker/img/farmerGrandma.png
@@ -103,6 +110,9 @@ http://orteil.dashnet.org/cookieclicker/img/favicon.ico
 http://orteil.dashnet.org/cookieclicker/img/featherLeft.png
 http://orteil.dashnet.org/cookieclicker/img/featherRight.png
 http://orteil.dashnet.org/cookieclicker/img/filler.png
+http://orteil.dashnet.org/cookieclicker/img/flare.png
+http://orteil.dashnet.org/cookieclicker/img/flareGold.png
+http://orteil.dashnet.org/cookieclicker/img/flareSuckRed.png
 http://orteil.dashnet.org/cookieclicker/img/fractalEngine.png
 http://orteil.dashnet.org/cookieclicker/img/fractalEngineBackground.png
 http://orteil.dashnet.org/cookieclicker/img/frameBorder.png
@@ -117,6 +127,7 @@ http://orteil.dashnet.org/cookieclicker/img/girlscoutLucky.png
 http://orteil.dashnet.org/cookieclicker/img/glint.jpg
 http://orteil.dashnet.org/cookieclicker/img/glint.png
 http://orteil.dashnet.org/cookieclicker/img/goldCookie.png
+http://orteil.dashnet.org/cookieclicker/img/goldCookieWreath.png
 http://orteil.dashnet.org/cookieclicker/img/grandma.png
 http://orteil.dashnet.org/cookieclicker/img/grandmaBackground.png
 http://orteil.dashnet.org/cookieclicker/img/grandmas1.jpg
@@ -125,6 +136,7 @@ http://orteil.dashnet.org/cookieclicker/img/grandmas3.jpg
 http://orteil.dashnet.org/cookieclicker/img/grandmasGrandma.png
 http://orteil.dashnet.org/cookieclicker/img/grimoireBG.png
 http://orteil.dashnet.org/cookieclicker/img/heartStorm.png
+http://orteil.dashnet.org/cookieclicker/img/heartStormWrath.png
 http://orteil.dashnet.org/cookieclicker/img/hearts.png
 http://orteil.dashnet.org/cookieclicker/img/heavenRing1.jpg
 http://orteil.dashnet.org/cookieclicker/img/heavenRing2.jpg
@@ -165,7 +177,11 @@ http://orteil.dashnet.org/cookieclicker/img/milkCherry.png
 http://orteil.dashnet.org/cookieclicker/img/milkChocolate.png
 http://orteil.dashnet.org/cookieclicker/img/milkCoconut.png
 http://orteil.dashnet.org/cookieclicker/img/milkCoffee.png
+http://orteil.dashnet.org/cookieclicker/img/milkCol1Mask.jpg
+http://orteil.dashnet.org/cookieclicker/img/milkCol2Mask.jpg
+http://orteil.dashnet.org/cookieclicker/img/milkDarkMask.jpg
 http://orteil.dashnet.org/cookieclicker/img/milkDragonfruit.png
+http://orteil.dashnet.org/cookieclicker/img/milkFXbubbles.jpg
 http://orteil.dashnet.org/cookieclicker/img/milkFire.png
 http://orteil.dashnet.org/cookieclicker/img/milkGold.png
 http://orteil.dashnet.org/cookieclicker/img/milkGreenFire.png
@@ -174,6 +190,7 @@ http://orteil.dashnet.org/cookieclicker/img/milkHoney.png
 http://orteil.dashnet.org/cookieclicker/img/milkLicorice.png
 http://orteil.dashnet.org/cookieclicker/img/milkLime.png
 http://orteil.dashnet.org/cookieclicker/img/milkMaple.png
+http://orteil.dashnet.org/cookieclicker/img/milkMask.png
 http://orteil.dashnet.org/cookieclicker/img/milkMelon.png
 http://orteil.dashnet.org/cookieclicker/img/milkMint.png
 http://orteil.dashnet.org/cookieclicker/img/milkOrange.png
@@ -229,6 +246,7 @@ http://orteil.dashnet.org/cookieclicker/img/prism.png
 http://orteil.dashnet.org/cookieclicker/img/prismBackground.png
 http://orteil.dashnet.org/cookieclicker/img/rainbowGrandma.png
 http://orteil.dashnet.org/cookieclicker/img/raspberryWave.png
+http://orteil.dashnet.org/cookieclicker/img/ripple.png
 http://orteil.dashnet.org/cookieclicker/img/roundFrameBorder.png
 http://orteil.dashnet.org/cookieclicker/img/roundedPanelBG.png
 http://orteil.dashnet.org/cookieclicker/img/roundedPanelBGS.png
@@ -258,6 +276,8 @@ http://orteil.dashnet.org/cookieclicker/img/smallCookies.png
 http://orteil.dashnet.org/cookieclicker/img/smallDollars.png
 http://orteil.dashnet.org/cookieclicker/img/snow.jpg
 http://orteil.dashnet.org/cookieclicker/img/snow2.jpg
+http://orteil.dashnet.org/cookieclicker/img/snow2Wrath.jpg
+http://orteil.dashnet.org/cookieclicker/img/spamCookies.gif
 http://orteil.dashnet.org/cookieclicker/img/sparkles.jpg
 http://orteil.dashnet.org/cookieclicker/img/spellBG.png
 http://orteil.dashnet.org/cookieclicker/img/spinnyBig.png
@@ -272,11 +292,18 @@ http://orteil.dashnet.org/cookieclicker/img/templeGrandma.png
 http://orteil.dashnet.org/cookieclicker/img/timemachine.png
 http://orteil.dashnet.org/cookieclicker/img/timemachineBackground.png
 http://orteil.dashnet.org/cookieclicker/img/timerBars.png
+http://orteil.dashnet.org/cookieclicker/img/tingusgoose.png
 http://orteil.dashnet.org/cookieclicker/img/tinyEyeEmpty.png
 http://orteil.dashnet.org/cookieclicker/img/tinyEyeOff.png
 http://orteil.dashnet.org/cookieclicker/img/tinyEyeOn.png
 http://orteil.dashnet.org/cookieclicker/img/tinyglobe.gif
 http://orteil.dashnet.org/cookieclicker/img/tinyglobeSheet.gif
+http://orteil.dashnet.org/cookieclicker/img/topbarDiv.png
+http://orteil.dashnet.org/cookieclicker/img/topbarMobile.png
+http://orteil.dashnet.org/cookieclicker/img/topbarPS.png
+http://orteil.dashnet.org/cookieclicker/img/topbarSteam.png
+http://orteil.dashnet.org/cookieclicker/img/topbarSwitch.png
+http://orteil.dashnet.org/cookieclicker/img/topbarXbox.png
 http://orteil.dashnet.org/cookieclicker/img/transmutedGrandma.png
 http://orteil.dashnet.org/cookieclicker/img/turnInto.png
 http://orteil.dashnet.org/cookieclicker/img/upgradeFrame.png
@@ -297,6 +324,7 @@ http://orteil.dashnet.org/cookieclicker/img/wizardtowerBackground.png
 http://orteil.dashnet.org/cookieclicker/img/workerGrandma.png
 http://orteil.dashnet.org/cookieclicker/img/wrathContract.png
 http://orteil.dashnet.org/cookieclicker/img/wrathCookie.png
+http://orteil.dashnet.org/cookieclicker/img/wrathCookieWreath.png
 http://orteil.dashnet.org/cookieclicker/img/wrinkler.png
 http://orteil.dashnet.org/cookieclicker/img/wrinklerBits.png
 http://orteil.dashnet.org/cookieclicker/img/wrinklerBitsOld.png
