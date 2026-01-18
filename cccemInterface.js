@@ -1190,14 +1190,38 @@ new buttonCategory('savingSettings', 2, [
   new CCCEMButton('importSave', 'Import save',
     new stringInputButton(null, ()=> {return ""}),
     new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents.', [24, 7]),
-    s => {s = StripCCCEMData(s);
-      CCCEMButtons['importSave'].state = s
-      iniLoadSave = s}
+    function(s) {s = StripCCCEMData(s);
+      this.state = s
+      iniLoadSave = s
+      CCCEMButtons['clearImportedSave'].hidden = false;
+      if (!s) { 
+        CCCEMButtons['clearImportedSave'].hidden = true;
+        CCCEMButtons['clearImportedSave'].changeState(null);
+        return;
+      }
+      const settingsOverriden = ['cookies', 'cookiesBTA', 'prestige', 'buildingCountAnchor'];
+      for (let i in settingsOverriden) {
+        CCCEMButtons[settingsOverriden[i]].hidden = true;
+      }
+    }
+  ),
+  new CCCEMButton('clearImportedSave', 'Clear imported save',
+    new triggerButton(),
+    new buttonInfo('Clear import', 'Remove the currently imported save, if any.', [24, 7]),
+    function(s) {
+      CCCEMButtons['importSave'].state = '';
+      iniLoadSave = '';
+      const settingsOverriden = ['cookies', 'cookiesBTA', 'prestige', 'buildingCountAnchor'];
+      for (let i in settingsOverriden) {
+        CCCEMButtons[settingsOverriden[i]].hidden = false;
+      }
+      this.hidden = true;
+    }
   ),
   new CCCEMButton('importSettings', 'Import settings',
     new stringInputButton(null, ()=> {return ""}),
     new buttonInfo('Import settings', 'Imports a setting.', [2, 32]),
-    s => setSettings(s)
+    s => setSettings(s), true
   ),
   new CCCEMButton('exportSettings', 'Export settings',
     new readonlyDisplayButton(() => {
@@ -1206,13 +1230,14 @@ new buttonCategory('savingSettings', 2, [
     new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32])
   ),
   new CCCEMButton('saveSave','[##] save',
-    new boolButton('incl.', 'excl.'),
+    new boolButton('Include', 'Exclude'),
     new buttonInfo('Export save', 'Whether the save currently used will be exported together with settings', [16, 5]),
     s => CCCEMButtons['importSave'].type.willSave = s
   )
 ]);
 CCCEMButtons['exportSettings'].type.willSave = false;
 CCCEMButtons['importSettings'].type.willSave = false;
+CCCEMButtons['clearImportedSave'].hidden = true;
 
 new buttonCategory('presetSettings', 3, [
   new CCCEMButton('defaultPreset', 'Default (EF scry)',
