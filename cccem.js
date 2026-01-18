@@ -58,11 +58,12 @@
 //version 3.0: updated info display for buttons, are now proper tooltips
 //version 3.02: added keyword for garden plant setting, fixed version typo
 //version 3.1: adapted to v2.058, added the ability to record game options and now auto resets to the recorded options on trying again
+//version 3.11: added setup combo preset
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3.1';
+var CCCEMVerReal = 'v3.11';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
