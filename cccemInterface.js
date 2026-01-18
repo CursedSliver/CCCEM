@@ -1215,9 +1215,9 @@ CCCEMButtons['exportSettings'].type.willSave = false;
 CCCEMButtons['importSettings'].type.willSave = false;
 
 new buttonCategory('presetSettings', 3, [
-  new CCCEMButton('defaultPreset', 'Default',
+  new CCCEMButton('defaultPreset', 'Default (EF scry)',
     new triggerButton(),
-    new buttonInfo('Default', 'Resets settings to default.', [14, 6]),
+    new buttonInfo('Default', 'Resets settings to default, corresponding to a typical grail combo.', [14, 6]),
     () => { PresetSettingsGrail(); }
   ),
   new CCCEMButton('consistPreset', '100% consistency',
@@ -1230,6 +1230,11 @@ new buttonCategory('presetSettings', 3, [
     new buttonInfo('BS scry', 'Resets settings to a preset setting for a combo with a scried Building special.', [13, 6]),
     () => { PresetSettingsBSScry(); }
   ),
+  new CCCEMButton('soupPreset', 'Setup combo', 
+    new triggerButton(),
+    new buttonInfo('Setup combo', 'Resets settings to a present setting for a typical setup combo.', [9, 26]),
+    () => { PresetSettingsSoup(); }
+  )
 ]),
 
 new buttonCategory('gameSettings', 4, [
