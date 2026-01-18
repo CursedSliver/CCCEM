@@ -1443,6 +1443,7 @@ if (Game.ready && !l('topbarFrenzy')) {
 function InitializeMod() {
   InitBuffMod()
   console.log(hasSettingsSet)
+  Game.LoadSave(consistSave)
   if (hasSettingsSet && get('importSave')) {
     ResetGame(1); 
     IntegratedSettingsGrail();
