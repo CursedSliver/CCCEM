@@ -496,7 +496,7 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
             new boolButton('Unpause', 'Pause'),
             new buttonInfo('Game pause', 'Stops the game from performing logic ticks until unpaused.', [8, 22]),
             function() { PauseGame(); this.state = gamePause; }, 
-            false, function() { if (this.state != gamePause) { this.state = gamePause; RedrawCCCEM(); } }
+            { watch: function() { if (this.state != gamePause) { this.state = gamePause; RedrawCCCEM(); } } }
         ),
         new CCCEMButton('tickStep','Tick step',
             new triggerButton(),
@@ -518,18 +518,17 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
             new numberInputButton(2),
             new buttonInfo('Gamespeed multiplier', 'Sets the multiplier that will be applied when the gamespeed trigger is used.', [23, 11]),
             s => {
-                console.log('a', s);
                 console.trace();
                 timeFactorWhenEnabled = s;
                 if (Game.keys[CCCEMButtons['gamespeedKey'].state] || CCCEMButtons['gamespeedKey'].state == -1) {
                     PForPause.changeGameSpeed(timeFactorWhenEnabled);
                 }
-            }
+            }, { advanced: false }
         ),
         new CCCEMButton('gamespeedKey','Trigger method: [##]',
             new gameSpeedKeySelect(0),
             new buttonInfo('Gamespeed trigger method', 'Selects the key that changes the game speed to the specified game speed when held.', [0, 8]),
-            down => { if (!down) { PForPause.changeGameSpeed(1); return; } PForPause.changeGameSpeed(timeFactorWhenEnabled); }
+            down => { if (!down) { PForPause.changeGameSpeed(1); return; } PForPause.changeGameSpeed(timeFactorWhenEnabled); }, { advanced: false }
         )
     ], null, function() {
         CCCEMButtons['gamespeed'].changeState(1);

@@ -627,22 +627,22 @@ if (typeof CCCEMUILoaded !== 'undefined') {
         new CCCEMButton('cfCode', 'Open Cast Finder', 
             new stringInputButton(),
             new buttonInfo('Open Cast Finder', 'Opens the Cast Finder. Inputs will be ran upon pressing Try Again, unless auto execute is off.', [17, 14]),
-            function(s) {codes = compile(s);}
+            function(s) {codes = compile(s);}, { advanced: false }
         ),
         new CCCEMButton('cfDocs', 'Documentation',
             new triggerButton(),
             new buttonInfo('Open Documentation', 'Opens the documentation to the Cast Finder in a new tab.', [26, 7]),
-            () => linking()
+            () => linking(), { advanced: false }
         ),
         new CCCEMButton('cfExecute', 'Execute',
             new limeButton(),
             new buttonInfo('Execute Cast Finder', 'Executes the code in the Cast Finder.', [11, 10]),
-            () => CCCEMIntegratedExecute()
+            () => CCCEMIntegratedExecute(), { advanced: false }
         ),
         new CCCEMButton('cfAutoExec', 'Auto execute [##]',
             new boolButton("On", "Off"),
             new buttonInfo('Auto execute', 'Whether the Cast Finder is ran upon pressing Try Again. Disabling would cause the outcome to become randomized.', [17, 22]),
-            s => { autoExecute = s; }, true
+            s => { autoExecute = s; }, { advanced: false }
         ),
         new CCCEMButton('cfPreload', 'Pre-Load',
             new triggerButton(),

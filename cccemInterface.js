@@ -47,7 +47,6 @@
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
 Game.sesame=0 //this prevents a crash if opensesame is open, but doesn't get rid of the fps counter. Not sure what to do about that
-var FtHoFOutcomes= ['random','blood frenzy','click frenzy','building special','frenzy','cursed finger','multiply cookies','cookie storm','free sugar lump','cookie storm drop','blab']
 var promptN=0
 var maxComboPow=1
 var relComboPow=1
@@ -476,7 +475,8 @@ var CCCEMCategories = {};
 var uncategorizedButtons = [];
 
 class CCCEMButton {
-  constructor(key, name, type, info, updateVarFunc, newLine, watch) {
+  //options: newLine, preNewLine, watch, advanced
+  constructor(key, name, type, info, updateVarFunc, options) {
     this.key = key;
     this.namesList = [].concat(name);
     this.type = type; //class type
@@ -484,9 +484,17 @@ class CCCEMButton {
     this.state = this.type.default.call(this.type); //can be anything really, is the actual variable in a way
     this.updateVarFunc = updateVarFunc; //sets the variable so no need to rewrite everything, but can also do anything else really
     this.info = info; //class info
-    this.newLine = newLine?'<br>':'';
+    if (options === true) { options = { newLine: true }; }
+    options = options ?? {};
+    this.newLine = options.newLine?'<div class="flexbreak"></div>':'';
+    this.preNewLine = options.preNewLine?'<div class="flexbreak"></div>':'';
     this.hidden = false;
-    this.watch = watch; //called every 5 frames with this keyword set to the button so state can be adjusted, mainly used in external categories, developing cccem itself shouldnt use it and it isnt functional in that context anyways
+    this.watch = options.watch; 
+    this.advanced = options.advanced ?? true;
+    //called every 5 frames with this keyword set to the button 
+    // so state can be adjusted, mainly used in external categories, 
+    // developing cccem itself shouldnt use it and it isnt functional 
+    // in that context anyways
 
     this.id = CCCEMButtonsList.length;
     CCCEMButtonsList.push(this);
@@ -495,8 +503,12 @@ class CCCEMButton {
   updateVarFunc = () => {}
 
   getLStr() {
-    if (this.hidden) { return ''; }
-    return '<a class="option '+this.type.getColorStr()+'" '+this.info.getTooltip(this)+' '+Game.clickStr+'="(CCCEMButtonsList['+this.id+'].triggerSetVar());">'+this.type.parse(this.namesList, this.state)+'</a>'+this.newLine;
+    if (this.isHidden()) { return ''; }
+    return this.preNewLine+'<a class="option '+this.type.getColorStr()+'" '+this.info.getTooltip(this)+' '+Game.clickStr+'="(CCCEMButtonsList['+this.id+'].triggerSetVar());">'+this.type.parse(this.namesList, this.state)+'</a>'+this.newLine;
+  }
+
+  isHidden() {
+    return this.hidden || ((!this.category.complexityHideImmune) && (activePreset && (!activePreset.visibleButtons.has(this.key)) || (this.advanced && !advancedMode)));
   }
 
   changeState(value, update) {
@@ -525,11 +537,17 @@ function get(str) {
   return CCCEMButtons[str].state;
 }
 class buttonCategory {
-  constructor(key, order, buttonsList) {
+  constructor(key, order, buttonsList, associatedToggleButton) {
     this.key = key;
     this.order = order ?? Object.keys(CCCEMCategories).length;
     this.hidden = false;
     this.buttons = buttonsList;
+    if (typeof associatedToggleButton == 'string') {
+      this.associatedToggleButton = CCCEMButtons[associatedToggleButton];
+    } else {
+      this.associatedToggleButton = associatedToggleButton ?? null;
+    }
+    this.complexityHideImmune = true;
     CCCEMCategories[key] = this;
     for (let i in this.buttons) {
       this.buttons[i].category = this;
@@ -562,6 +580,14 @@ class buttonCategory {
       if (!this.buttons[i].type.willSave) { continue; }
       obj[this.buttons[i].key] = this.buttons[i].save();
     }
+  }
+  setAssociatedButtonRedundantHideState() {
+    if (!this.associatedToggleButton) { return null; }
+    for (let i in this.buttons) { 
+      if (this.buttons[i] && !this.buttons[i].isHidden()) { this.associatedToggleButton.hidden = false; return false; }
+    }
+    this.associatedToggleButton.hidden = true;
+    return true;
   }
   dataSlot() {
     //externals only
@@ -626,6 +652,23 @@ class triggerButton extends buttonType {
   willSave = false
   getTip() {
     return 'Click to activate.';
+  }
+}
+class presetButton extends buttonType {
+  willSave = false
+  constructor(preset) {
+    super();
+    if (typeof preset == 'string') { this.preset = CCCEMPresets[preset]; } 
+    else { this.preset = preset ?? null; }
+  }
+  getColorStr() { 
+    return 'neatofire';
+  }
+  getTip() {
+    return 'Click to apply this preset.';
+  }
+  onClick() {
+    Game.Prompt('<id presetApplicationConfirm><h3>Confirm preset</h3><div class="line"></div><div class="block">You are about to apply the <b>'+this.preset.name+'</b> preset.</div>', [[loc('Confirm'), 'CCCEMPresets["'+this.preset.key+'"].invoke();Game.ClosePrompt();'], [loc('Nevermind'), 'Game.ClosePrompt();']]);
   }
 }
 class limeButton extends buttonType {
@@ -1044,6 +1087,7 @@ class CCCEMExternalCategory extends buttonCategory {
         categoryToggleInfo
       ));
     }
+    this.associatedToggleButton = CCCEMButtons['optionsBatch'+modKey];
 
     console.log(defaults);
     if (defaults) {
@@ -1096,6 +1140,9 @@ Game.registerHook('logic', function() {
 });
 
 function compileAllButtons() {
+  for (let i in CCCEMCategories) {
+    CCCEMCategories[i].setAssociatedButtonRedundantHideState();
+  }
   const cats = Object.keys(CCCEMCategories)
     .map(k => CCCEMCategories[k])
     .filter(Boolean)
@@ -1109,14 +1156,18 @@ function compileAllButtons() {
   });
 
   let str = '';
-  const gap = '<br><div class="line"></div>';
+  const gap = '<div class="line"></div>';
   for (const cat of cats) {
-    str += cat.compileButtons();
-    str += gap;
+    const content = cat.compileButtons();
+    if (content) {
+      str += content + gap;
+    }
   }
   str = str.slice(0, str.length - gap.length);
   return str;
 }
+
+var advancedMode = false;
 
 new buttonCategory('interfaceBegin', 0, [
   new CCCEMButton('tryAgain', 'Try again',
@@ -1143,20 +1194,20 @@ new buttonCategory('categoryTogglePanel', 1, [
     new buttonInfo('Options group: Presets', 'Options related to wide-spread setting changes. ', [27, 29]),
     null, true
   ),
-  new CCCEMButton('optionsBatch2', 'Game settings options [##]',
+  new CCCEMButton('optionsBatch3', 'Game settings options [##]',
     new categoryToggleButton('gameSettings'),
     new buttonInfo('Options group: Game settings', 'Options related to the game\'s core features, including adjusting cookies, buildings, and lumps. ', [28, 29]),
   ),
-  new CCCEMButton('optionsBatch3', 'Minigame options [##]',
+  new CCCEMButton('optionsBatch4', 'Minigame options [##]',
     new categoryToggleButton('minigameSettings'),
     new buttonInfo('Options group: Minigames', 'Options related to the four minigames. ', [28, 29]),
     null, true
   ),
-  new CCCEMButton('optionsBatch4', 'Buff options [##]',
+  new CCCEMButton('optionsBatch5', 'Buff options [##]',
     new categoryToggleButton('buffSettings'),
     new buttonInfo('Options group: Buffs', 'Settings related to starting golden cookie buffs', [28, 29])
   ),
-  new CCCEMButton('optionsBatch5', 'GC options [##]',
+  new CCCEMButton('optionsBatch6', 'GC options [##]',
     new categoryToggleButton('gcSettings'),
     new buttonInfo('Options group: GCs', 'Options related to buffs and Golden cookies. Also includes many randomness-related options.', [28, 29]),
     null, true
@@ -1203,7 +1254,7 @@ new buttonCategory('savingSettings', 2, [
       for (let i in settingsOverriden) {
         CCCEMButtons[settingsOverriden[i]].hidden = true;
       }
-    }
+    }, { advanced: false }
   ),
   new CCCEMButton('clearImportedSave', 'Clear imported save',
     new triggerButton(),
@@ -1216,51 +1267,85 @@ new buttonCategory('savingSettings', 2, [
         CCCEMButtons[settingsOverriden[i]].hidden = false;
       }
       this.hidden = true;
-    }
+    }, { advanced: false }
   ),
   new CCCEMButton('importSettings', 'Import settings',
     new stringInputButton(null, ()=> {return ""}),
     new buttonInfo('Import settings', 'Imports a setting.', [2, 32]),
-    s => setSettings(s), true
+    s => setSettings(s), { newLine: true, advanced: false }
   ),
   new CCCEMButton('exportSettings', 'Export settings',
     new readonlyDisplayButton(() => {
       return getSettingsCode();
     }),
-    new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32])
+    new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32]), null,
+     { advanced: false }
   ),
   new CCCEMButton('saveSave','[##] save',
     new boolButton('Include', 'Exclude'),
     new buttonInfo('Export save', 'Whether the save currently used will be exported together with settings', [16, 5]),
-    s => CCCEMButtons['importSave'].type.willSave = s
+    s => CCCEMButtons['importSave'].type.willSave = s, { advanced: false }
   )
-]);
+], 'optionsBatch1');
+CCCEMCategories.savingSettings.complexityHideImmune = false;
 CCCEMButtons['exportSettings'].type.willSave = false;
 CCCEMButtons['importSettings'].type.willSave = false;
 CCCEMButtons['clearImportedSave'].hidden = true;
 
 new buttonCategory('presetSettings', 3, [
-  new CCCEMButton('defaultPreset', 'Default (EF scry)',
-    new triggerButton(),
-    new buttonInfo('Default', 'Resets settings to default, corresponding to a typical grail combo.', [14, 6]),
-    () => { PresetSettingsGrail(); }
-  ),
   new CCCEMButton('consistPreset', '100% consistency',
-    new triggerButton(),
-    new buttonInfo('100% consistency', 'Resets settings to a preset setting for a combo with a scried Click frenzy.', [14, 6]),
-    () => { PresetSettingsConsist(); }
+    new presetButton('consist'),
+    new buttonInfo('100% consistency', 'Resets settings to a preset setting for a combo with a scried Click frenzy.', [12, 6]),
+    () => { }
   ),
   new CCCEMButton('bsScryPreset', 'BS scry',
-    new triggerButton(),
+    new presetButton('bsScry'),
     new buttonInfo('BS scry', 'Resets settings to a preset setting for a combo with a scried Building special.', [13, 6]),
-    () => { PresetSettingsBSScry(); }
+    () => { }
+  ),
+  new CCCEMButton('defaultPreset', 'Grail',
+    new presetButton('grail'),
+    new buttonInfo('Grail', 'Resets settings to a preset setting for a combo with a scried Elder frenzy, which if combined with Dragonflight and Click frenzy, is called a grail.', [14, 6]),
+    () => { }
   ),
   new CCCEMButton('soupPreset', 'Setup combo', 
-    new triggerButton(),
+    new presetButton('soup'),
     new buttonInfo('Setup combo', 'Resets settings to a present setting for a typical setup combo.', [9, 26]),
-    () => { PresetSettingsSoup(); }
-  )
-]),
+    () => { }
+  ),
+  new CCCEMButton('revertPreset', 'Undo preset', 
+    new triggerButton(),
+    new buttonInfo('Undo preset', 'Revert your settings to what it was before.<br>Only records the settings before the most recent preset trigger.', [0, 0]),
+    function() { 
+      cancelActivePreset();
+      CCCEMContainerModObj.load(b64_to_utf8(unescape(CCCEMButtons['revertPresetContainer'].state)), true);
+      ResetAll();
+      Game.CloseNotes();
+      CCCEMButtons['revertPresetContainer'].seate = '';
+      this.hidden = true;
+    }, { preNewLine: true }
+  ),
+  new CCCEMButton('revertPresetContainer', 'Undo preset', 
+    new stringInputButton(),
+    new buttonInfo('Savedata container', 'You are not supposed to see this.', [0, 0]),
+    s => { 
+
+    }, { preNewLine: true }
+  ),
+  new CCCEMButton('editPreset', 'Unlock settings', 
+    new triggerButton(),
+    new buttonInfo('Unlock settings', 'Unhides other settings, for further customization of the preset.', [0, 0]),
+    () => { cancelActivePreset(); }
+  ),
+  new CCCEMButton('advancedMode', 'Advanced mode [##]', 
+    new boolButton(),
+    new buttonInfo('Advanced mode', 'Reveals even more buttons and customization options.', [0, 0]),
+    s => { advancedMode = s; }
+  ),
+], 'optionsBatch2'),
+CCCEMButtons['revertPreset'].hidden = true;
+CCCEMButtons['editPreset'].hidden = true;
+CCCEMButtons['revertPresetContainer'].hidden = true;
 
 new buttonCategory('gameSettings', 4, [
   new CCCEMButton('iniSeed', 'Initial seed [##]',
@@ -1271,7 +1356,7 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('cookies', 'Cookies [##]',
     new numberInputButton(),
     new buttonInfo('Cookies', 'The amount of cookies you start with each attempt.', [10, 0]),
-    s => iniC = s, true
+    s => iniC = s
   ),
   new CCCEMButton('cookiesBTA', 'CookiesBTA [##]',
     new numberInputButton(),
@@ -1281,22 +1366,22 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('prestige', 'Prestige [##]',
     new numberInputButton(),
     new buttonInfo('Prestige', 'Sets the amount of prestige you have.', [20, 7]),
-    s => iniP = s, true
+    s => iniP = s
   ),
   new CCCEMButton('scoreMult', 'Score mult x[##]',
     new numberInputButton(),
     new buttonInfo('Correction value', 'The value the score should be multiplied by to better match standard values.', [16, 5]),
-    s => scoreCorVal = s
+    s => scoreCorVal = s, { advanced: false }
   ),
   new CCCEMButton('scoreMultVerify', 'Score info [##]',
     new boolButton(),
     new buttonInfo('Score correction notifications', 'Whether to notify when the score does not conform to the baseline.', [1, 7]),
-    s => scoreCorNotify = s
+    s => scoreCorNotify = s, { advanced: false }
   ),
   new CCCEMButton('lumps', 'Lumps [##]',
     new numberInputButton(),
     new buttonInfo('Lumps', 'The amount of Sugar lumps you start with each attempt.', [29, 14]),
-    s => iniLumps = s, true
+    s => iniLumps = s
   ),
   new CCCEMButton('lumpType', 'Lump type [##]',
     new cycleButton(0, 4, e => ["Normal", "Bifurcated", "Golden", "Meaty", "Caramel"][e]),
@@ -1311,22 +1396,22 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('clickCooldown', 'Click cooldown [##]ms',
     new numberInputButton(),
     new buttonInfo('Click cooldown', 'The minimum amount of milliseconds between each click.', [0, 15]),
-    s => clickWait = s, true
+    s => clickWait = s
   ),
   new CCCEMButton('buildingCountAnchor', 'Building count anchor [##]',
     new numberInputButton(),
     new buttonInfo('Building count anchor', 'The amount of Cursors you start with each attempt. Other buildings scale off this value.', [33, 6]),
-    s => iniBC = s
+    s => iniBC = s, { advanced: false }
   ),
   new CCCEMButton('useEB', '[##]',
     new boolButton('Use EB', 'No EB'),
     new buttonInfo('Elder Battalion strategy', 'Changes the building distribution to better fit an Elder Battalion strategy.', [1, 25]),
-    s => useEB = s
+    s => useEB = s, { advanced: false }
   ),
   new CCCEMButton('useRebuy', '[##]',
     new boolButton('Rebuy', 'No Rebuy'),
     new buttonInfo('Elder Battalion rebuy', 'Changes the building distribution to better fit a strategy rebuying after godzamok.', [1, 27]),
-    s => useRebuy = s, true
+    s => useRebuy = s, { newLine: true, advanced: false }
   ),
   new CCCEMButton('buildingSelect', '[##]:',
     new cycleButton(0, Object.keys(Game.Objects).length - 1, e => Game.ObjectsById[e].name),
@@ -1334,12 +1419,12 @@ new buttonCategory('gameSettings', 4, [
     s => {
       CCCEMButtons['overridingNumber'].changeState(manualBuildings[s]);
       CCCEMButtons['muteBuilding'].changeState(muteBuildings[s]);
-    }
+    }, { advanced: false, preNewLine: true }
   ),
   new CCCEMButton('overridingNumber', 'Overriding number [##]',
     new numberInputButton(),
     new buttonInfo('Overriding count', 'The number of that building you start with each attempt. An assignment of 0 disables override.', [29, 21]),
-    s => { manualBuildings[get('buildingSelect')] = s; }
+    s => { manualBuildings[get('buildingSelect')] = s; }, { advanced: false }
   ),
   new CCCEMButton('muteBuilding', '[##]',
     new boolButton('Muted', 'Unmuted'),
@@ -1354,22 +1439,22 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('wizCount', 'Wizard towers [##]',
     new numberInputButton(),
     new buttonInfo('Wizard towers', 'The amount of Wizard towers you start with each attempt.', [17, 0]),
-    s => { wizCount = s; }
+    s => { wizCount = s; }, { advanced: false }
   ),
   new CCCEMButton('wizLevel', 'Tower Level [##]',
     new numberInputButton(),
     new buttonInfo('Tower Level', 'The level of Wizard towers you start with each attempt.', [17, 26]),
-    s => { wizLevel = s; }, true
+    s => { wizLevel = s; }, { newLine: true, advanced: false }
   ),
   new CCCEMButton('buyOption1', '[##]',
     new cycleButton(0, 1, e => e ? 'Sell' : 'Buy'),
     new buttonInfo('Sell/Buy select', 'Selects whether you are selecting \'Sell\' or \'Buy\' on the building list with the start of each attempt.', [9, 9]),
-    s => { buyOption1 = s; }
+    s => { buyOption1 = s; }, { advanced: false }
   ),
   new CCCEMButton('buyOption2', '[##]',
     new cycleButton(2, 5, e => (e > 4 ? 'All' : String(Math.pow(10, e - 2)))),
     new buttonInfo('Sell/Buy amount', 'Selects the bulk-buying amount you are selecting at the start of each attempt.', [1, 6]),
-    s => { buyOption2 = s; }
+    s => { buyOption2 = s; }, { advanced: false }
   ),
   new CCCEMButton('heraldsOverride', 'Herald override [##]', 
     new boolButton(),
@@ -1377,7 +1462,6 @@ new buttonCategory('gameSettings', 4, [
     s => { if (!CCCEMButtons['heraldsOverride'].hidden) { 
         CCCEMButtons['heraldsN'].hidden = !s; 
         if ((!s) && Game.realExternalDataLoaded) { Game.UpdateHeralds(); } else if (s) { CCCEMButtons['heraldsN'].type.triggerVarFunc(); } 
-        if (s) { this.newLine = ''; } else { this.newLine = '<br>'; }
         RedrawCCCEM();
       } 
     }
@@ -1385,7 +1469,7 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('heraldsN', 'Heralds [##]',
     new numberInputButton(),
     new buttonInfo('Heralds', 'Changes the amount of Heralds you have.<br>Max 100, usually around 100.', [21, 29]),
-    s => { if (get('heraldsOverride') || !Game.realExternalDataLoaded) { Game.heralds = s; l('heraldsAmount').textContent = s; Game.recalculateGains = 1; } }, true
+    s => { if (get('heraldsOverride') || !Game.realExternalDataLoaded) { Game.heralds = s; l('heraldsAmount').textContent = s; Game.recalculateGains = 1; } }
   ),
   new CCCEMButton('leftAura', 'Left Aura [##]',
     new cycleButton(0, 21, e => Game.dragonAuras[e].name),
@@ -1395,7 +1479,7 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('rightAura', 'Right Aura [##]',
     new cycleButton(0, 21, e => Game.dragonAuras[e].name),
     new buttonInfo('Right Aura', 'The Dragon Aura you start with for the slot on the right.', [8, 25]),
-    s => { d1Aura = s; }, true
+    s => { d1Aura = s; }
   ),
   new CCCEMButton('fortuneChance', 'Fortune chance: [##]%',
     new numberInputButton(0),
@@ -1410,7 +1494,7 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('startingSeason', 'Starting season: [##]',
     new seasonalCycleButton(),
     new buttonInfo('Starting season', 'The season that you start with upon trying again.', [16, 6]),
-    s => { setSeason = s; }, true
+    s => { setSeason = s; }
   ),
   new CCCEMButton('scriedSeason', 'Scried season: [##]',
     new seasonalCycleButton(),
@@ -1432,9 +1516,10 @@ new buttonCategory('gameSettings', 4, [
     new buttonInfo('Record game settings in options', 'Makes all subsequent resets set the game settings (as in the options in the options menu) to be the options at the time of clicking.', [11, 10]),
     s => {
       CCCEMButtons['prefsRecord'].state = getPrefsCompilation();
-    }
+    }, { advanced: false }
   )
-]);
+], 'optionsBatch3');
+CCCEMCategories.gameSettings.complexityHideImmune = false;
 CCCEMButtons['buildingSelect'].type.willSave = false;
 CCCEMButtons['overridingNumber'].type.willSave = false;
 CCCEMButtons['muteBuilding'].type.willSave = false;
@@ -1463,10 +1548,10 @@ Game.externalDataLoaded = true;
 Game.UpdateHeralds();
 
 new buttonCategory('minigameSettings', 5, [
-  new CCCEMButton('forceFtHoF', 'FtHoF [##]',
-    new cycleButton(0, FtHoFOutcomes.length - 1, e => FtHoFOutcomes[e]),
+  new CCCEMButton('forceFtHoF', 'Force the Hand of Fate outcome: [##]',
+    new cycleButton(0, FtHoFOutcomes.length - 1, e => FtHoFOutcomesMap[FtHoFOutcomes[e]]),
     new buttonInfo('FtHoF scry', 'The outcome of the first Force the Hand of Fate cast upon starting an attempt.', [27, 11]),
-    s => { forceFtHoF = FtHoFOutcomes[s]; }
+    s => { forceFtHoF = FtHoFOutcomes[s]; }, { advanced: false, newLine: true }
   ),
   new CCCEMButton('forceCastToggle', 'Force cast count [##]',
     new boolButton('On', 'Off'),
@@ -1476,12 +1561,12 @@ new buttonCategory('minigameSettings', 5, [
   new CCCEMButton('forcedCastValue', 'Forced cast count [##]',
     new numberInputButton(),
     new buttonInfo('Forced cast count', 'The value to assign to the Grimoire\'s Spells casted all time.', [30, 5]),
-    s => { forcedCastCount[0] = s; }, true
+    s => { forcedCastCount[0] = s; }
   ),
   new CCCEMButton('gardenLevel', 'Farm Level [##]',
     new numberInputButton(),
     new buttonInfo('Farm Level', 'The level of your Farm, which controls the size of your garden.', [2, 26]),
-    s => { gardenLevel = s; }
+    s => { gardenLevel = s; }, { advanced: false }
   ),
   new CCCEMButton('gardenSeed', 'Holding [##]',
     new cycleButton(0, 33, e => {
@@ -1495,7 +1580,7 @@ new buttonCategory('minigameSettings', 5, [
   new CCCEMButton('gardenRotation', 'Rotation [##]',
     new cycleButton(0, 4, e => ['R', 'bottom', 'top', 'left', 'right'][e]),
     new buttonInfo('Rotation', 'The orientation of the garden upon starting an attempt.', [28, 18]),
-    s => { setGardenR = s; }, true
+    s => { setGardenR = s; }
   ),
   new CCCEMButton('toNextTick', 'Tick [##]',
     new numberInputButton(),
@@ -1503,7 +1588,7 @@ new buttonCategory('minigameSettings', 5, [
     s => { toNextTick = s; }
   ),
   new CCCEMButton('plant1', 'Plant 1 [##]',
-    new cycleButton(1, 34, e => Game.Objects['Farm'].minigame.plantsById[e - 1].name),
+    new cycleButton(0, 34, e => e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing'),
     new buttonInfo('Plant 1', 'One of the plants in the garden at the start of each attempt.', [26, 20]),
     s => { gardenP1[0] = s; }
   ),
@@ -1517,7 +1602,7 @@ new buttonCategory('minigameSettings', 5, [
     new buttonInfo('Ghost Tulips', 'Adds ghost tulips in addition to other specified plants. Useful for starting an attempt in the middle of a combo, after you would already have replanted.', [26, 20])
   ),
   new CCCEMButton('plant2', 'Plant 2 [##]',
-    new cycleButton(1, 34, e => Game.Objects['Farm'].minigame.plantsById[e - 1].name),
+    new cycleButton(0, 34, e => e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing'),
     new buttonInfo('Plant 2', 'The other plant in the garden at the start of each attempt.', [26, 20]),
     s => { gardenP2[0] = s; }
   ),
@@ -1534,19 +1619,20 @@ new buttonCategory('minigameSettings', 5, [
   new CCCEMButton('diamondGod', 'Diamond [##]',
     new cycleButton(0, 10, e => ['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]),
     new buttonInfo('Pantheon Diamond slot', 'The god slotted within the Diamond slot of the Pantheon at the start of each attempt.', [23, 15]),
-    s => { spirit1 = s; }
+    s => { spirit1 = s; }, { advanced: false }
   ),
   new CCCEMButton('rubyGod', 'Ruby [##]',
     new cycleButton(0, 10, e => ['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]),
     new buttonInfo('Pantheon Ruby slot', 'The god slotted within the Ruby slot of the Pantheon at the start of each attempt.', [25, 18]),
-    s => { spirit2 = s; }
+    s => { spirit2 = s; }, { advanced: false }
   ),
   new CCCEMButton('jadeGod', 'Jade [##]',
     new cycleButton(0, 10, e => ['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]),
     new buttonInfo('Pantheon Jade slot', 'The god slotted within the Jade slot of the Pantheon at the start of each attempt.', [27, 18]),
-    s => { spirit3 = s; }
+    s => { spirit3 = s; }, { advanced: false }
   )
-]);
+], 'optionsBatch4');
+CCCEMCategories.minigameSettings.complexityHideImmune = false;
 
 new buttonCategory('buffSettings', 6, [
   new CCCEMButton('buffs', 'Buffs',
@@ -1566,12 +1652,12 @@ new buttonCategory('buffSettings', 6, [
         CCCEMButtons['removeType'].state = Math.max(0, len-2)
         CCCEMButtons['removeType'].triggerSetVar()
       }
-    }
+    }, { advanced: false }
   ),
   new CCCEMButton('snapBuffs', 'Snapshot buffs',
     new triggerButton(),
     new buttonInfo('Snapshot', 'Will alter your starting buff settings to be the buffs you currently have active.', [30, 20]),
-    () => CCCEMButtons['buffs'].changeState(ExportBuffs()), true
+    () => CCCEMButtons['buffs'].changeState(ExportBuffs()), { newLine: true, advanced: false }
   ),
   new CCCEMButton('buffType', 'Cycle Buffs',
     new cycleButton(0, Game.buffTypes.length-1, e => Game.buffTypes[e]),
@@ -1587,30 +1673,32 @@ new buttonCategory('buffSettings', 6, [
       CCCEMButtons['buffObj'].hidden = (s==9 || s==10)?false:true
       CCCEMButtons['addBuff'].state = name
       RedrawCCCEM();
-      }
+      }, { advanced: false }
   ),
   new CCCEMButton('buffObj', 'Cycle BS',
     new cycleButton(-1, Object.keys(Game.goldenCookieBuildingBuffs).length-1, e => Game.goldenCookieBuildingBuffs[e]),
     new buttonInfo('Cycle BS type', 'Cycle through BS types. If left at Building Buff or Building Debuff, a random one will be selected', [4, 14]),
-    () => CCCEMButtons['buffType'].updateVarFunc(get('buffType'))
+    () => CCCEMButtons['buffType'].updateVarFunc(get('buffType')), { advanced: false }
   ),
   new CCCEMButton('addBuff', 'Add [##]',
     new triggerButton(),
     new buttonInfo('Add starting buff', 'Will add another starting buff based on the subsequent settings (incl type, max time, time, power, BS type)', [33, 25]),
-    () => AddStartBuff(get('buffType'), get('buffMaxTime'), get('buffTime'), get('buffPow'), get('buffObj')), true
+    () => AddStartBuff(get('buffType'), get('buffMaxTime'), get('buffTime'), get('buffPow'), get('buffObj')), { newLine: true, advanced: false }
   ),
   new CCCEMButton('buffMaxTime', 'Max Time [##]',
     new numberInputButton(),
     new buttonInfo('Maximum buff duration', 'How much maximum time the added buff has, if left at 0 the buff default will be used.', [23, 11]),
+    null
   ),
   new CCCEMButton('buffTime', 'Time [##]',
     new numberInputButton(),
     new buttonInfo('Buff duration', 'How much remaining time the added buff has, if left at 0 max time will be used.', [23, 11]),
+    null, { advanced: false }
   ),
   new CCCEMButton('buffPow', 'Power [##]',
     new numberInputButton(),
     new buttonInfo('Buff power', 'This is used to determine the strength of the added buff, if left at 0 the buff default will be used.', [30, 5]),
-    null,true
+    null, { newLine: true }
   ),
   new CCCEMButton('removeType', 'Cycle remove',
     new cycleButton(0, 0),
@@ -1625,9 +1713,10 @@ new buttonCategory('buffSettings', 6, [
   new CCCEMButton('clearBuffs', 'Clear buffs',
     new triggerButton(),
     new buttonInfo('Clear starting buffs', 'Will remove all starting buffs, making you have no buffs when resetting', [0, 31]),
-    () => CCCEMButtons['buffs'].changeState(""),
+    () => CCCEMButtons['buffs'].changeState(""), { advanced: false }
   )
-]);
+], 'optionsBatch5');
+CCCEMCategories.buffSettings.complexityHideImmune = false;
 for (let i in CCCEMCategories["buffSettings"].buttons) {
   CCCEMCategories["buffSettings"].buttons[i].type.willSave=false
   };
@@ -1661,12 +1750,12 @@ new buttonCategory('gcSettings', 7, [
     function (s) {
       iniSpawn = s;
       CCCEMButtons['iniSpawnTimer'].hidden = s;
-    }
+    }, { advanced: false }
   ),
   new CCCEMButton('iniSpawnTimer', 'Nat spawn timer: [##]',
     new numberInputButton(),
     new buttonInfo('Natural spawn timer', 'The amount of time after each reset for the first Golden cookie to naturally spawn (in frames, this game is 30 fps).', [22, 6]),
-    s => { iniTimer = s; }
+    s => { iniTimer = s; }, { advanced: false }
   ),
   new CCCEMButton('iniDO', 'Dragon Orbs [##]',
     new boolButton('On', 'Off'),
@@ -1676,13 +1765,13 @@ new buttonCategory('gcSettings', 7, [
   new CCCEMButton('iniDEoRL', 'DEoRL [##]',
     new boolButton('On', 'Off'),
     new buttonInfo('Initial Distilled Essence of Redoubled Luck spawn toggle', 'Whether an invoke of DEoRL at the start of each attempt will be successful.', [27, 12]),
-    s => { iniDEoRL = s; }, true
+    s => { iniDEoRL = s; }
   ),
   new CCCEMButton('iniGC', 'GC1 [##]',
     new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
     new buttonInfo('First Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial natural Golden cookie spawn.', [0, 10]),
     s => { s=(s%2 === 0)?s-1:s;
-      CCCEMButtons['iniGC'].state=s}
+      CCCEMButtons['iniGC'].state=s}, { advanced: false }
   ),
   new CCCEMButton('iniGC2', 'GC2 [##]',
     new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
@@ -1694,7 +1783,7 @@ new buttonCategory('gcSettings', 7, [
     new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
     new buttonInfo('Third Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial, successful invoke of DEoRL.', [2, 10]),
     s => { s=(s%2 === 0)?s-1:s;
-      CCCEMButtons['iniGC3'].state=s}, true
+      CCCEMButtons['iniGC3'].state=s}
   ),
   new CCCEMButton('boughtSF', 'Sugar frenzy [##]',
     new boolButton('used', 'unused'),
@@ -1704,19 +1793,20 @@ new buttonCategory('gcSettings', 7, [
   new CCCEMButton('boughtCE', 'Chocolate egg [##]',
     new boolButton('bought', 'available'),
     new buttonInfo('Chocolate egg purchasability', 'Whether chocolate egg has been purchased already, thus determining whether it can be purchased again.', [18, 12]),
-    s => { boughtCE = s; }, true
+    s => { boughtCE = s; }
   ),
   new CCCEMButton('DFChanceMult', 'Dragonflight chance x[##]',
     new numberInputButton(),
     new buttonInfo('Dragonflight chance', 'Sets a multiplier to Dragonflight (buff) chance.', [5, 25]),
-    s => { DFChanceMult = s; }
+    s => { DFChanceMult = s; }, { advanced: false }
   ),
   new CCCEMButton('gcRateMult', 'Golden cookie spawnrate x[##]',
     new numberInputButton(),
     new buttonInfo('Golden cookie spawnrate', 'Sets a multiplier to the spawn rate of golden cookies.', [10, 14]),
     s => { gcRateMult = s; }
   )
-]);
+], 'optionsBatch6');
+CCCEMCategories.gcSettings.complexityHideImmune = false;
 CCCEMButtons['iniSpawnTimer'].hidden = true;
 CCCEMButtons['boughtCE'].hidden = true;
 CCCEMButtons['boughtSF'].hidden = true;
@@ -1812,11 +1902,12 @@ new buttonCategory('savingControls', 1e6, [
   ),
   new CCCEMButton('miscSaveData', '',
     new savingModule(() => {
-      return Game.volume + '_' + (App ? Game.volumeMusic : 'N');
+      return Game.volume + '_' + (App ? Game.volumeMusic : 'N') + '_' + (activePreset?activePreset.key:'N');
     }, str => {
       const strs = str.split('_');
       if (strs[0] && !isNaN(parseFloat(strs[0]))) { Game.volume = parseFloat(strs[0]); }
       if (strs[1] && !isNaN(parseFloat(strs[1]))) { Game.volumeMusic = parseFloat(strs[1]); }
+      if (strs[2] && strs[2] != 'N') { CCCEMPresets[strs[2]].invoke(true); }
     }),
     new buttonInfo('Miscellaneous save', 'Saves other random stuff (hidden button)', [0, 0])
   )
@@ -1836,8 +1927,8 @@ function RedrawCCCEM(noinvalidate) {
   var str='';
   str+='<div class="icon" style="position:absolute;left:-9px;top:-6px;background-position:'+(-28*48)+'px '+(-12*48)+'px;"></div>';
   
-  str+='<div id="devConsoleContent">';
-  str+='<div class="title" style="font-size:14px;margin:6px;">CCCEM interface</div>';
+  str+='<div id="devConsoleContent" class="'+(l('devConsoleContent')?((l('devConsoleContent').classList.contains('fadeOut') || l('devConsoleContent').classList.contains('initHidden'))?'initHidden':''):'initHidden')+'">';
+  str+='<div class="title" style="font-size:14px;margin:6px;">CCCEM interface</div><span class="flexbreak"></span>';
   
   str+=compileAllButtons();
 
@@ -1847,7 +1938,11 @@ function RedrawCCCEM(noinvalidate) {
   devConsoleL = l('devConsole');
   };
 l('devConsole').classList.add('CCCEMInterface');
+l('devConsole').addEventListener('mouseenter', () => { l('devConsoleContent').classList.remove('fadeOut'); l('devConsoleContent').classList.remove('initHidden'); l('devConsoleContent').classList.remove('widthCapped'); });
+l('devConsole').addEventListener('mouseleave', () => { l('devConsoleContent').classList.add('fadeOut'); l('devConsoleContent').classList.add('widthCapped'); });
 RedrawCCCEM();
+l('devConsoleContent').classList.add('initHidden');
+l('devConsoleContent').classList.add('fadeOut');
 invalidateScore=0;
 
 //colored buttons
@@ -1858,6 +1953,7 @@ customStyles.push(`
     min-width: 24px;
     width: auto !important;
     max-height: calc(100vh - ${((App?0:l('topBar').getBoundingClientRect().height) + 18)}px);
+    will-change: opacity, transform;
   }
   .CCCEMInterface::-webkit-scrollbar {
     width: 5px;
@@ -1872,6 +1968,34 @@ customStyles.push(`
     border: none;
     box-shadow: none;
     border-radius: 3px; 
+  }
+  .flexbreak { 
+    flex-basis: 100%;
+    height: 0;
+  }
+  .CCCEMInterface.cccem-fade-out {
+    animation: cccem-fade-out 0.5s cubic-bezier(.22,.9,.33,1) forwards;
+  }
+  #devConsoleContent { 
+    display: flex; 
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 450px;
+  }
+  #devConsoleContent.widthCapped { 
+    width: 24px !important;
+  }
+  #devConsoleContent.fadeOut {
+    animation: cccem-fade-out 0.5s cubic-bezier(.22,.9,.33,1) forwards;
+  }
+  #devConsoleContent.initHidden {
+    pointer-events: none; visibility: hidden; display: none;
+  }
+
+  @keyframes cccem-fade-out {
+    0%   { opacity: 1; transform: translateZ(0) scale(1); }
+    70%  { opacity: 0.15; transform: translateZ(0) scale(0.995); }
+    100% { opacity: 0; transform: translateZ(0) scale(0.99); pointer-events: none; visibility: hidden; }
   }
   `)
 customStyles.push(`
@@ -1971,6 +2095,20 @@ customStyles.push(`
 customStyles.push(`
   a.option.neatoblue:active {
     background-color: #05002f;
+  }`)
+customStyles.push(`
+  .neatofire, a.option.neatofire {
+    color: rgba(255, 85, 55, 1);
+    border-color: rgba(255, 85, 55, 1);
+  }`)
+customStyles.push(`
+  a.option.neatofire:hover {
+    color: rgba(255, 137, 104, 1);
+    border-color: rgba(255, 137, 104, 1);
+  }`)
+customStyles.push(`
+  a.option.neatofire:active {
+    background-color: #2f0000;
   }`)
 customStyles.push(`
   .neatopurple, a.option.neatopurple {
