@@ -1550,7 +1550,7 @@ Game.UpdateHeralds();
 new buttonCategory('minigameSettings', 5, [
   new CCCEMButton('forceFtHoF', 'Force the Hand of Fate outcome: [##]',
     new cycleButton(0, FtHoFOutcomes.length - 1, e => FtHoFOutcomesMap[FtHoFOutcomes[e]]),
-    new buttonInfo('FtHoF scry', 'The outcome of the first Force the Hand of Fate cast upon starting an attempt.', [27, 11]),
+    new buttonInfo('FtHoF outcome', 'The outcome of the first Force the Hand of Fate cast upon starting an attempt.', [27, 11]),
     s => { forceFtHoF = FtHoFOutcomes[s]; }, { advanced: false, newLine: true }
   ),
   new CCCEMButton('forceCastToggle', 'Force cast count [##]',
