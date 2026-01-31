@@ -60,11 +60,12 @@
 //version 3.1: adapted to v2.058, added the ability to record game options and now auto resets to the recorded options on trying again
 //version 3.11: added setup combo preset
 //version 3.2: made presets hide most settings, hidden most settings behind advanced mode, added revert preset, changed initial load screen
+//version 3.3: added basic combo preset, one half of the create preset functionality, overhauled ui slightly, refactored
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3.2';
+var CCCEMVerReal = 'v3.3';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -125,11 +126,6 @@ var clickWait=20; //requires this amount of milliseconds after each click to hav
 var initCastFindSeason=null //season for finding casts; if null, the same as setSeason
 var hasSettingsSet=0; //whether there is a saved preferred settings
 var pureWriteSave=true; //whether CCCEM saving will be invoked upon Game.WriteSave(); true is dont invoke
-
-var initSave = 'Mi4wNTh8fDE3Njk3ODA5NzAyNTQ7MTc2OTc4MDk3MDI1NDsxNzY5NzgyMzgxNjYwO0F3YWl0aW5nIElucHV0O3hwbmx3OzAsMSwwLDAsMCwwLDB8MTExMTExMDExMDAxMDExMDAxMDEwMTEwMDAxfDA7MDswOzA7MDswOzA7MDswOzA7MDswOzA7MDswOzA7MDswOzA7MDswOzA7OzA7MDswOzA7MDswOzA7LTE7LTE7LTE7LTE7LTE7MDswOzA7MDs3NTswOzA7LTE7LTE7MTc2OTc4MDk3MDI1NDswOzA7OzA7MDswOzA7NTA7MDswO3wwLDAsMCwwLCwwLDA7MCwwLDAsMCwsMCwwOzAsMCwwLDAsLDAsMDswLDAsMCwwLCwwLDA7MCwwLDAsMCwsMCwwOzAsMCwwLDAsLDAsMDswLDAsMCwwLCwwLDA7MCwwLDAsMCwsMCwwOzAsMCwwLDAsLDAsMDswLDAsMCwwLCwwLDA7MCwwLDAsMCwsMCwwOzAsMCwwLDAsLDAsMDswLDAsMCwwLCwwLDA7MCwwLDAsMCwsMCwwOzAsMCwwLDAsLDAsMDswLDAsMCwwLCwwLDA7MCwwLDAsMCwsMCwwOzAsMCwwLDAsLDAsMDswLDAsMCwwLCwwLDA7MCwwLDAsMCwsMCwwO3wwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDB8MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMHx8%21END%21';
-var soupSave = 'Mi4wNTh8fDE3Njg3MDUxNzI0MjE7MTYwMzQ2NjgwMjcyMDsxNzY4NzA4MjU5OTYyO3NvdXAgZW5qb3llcjtudGNydTswLDEsMCwwLDAsMCwwfDExMTExMTEwMTAxMTAwMTEwMTAxMDExMTAxMXwyLjYyMzQyMzA4OTU5OTU3MzVlKzU5OzEuNTU5NDczNzQwNjI1MjYyZSs2Mjs4NTc7Mjc3ODg7MS41NTUwNzY0OTYxMzUwNzA0ZSs2MjszNjI7MjM7MzE7MS4yMDAyNzM1ODUzNzA5MTE1ZSs2NjsyOzEwOzA7MDstMTsxMTc7MTA7NC40Nzg3NDY4Mzc2OTAxMjA1ZSs1NTsxOzE0OzU7LTE7Njs7MDswOzEwNjI3MzkzMjA3NzkxMjY5MDA7NTcyODM2Nzg2MzgwMzY0ODAwOzI1OTQyODczMTg3OTY1MjgwOzA7MDs1Mzs1Mjs2NDE7MjIyOzYzOTsyNzsxOzE1OzQ7MDswOzA7MTA5MDsxMTg0OzE3Njg2NDYyMTA0OTk7MDswOzIyNzsxMDA7MDswOzQuNjEyNTUxMzI1MjY1OTgxZSs1NTs1MDswOzA7fDkyMyw0MDQ1LDIuMTM0MjQ5NDgzNDc4MjAzZSs1OCwxMiwsMCw5NTM7OTEwLDIyMDAsNC45NDc0OTc1NjM4MTgzNzRlKzU2LDAsLDEsOTgzOzg4OCwyMDk4LDEuNDQ0MzcyMjI5MjA1NTIzM2UrNTcsOSwxNzY4NzA4MzgwODg2OjE6MTc2ODcwNTkxMzQxODowOjA6MDoxOjA6MTc2ODcwNTE3MjQyNTogMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMSAwOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDosMCw4ODg7ODU2LDIwNDMsMy4zOTU1NDIyMjkwMDYwOTFlKzU3LDAsLDEsODU2Ozg1OCwyMDMwLDIuNTE1NTc2OTUwNDkzNzcxNWUrNTYsMCwsMSw4Njg7ODQ4LDE5OTYsMy4zNDk2NTI4ODc0ODg4NDM0ZSs1NSwxLDU6MDoxOjA6MTogNDUwOjI6LTQwOjY2NTowOjE6MDowITM5NDI6NTotMjg6MTY4OjA6MTowOjAhNTg3OjI6LTM4OjI2OjA6MTowOjAhNTE5NjoxOjUyOjE3NjowOjE6MDowITUyMDE6NDotMjU6MTU1OjA6MTowOjAhMjIwODoxOjU2OjIyMjowOjE6MDowITcyNzM6NTo1MDozOTowOjE6MDowITM5ODo0Oi0xMzA6MTc3OjA6MTowOjAhMTAwNTE6MjotMTQ6NDUwOjA6MTowOjAhNzMwOToyOjE2OjQwNTowOjE6MDowITExMDA1OjU6LTEwMjo0ODk6MDoxOjA6MCExMDY2MTo1Oi03OTo0NzowOjE6MDowITEzMzg2OjA6LTExOjM3MDowOjE6MDowITEyMDUwOjU6LTY5OjUyMzowOjE6MDowITE1ODU2OjE6MTE6MzY2OjA6MTowOjAhMTU4NDE6MjotNjY6NDE2OjA6MTowOjAhMTU5MTI6MjotNzE6MjQ4OjA6MTowOjAhOTgxODo1Oi00NDo2NjM6MDoxOjA6MCEgMSwwLDg1ODs4MjEsMTE3MSwyLjc1MTU3Mjc0MTg5NzYwODVlKzU3LDEsLTEvNC82IDMgMTc2ODcwNjQ1MDY4MCAxLDAsODIxOzc3OCwxMTI4LDEuNjgxMDI4NjAwNzQ1MTkxOGUrNTUsMiw2OC4xNjk1NTk0MjUzMjk5OCAwIDczNDYgMSwwLDc3ODs3NDksMTgzMywyLjQ1NDM2MDM5MzUxNjc1MTJlKzU0LDAsLDEsNzQ5OzcyOSwxNzg4LDguNDY5NDM5MzU3MzQzMTUyZSs1NCwwLCwxLDcyOTs3MTQsMTc1OCw4LjQyMDI4MzIyNjIxMTkwNGUrNTYsMCwsMSw3MTQ7Njk0LDE3MjEsMi42NzU5Nzk2NDAyNzA3MzdlKzU3LDAsLDEsNjk0OzY3MywxNjgyLDYuOTA5NDQ3MDM4MTI3MTgzNWUrNTYsMCwsMSw2NzM7NjU3LDE2NTIsMi4yMjE3MzE0MjY2NDU5OTJlKzU3LDAsLDEsNjU3OzY0NywxNjM3LDIuNDIzMzYwNzY0OTYwNTg2NGUrNTcsMCwsMSw2NDc7NjQzLDE1OTgsOS41NDA0NjMyMzA3NDQ2N2UrNTcsMCwsMSw2NDM7NjE5LDE1MzksMS40MjQ4MzM1MjY4NjI0NTdlKzU4LDAsLDEsNjE5OzYwMSwxNDc5LDEuMjU4ODA5NzgzMzEyNTI1NWUrNTcsMCwsMSw2MDE7NTY5LDE0MjAsMy44MDI1NzY1OTc4MDY1NzdlKzU3LDAsLDAsNTY5OzU1MCwxNDE1LDEuMDM3MTgwMzgzMDQ5MDU1OGUrNTgsMCwsMSw1NTA7fDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMDAxMTExMTEwMDEwMTExMTExMTExMTExMDAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDEwMTAxMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDAxMDExMTExMTExMTExMTExMTExMTExMTExMTExMDAwMDExMDAxMDAwMDAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMTEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTAwMTExMTExMTExMTExMTExMTExMTEwMDAwMDAwMDAwMDAwMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAwMTExMTExMTExMTExMTExMTAwMDAwMDExMDAxMTExMTEwMDExMTExMTExMTEwMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMTExMTExMTExMTEwMDExMTExMTExMTExMTExMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMTExMTExMTExMTExMTExMTAxMDEwMTAxMDEwMTExMTEwMTExMTExMDExMTExMDEwMTAxMDEwMDAwMDAwMDAxMTExMDAwMDAwMDAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTAwMDAwMTExMTExMDAxMTExMTExMTAwMDAwMDAwMDAwMDExMTEwMHwxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTEwMDAwMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMDAwMDAwMDAwMDAxMTEwMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDAxMDEwMDAxMTEwMDAxMTExMTExMTExMTExMDExMTAxMTExMTExMTExMTExMTEwMDAwMDAxMTExfHw%3D%21END%21';
-var consistSave = 'Mi4wNTJ8fDE2ODY0NDE5MDA0MTg7MTYwMzQ2NjgwMjcyMDsxNjg2NjQ4OTQ5MjcxO3ByZXNldCBjb25zaXN0ZW5jeTttaG9mYjswLDEsMCwwLDAsMCwwfDAxMTEwMDEwMTAxMTAwMTEwMTAxMDExMTAxMXw2LjA0NDM0MTA5NTQxMTAwNGUrNjQ7MS4wMDEwNTE5ODEzMzI1MTA5ZSs2NTs1OTsyNzc3NzsxLjQzODUxNDE0NzAxMTYyMDllKzYwOzM2MTsyMzszMTsxLjEwMDAwMDU5MDQ2NTk3NDJlKzY2OzA7NDsxMDE1NjE7MDstMTsxMTY7Nzs2LjE0NDEzMDgxMTE2MjI5NGUrNTU7NTsxNDsyOy0xOzE7OzA7MDsxMDMyMjgwMzAwMTYxMjY2MzAwOzU0MjM3Nzc2NTc2MjUwNDIwMDsyNTk0Mjg3MzE4Nzk2NTI4MDswOzA7NTM7NTI7NjQxOzIyMjs2Mzk7Mjc7MDswOzQ7NjU7MDswOzcxOzE0NzsxNjg2NTk1MDEwNDk5OzA7MTsyMjc7NDE7MDsxOzIuMjU0MzA3Mzc0NzM2MzA0ZSs1NTs1MDswOzA7fDEwMTEsMTM2MSwzLjY2MDg3NDYyMjAxMzQxNWUrNTcsMTIsLDAsMTAxMTsxMDAzLDEzNTMsMi4yODQ1MDgxNTI4MjQ5MjY3ZSs1NiwwLCwxLDEwMDM7OTY2LDEzMTYsNC4xMzcxNjM4MDU2MDA2NDVlKzU2LDcsMTY4NjY0ODk5NjIyMzoxOjE2ODY0NDMxMzg4MjE6MDowOjA6MTowOjE2ODY0NDE5MDA0NDQ6IDEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAgMDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6LDAsOTY2Ozk0NiwxMjk2LDkuOTI3Mjk3ODc3NjY0MTQzZSs1NiwwLCwxLDk0Njs5MTksMTI2OSw2LjM2NDE3ODg3NjQ1NDUwOGUrNTUsMCwsMSw5MTk7ODkxLDEyNDEsNy41MDgyNjE1NjI1MjI2NGUrNTQsMSwwOjA6MTowOjE6IDM3ODI6MTo3OTo0OjA6MDowOjAhMjY0OjQ6LTg2OjQyODowOjA6MDowITMyMDA6MTotNDI6NTgwOjA6MDowOjAhNDMzODoxOjEzOjM5NjowOjA6MDowITI1NTI6NDotMTA1OjIyMTowOjA6MDowITQwODg6MjotMTI1OjE1MTowOjA6MDowITc5NzU6MTo0NzoyOTA6MDowOjA6MCE5MzQwOjE6NDI6MTk3OjA6MDowOjAhNzYyNTo1OjEyOjU0MTowOjA6MDowITMzNDY6NDotOTY6NjA4OjA6MDowOjAhMTA2MjE6MTo3OjQ1MTowOjA6MDowITEyNTEwOjE6LTM6MTgzOjA6MDowOjAhMTMxNjE6MToxOjQ2OTowOjA6MDowITEzMjY0OjA6LTI6NDA2OjA6MDowOjAhMTM4NjQ6NTotOToyMTU6MDowOjA6MCExNzkwODozOjQwOjU2NTowOjA6MDowITgzMzI6NDotODU6NTYxOjA6MDowOjAhMTY3Mzk6NDotMTAyOjU0NTowOjA6MDowISAxLDAsODkxOzg5MSwxMjQxLDYuODI0NzMwNTQ3ODY0MDczZSs1NiwxLC0xLy0xLy0xIDMgMTY4NjQ0MTkwMDQ0OSAxLDAsODkxOzg1NywxMjA3LDMuNDUzMzY1MTY1NTA0NjQyZSs1NCwyLDQzLjY2OTAwMTIyNTQyNDg5IDAgNzM0NiAxLDAsODU3Ozg0NywxMTk3LDUuNDYwODkwNjU1MzY3NjU4ZSs1MywwLCwxLDg0Nzs4MTksMTE2OSwxLjY4NzI4MDIxNDg2Njk4NWUrNTQsMCwsMSw4MTk7ODEwLDExNjAsMS45NDQ0NzQ3ODUzOTM2NDllKzU2LDAsLDEsODEwOzc5MiwxMTQyLDYuNTA3NDc1NzI4MDA4NjAzZSs1NiwwLCwxLDc5Mjs3NzMsMTEyMywxLjM3NjMzOTgyNTg4MDQxMDJlKzU2LDAsLDEsNzczOzc1NiwxMTA2LDQuMjIzMTQzNDUxODg3NTA2ZSs1NiwwLCwxLDc1Njs3MzcsMTA4Nyw0LjcxNjg4NDc5NTI5NjUzOGUrNTYsMCwsMSw3Mzc7NzIxLDEwNzEsMS43MTMxMTYxNDY2NTY5MTVlKzU3LDAsLDEsNzIxOzY4MSwxMDMxLDUuNTkyNTI2MTY2NzY0NDc2ZSs1NywwLCwxLDY4MTs2NDUsOTk1LDQuNzU4MzU2MzI4MzQyODgxZSs1NiwwLCwxLDY0NTs2MjAsOTcwLDEuMjE0NTc4MjIzNTIxNTllKzU3LDAsLDEsNjIwOzYwMCw5NTAsMi43ODcwNzgwNDg0NDU1ODg2ZSs1NywwLCwwLDYwMDt8MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDEwMTAxMDEwMTAxMDEwMTExMTExMTExMTEwMDExMTExMTAwMTAxMTExMDExMTExMTEwMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMDExMTExMTExMTExMTExMTExMTAxMDEwMTAxMDEwMTAxMTEwMDAxMDEwMTAxMDEwMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAwMTEwMTAxMDEwMTAxMDExMTExMTExMTExMTExMTEwMTAxMDEwMDAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMDEwMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMTEwMTAxMDEwMTAwMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDAwMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAwMDAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMDAxMTExMTExMTExMTExMTExMTExMTAwMDAwMDAxMDEwMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAwMTExMTExMDEwMTAxMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAwMTExMTExMTExMTExMTEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMDExMTExMTExMTExMTExMTExMDEwMTAxMDEwMTAxMTExMTAxMTExMTEwMTExMTExMTExMTExMTExMTExMTExMDExMTExMTEwMTAwMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTAxMTExMTEwMDExMTExMTExMDAwMDAwMDAwMDAwMTExMXwxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTEwMDAwMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMDExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMDAwMDAwMDAwMDAxMTEwMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTExMDAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDAxMDEwMDAxMTEwMDAxMTExMTExMTExMTExMDExMTAxMTExMTExMTExMTExMTEwMDAwMDAxMTExfHw%3D%21END%21';
-var bsScrySave = 'Mi4wNTJ8fDE2ODY0NDE5MDA0MTg7MTYwMzQ2NjgwMjcyMDsxNjg2NjQ5MDYyMTM5O3ByZXNldCBCUyBzY3J5O21ob2ZiOzAsMSwwLDAsMCwwLDB8MDExMTAwMTAxMDExMDAxMTAxMDEwMTExMDExfDkuNTkyMzU0NDg3MzcwOTFlKzY2OzEuMDAwMDAwMDAwMTkwNjUwNWUrNzE7NTk7Mjc3Nzc7MS40Mzg1MTQxNDcwMTE2MjA5ZSs2MDszNjA7MjM7MzE7MS4xMDAwMDA1OTA0NjU5NzQyZSs2NjswOzU7MTA2Nzk1OzA7LTE7MTE2OzEwOzEuMDUxOTI0NTMzMjM3MDkxMWUrNTQ7NDsxNDs0Oy0xOzE7OzA7MDsxMDMyMjgwMzAwMTYxMjY2MzAwOzU0MjM3Nzc2NTc2MjUwNDIwMDsyNTk0Mjg3MzE4Nzk2NTI4MDswOzA7NTM7NTI7NjQxOzIyMjs2Mzk7Mjc7MDswOzQ7NjU7MDswOzg2OzE0NzsxNjg2NTk1MDEwNDk5OzA7MTsyMjc7NDE7MDsxOzIuNTU0OTA2NTg1ODQ1OTI4M2UrNTc7NTA7MDswO3wxMDQxLDI1NDEsMy45Mjc3MTQ2Mzc0MjE3MjdlKzU5LDEwLCwwLDEwNTE7MTAzMywxMzgzLDIuNTE1MTk1MjYyNzk1MDUxZSs1OCwwLCwxLDEwMzM7MTAxNiwxMzY2LDUuMzUyNDIxMTAzODYyMTU4ZSs1OCw4LDE2ODY2NDkxNTU1NDY6MToxNjg2NDQzMTM4ODIxOjA6MDowOjE6MDoxNjg2NDQxOTAwNDQ0OiAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwIDA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOjA6MDowOiwwLDEwMTY7OTk2LDEzNDYsMS4yNzQ4OTI5NzE4NTcyMzIzZSs1OSwwLCwxLDk5Njs5NjksMTMxOSw4LjAwNzA3Mzk3NTQxNjM1OWUrNTcsMCwsMSw5Njk7OTQxLDEyOTEsOS4xOTgwNjY1MDIyNjQwMzJlKzU2LDEsNDowOjE6MDoxOiAzOTA3OjM6NjE6MzUwOjA6MDowOjAhMjQ4OjQ6LTkxOjQyMTowOjA6MDowITMxMTU6MTotMjQ6NTczOjA6MDowOjAhMzcxNjoxOjM2OjM4OTowOjA6MDowITE0MzM6NDotMTE1OjIxNDowOjA6MDowITQwMzg6MjotOTA6MTQ0OjA6MDowOjAhODM3MDoxOjY5OjI4MzowOjA6MDowITkyNzQ6MTo1NDoxOTA6MDowOjA6MCE2ODk4OjU6MTA6NTM0OjA6MDowOjAhMjQ0OjQ6LTEyNjo2MDE6MDowOjA6MCExMDg5OToxOjEyOjQ0NDowOjA6MDowITEyNjYxOjE6MjM6MTc2OjA6MDowOjAhMTM0ODc6MToxOjQ2MjowOjA6MDowITEyOTg0OjA6LTI6Mzk5OjA6MDowOjAhMTMyNzY6NTotODk6MjA4OjA6MDowOjAhMTk4ODU6Mzo1NTo1NTg6MDowOjA6MCE2OTU1OjQ6LTk0OjU1NDowOjA6MDowITE0MTQxOjQ6LTEyNTo1Mzg6MDowOjA6MCEgMSwwLDk0MTs5NDEsMTI5MSw4LjkwNzI5MTUzNDM3MDYzZSs1OCwxLC0xLy0xLy0xIDMgMTY4NjQ0MTkwMDQ0OSAxLDAsOTQxOzg1NywxMjA3LDMuOTY5NjIxNjc2MTcyNTkzZSs1NiwyLDYyLjY3MDc0ODQxNjk4NTc0IDAgNzM0NiAxLDAsODU3Ozg5NywxMjQ3LDYuMjgzMzIyMDEzMzkzMDIyZSs1NSwwLCwxLDg5Nzs4NjksMTIxOSwxLjk1MDAzMzU1ODU2MDM3NzdlKzU2LDAsLDEsODY5Ozg2MCwxMjEwLDIuNDMyODY1ODI4OTE2OTI0MmUrNTgsMCwsMSw4NjA7ODQyLDExOTIsOC4zODE5NDUzNDY4MjMyNTVlKzU4LDAsLDEsODQyOzgyMywxMTczLDEuNjM2NzgwMzQ5OTkwNTk5MmUrNTgsMCwsMSw4MjM7ODA2LDExNTYsNS4yOTYwOTg2MjM0MjkzMDdlKzU4LDAsLDEsODA2Ozc4NywxMTM3LDUuODM0MzI0MDQwODc2ODA4ZSs1OCwwLCwxLDc4Nzs3NzEsMTEyMSwyLjEzMDYwNjA1MDI5Mzk2NjZlKzU5LDAsLDEsNzcxOzczMSwxMDgxLDcuMzYyMDk5ODcyODQ5NDI3NWUrNTksMCwsMSw3MzE7Njk1LDEwNDUsNy4zOTQzNDc3MzM4OTM0MmUrNTgsMCwsMSw2OTU7NjYwLDEwMTAsMi41OTMwNzgwOTE0NjcxNjkzZSs1OSwwLCwxLDY2MDs2NTAsMTAwMCw0LjkxMTYzMzc3OTQ5NTA1NWUrNTksMCwsMCw2NTA7fDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMDEwMTAxMDEwMTAxMDExMTExMTExMTExMDAxMTExMTEwMDEwMTExMTAxMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDAxMTExMTExMTExMTExMTExMTEwMTAxMDEwMTAxMDEwMTExMDAwMTAxMDEwMTAxMDEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMDExMDEwMTAxMDEwMTAxMTExMTExMTExMTExMTExMDEwMTAxMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDAxMDAxMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTExMDEwMTAxMDEwMDAwMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAwMDEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMDAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTAwMTExMTExMTExMTExMTExMTExMTEwMDAwMDAwMTAxMDEwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMDExMTExMTAxMDEwMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDEwMTAxMDEwMTAxMDEwMTAxMDEwMTAxMTExMTExMTExMTExMTExMTAxMDEwMTAxMDEwMTExMTEwMTExMTExMDExMTExMTExMTExMTExMTExMTExMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMTExMDExMDExMTExMTExMTExMDEwMTAxMDExMTF8MTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMDAwMDAwMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMTExMTAxMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTAwMDAwMDAwMDAwMTExMDExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMTExMTExMTExMTExMTExMTExMTExMTExMTExMTAxMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTAwMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMDExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTExMTEwMTExMDEwMTExMTExMTExMTExMTExMTEwMTExMTExMTExMTExMTExMTAwMTExMTExMXx8%21END%21';
 
 Game.WriteSave();
 
@@ -251,13 +247,14 @@ function customSave() {
 var CCCEMPresets = {};
 var activePreset = null;
 class CCCEMPreset {
-  constructor(key, settings, onTriggerFunc, visibleButtons, name, icon) {
+  constructor(key, settings, onTriggerFunc, visibleButtons, name, icon, additionalInfo) {
     this.key = key;
     this.settings = settings;
     this.onTriggerFunc = onTriggerFunc;
     this.visibleButtons = new Set(visibleButtons);
     this.name = name;
     this.icon = icon;
+    this.additionalInfo = additionalInfo ?? null;
 
     CCCEMPresets[key] = this;
   }
@@ -270,13 +267,16 @@ class CCCEMPreset {
     CCCEMButtons['revertPresetContainer'].changeState(escape(utf8_to_b64(getSettingsCode())));
     CCCEMButtons['saveSave'].changeState(saveSaveStatus);
     CCCEMButtons['revertPresetContainer'].type.willSave = true; }
-    for (let i in this.settings) {
-      if (CCCEMButtons[i]) { CCCEMButtons[i].changeState(this.settings[i]); }
+    if (typeof this.settings == 'object') { 
+      for (let i in this.settings) {
+        if (CCCEMButtons[i]) { CCCEMButtons[i].changeState(this.settings[i]); }
+      }
+    }
+    if (typeof this.settings == 'string') {
+      CCCEMContainerModObj.load(this.settings, true);
     }
 
     invalidateScore = 1;
-    ResetAll();
-    Game.CloseNotes();
 
     activePreset = this;
     CCCEMButtons['revertPreset'].hidden = false;
@@ -285,365 +285,60 @@ class CCCEMPreset {
 
     CCCEMCategories['interfaceBegin'].hidden = false;
     CCCEMCategories['savingControls'].hidden = false;
+    CCCEMButtons['loadPForPause'].hidden = false;
+    CCCEMButtons['loadCastFinder'].hidden = false;
+    CCCEMButtons['createPreset'].hidden = false;
 
+    ResetAll();
     this.onTriggerFunc();
+    ResetAll();
+    Game.CloseNotes();
 
-    Game.Notify('Preset '+this.name+' set!', 'Remove or edit the setting changes through the presets option category.', this.icon);
+    Game.Notify('Preset '+this.name+' set!', 'Remove or edit the setting changes through the presets option category.' + (this.additionalInfo?('<br><br><div class="block" style="border: 1px solid #ffffff; box-shadow: 0px 0px 3px 3px #ffffff;">' + this.additionalInfo + '</div>'):''), this.icon);
     RedrawCCCEM();
+    invalidateScore = 0;
   }
 
   partialInvoke() {
     this.onTriggerFunc();
   }
 }
+window.CCCEMPreset = CCCEMPreset;
 function cancelActivePreset() {
   activePreset = null;
   if (!get('revertPresetContainer')) { CCCEMButtons['revertPreset'].hidden = true; }
   CCCEMButtons['editPreset'].hidden = true;
   CCCEMButtons['advancedMode'].hidden = false;
+  RedrawCCCEM();
 }
 
-new CCCEMPreset('grail', {
-  iniSeed: 'R',
-  importSave: '',
-  cookies: 4e69,
-  cookiesBTA: 1e78,
-  prestige: 1e22,
-  lumps: 105,
-  buildingCountAnchor: 1095,
-  wizCount: 951,
-  wizLevel: 10,
-  useEB: false,
-  useRebuy: 0,
-  seedNats: true,
-  seedTicker: true,
-  clickCooldown: 20,
-  gcClickCount: 77777,
-  reindeerCount: 0,
-  lumpType: 0,
-  leftAura: 13,
-  rightAura: 4,
-  scoreMult: 1,
-  scoreMultVerify: false,
-  heraldsN: 100,
-  startingSeason: 183,
-  scriedSeason: 0,
-  forceFtHoF: FtHoFOutcomes.indexOf('blood frenzy') !== -1 ? FtHoFOutcomes.indexOf('blood frenzy') : 0,
-  gardenSeed: 14,
-  gardenLevel: 10,
-  plant1: 6,
-  plant1Age: 'mature',
-  plant2: 17,
-  plant2Age: 'mature',
-  gardenRotation: 0,
-  office: 5,
-  diamondGod: 1,
-  rubyGod: 4,
-  jadeGod: 6,
-  buffs: "0,18000,18000,7;3,18000,18000,15;",
-  iniSpawn: true,
-  iniSpawnTimer: 0,
-  iniGC: 19,
-  iniDO: false,
-  iniDEoRL: false,
-  iniGC2: 21,
-  iniGC3: 1,
-  fortuneChance: 4,
-  fortuneClaim: false,
-  buyOption1: 1,
-  buyOption2: 4,
-  boughtSF: false,
-  boughtCE: false,
-  pledgeStatus: true,
-  scoreMult: 1,
-  DFChanceMult: 1,
-  gcRateMult: 1,
-}, () => {
-  Game.bakeryNameSet('grail moments');
-  manualBuildings=  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9]
-  buildingRelList=  [[-8, -33, -17, -17, -17, -26, -13, -20, -19, -19, -14, -23, -20, -12, -16, -32, -47, -39, -24],0,
-                    [-18, -22, -17, -17, -17, -19, -21, -18, -24, -16, -13, -27, -12, -15, -17, -34, -46, -33, -31],0]
-  buildingRelListEB=[[-4, -36, -17, -17, -18, -22, -17, -19, -19, -11, -25, -20, -20, -15, -16, -26, -51, -39, -28],-2,
-                    [-18, -22, -18, -17, -17, -19, -20, -21, -22, -5, -28, -23, -14, -16, -17, -26, -53, -34, -33],1]
-  CCCEMButtons['prefsRecord'].state = {"particles":0,"numbers":1,"autosave":0,"autoupdate":1,"milk":0,"fancy":0,"warn":1,"cursors":0,"focus":1,"popups":0,"format":0,"notifs":1,"animate":1,"wobbly":1,"monospace":0,"filters":0,"cookiesound":1,"crates":1,"altDraw":0,"showBackupWarning":0,"extraButtons":1,"askLumps":0,"customGrandmas":1,"timeout":0,"cloudSave":1,"bgMusic":1,"notScary":1,"fullscreen":0,"screenreader":1,"discordPresence":1};
+function convertSeconds(inputSeconds) {
+  const sec = Math.floor(inputSeconds);
+  const absSec = Math.floor(Math.abs(sec));
+  const SEC_PER_MIN = 60;
+  const SEC_PER_HOUR = 3600;
+  const SEC_PER_DAY = 86400;
+  const SEC_PER_YEAR = 86400 * 365; 
 
-  Game.specialTab="dragon";
-  if (typeof hasFinder != 'undefined') { code = 'b^blood frenzy'; codes = compile(code); }
-}, ['useEB', 'useRebuy', 'wizCount', 'wizLevel', 'gardenLevel'], 'Grail', [0, 0]);
+  const years = Math.floor(absSec / SEC_PER_YEAR);
+  let rem = absSec - years * SEC_PER_YEAR;
 
-new CCCEMPreset('consist', {
-  iniSeed: 'R',
-  importSave: consistSave,
-  cookies: 4e69,
-  cookiesBTA: 1e78,
-  prestige: 1e22,
-  lumps: 105,
-  buildingCountAnchor: 1095,
-  wizCount: 951,
-  wizLevel: 10,
-  useEB: false,
-  useRebuy: 0,
-  seedNats: true,
-  seedTicker: true,
-  clickCooldown: 20,
-  gcClickCount: 77777,
-  reindeerCount: 0,
-  lumpType: 0,
-  leftAura: 13,
-  rightAura: 9,
-  scoreMult: 1,
-  scoreMultVerify: false,
-  heraldsN: 100,
-  startingSeason: 183,
-  scriedSeason: 0,
-  forceFtHoF: FtHoFOutcomes.indexOf('click frenzy') !== -1 ? FtHoFOutcomes.indexOf('click frenzy') : 0,
-  gardenSeed: 14,
-  gardenLevel: 9,
-  plant1: 6,
-  plant1Age: 'mature',
-  plant2: 17,
-  plant2Age: 'mature',
-  gardenRotation: 0,
-  office: 5,
-  diamondGod: 2,
-  rubyGod: 8,
-  jadeGod: 6,
-  buffs: "0,18000,18000,7;3,18000,18000,15;",
-  iniSpawn: true,
-  iniSpawnTimer: 0,
-  iniGC: 19,
-  iniDO: false,
-  iniDEoRL: false,
-  iniGC2: 21,
-  iniGC3: 1,
-  fortuneChance: 4,
-  fortuneClaim: false,
-  buyOption1: 1,
-  buyOption2: 4,
-  boughtSF: false,
-  boughtCE: false,
-  pledgeStatus: true,
-  scoreMult: 1,
-  DFChanceMult: 1,
-  gcRateMult: 1,
-}, () => {
-  Game.bakeryNameSet('preset consistency');
-  manualBuildings=  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9]
-  buildingRelList=  [[-8, -33, -17, -17, -17, -26, -13, -20, -19, -19, -14, -23, -20, -12, -16, -32, -47, -39, -24],0,
-                    [-18, -22, -17, -17, -17, -19, -21, -18, -24, -16, -13, -27, -12, -15, -17, -34, -46, -33, -31],0]
-  buildingRelListEB=[[-4, -36, -17, -17, -18, -22, -17, -19, -19, -11, -25, -20, -20, -15, -16, -26, -51, -39, -28],-2,
-                    [-18, -22, -18, -17, -17, -19, -20, -21, -22, -5, -28, -23, -14, -16, -17, -26, -53, -34, -33],1]
-                    CCCEMButtons['prefsRecord'].state = {"particles":0,"numbers":1,"autosave":0,"autoupdate":1,"milk":0,"fancy":0,"warn":1,"cursors":0,"focus":1,"popups":0,"format":0,"notifs":1,"animate":1,"wobbly":1,"monospace":0,"filters":0,"cookiesound":1,"crates":1,"altDraw":0,"showBackupWarning":0,"extraButtons":1,"askLumps":0,"customGrandmas":1,"timeout":0,"cloudSave":1,"bgMusic":1,"notScary":1,"fullscreen":0,"screenreader":1,"discordPresence":1};
+  const days = Math.floor(rem / SEC_PER_DAY);
+  rem -= days * SEC_PER_DAY;
 
-  Game.specialTab="dragon";
-  if (typeof hasFinder != 'undefined') { code = 'b^click frenzy'; codes = compile(code); }
-}, ['useEB', 'useRebuy', 'wizCount', 'wizLevel', 'gardenLevel'], 'Consistency', [0, 0]);
+  const hours = Math.floor(rem / SEC_PER_HOUR);
+  rem -= hours * SEC_PER_HOUR;
 
-new CCCEMPreset('bsScry', {
-  iniSeed: 'R',
-  importSave: bsScrySave,
-  cookies: 4e69,
-  cookiesBTA: 1e78,
-  prestige: 1e22,
-  lumps: 103,
-  buildingCountAnchor: 1095,
-  wizCount: 951,
-  wizLevel: 10,
-  useEB: false,
-  useRebuy: 0,
-  seedNats: true,
-  seedTicker: true,
-  clickCooldown: 20,
-  gcClickCount: 77777,
-  reindeerCount: 0,
-  lumpType: 0,
-  leftAura: 13,
-  rightAura: 4,
-  scoreMult: 1,
-  scoreMultVerify: false,
-  heraldsN: 100,
-  startingSeason: 183,
-  scriedSeason: 0,
-  forceFtHoF: FtHoFOutcomes.indexOf('building special') !== -1 ? FtHoFOutcomes.indexOf('building special') : 0,
-  gardenSeed: 14,
-  gardenLevel: 9,
-  plant1: 17,
-  plant1Age: 'mature',
-  plant2: 6,
-  plant2Age: 'mature',
-  gardenRotation: 0,
-  office: 4,
-  diamondGod: 1,
-  rubyGod: 4,
-  jadeGod: 6,
-  buffs: "0,18000,18000,7;3,18000,18000,15;",
-  iniSpawn: true,
-  iniSpawnTimer: 0,
-  iniGC: 19,
-  iniDO: false,
-  iniDEoRL: false,
-  iniGC2: 21,
-  iniGC3: 1,
-  fortuneChance: 4,
-  fortuneClaim: false,
-  buyOption1: 1,
-  buyOption2: 4,
-  boughtSF: false,
-  boughtCE: false,
-  pledgeStatus: true,
-  scoreMult: 1,
-  DFChanceMult: 1,
-  gcRateMult: 1,
-}, () => {
-  Game.bakeryNameSet('preset BS scry');
-  manualBuildings=  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9]
-  buildingRelList=  [[-8, -33, -17, -17, -17, -26, -13, -20, -19, -19, -14, -23, -20, -12, -16, -32, -47, -39, -24],0,
-                    [-18, -22, -17, -17, -17, -19, -21, -18, -24, -16, -13, -27, -12, -15, -17, -34, -46, -33, -31],0]
-  buildingRelListEB=[[-4, -36, -17, -17, -18, -22, -17, -19, -19, -11, -25, -20, -20, -15, -16, -26, -51, -39, -28],-2,
-                    [-18, -22, -18, -17, -17, -19, -20, -21, -22, -5, -28, -23, -14, -16, -17, -26, -53, -34, -33],1]
-  CCCEMButtons['prefsRecord'].state = {"particles":0,"numbers":1,"autosave":0,"autoupdate":1,"milk":0,"fancy":0,"warn":1,"cursors":0,"focus":1,"popups":0,"format":0,"notifs":1,"animate":1,"wobbly":1,"monospace":0,"filters":0,"cookiesound":1,"crates":1,"altDraw":0,"showBackupWarning":0,"extraButtons":1,"askLumps":0,"customGrandmas":1,"timeout":0,"cloudSave":1,"bgMusic":1,"notScary":1,"fullscreen":0,"screenreader":1,"discordPresence":1};
+  const minutes = Math.floor(rem / SEC_PER_MIN);
+  const seconds = rem - minutes * SEC_PER_MIN;
 
-  Game.specialTab="dragon";
-  if (typeof hasFinder != 'undefined') { code = 'b^building special'; codes = compile(code); }
-}, ['useEB', 'useRebuy', 'wizCount', 'wizLevel', 'gardenLevel'], 'BS Scry', [0, 0]);
-
-new CCCEMPreset('soup', {
-  iniSeed: 'R',
-  importSave: soupSave,
-  cookies: 4e69,
-  cookiesBTA: 1e78,
-  prestige: 1e22,
-  lumps: 103,
-  buildingCountAnchor: 1095,
-  wizCount: 802,
-  wizLevel: 10,
-  useEB: false,
-  useRebuy: 0,
-  seedNats: true,
-  seedTicker: true,
-  clickCooldown: 20,
-  gcClickCount: 77777,
-  reindeerCount: 0,
-  lumpType: 0,
-  leftAura: 10,
-  rightAura: 4,
-  scoreMult: 7550,
-  scoreMultVerify: false,
-  heraldsN: 100,
-  startingSeason: 185,
-  scriedSeason: 0,
-  forceFtHoF: 0,
-  gardenSeed: 1,
-  gardenLevel: 9,
-  plant1: 17,
-  plant1Age: 'mature',
-  plant2: 6,
-  plant2Age: 'mature',
-  gardenRotation: 0,
-  office: 4,
-  diamondGod: 2,
-  rubyGod: 4,
-  jadeGod: 6,
-  buffs: "0,21000,18000,7;3,4590,1760,17;",
-  iniSpawn: true,
-  iniSpawnTimer: 0,
-  iniGC: 23,
-  iniDO: false,
-  iniDEoRL: false,
-  iniGC2: 21,
-  iniGC3: 1,
-  fortuneChance: 4,
-  fortuneClaim: false,
-  buyOption1: 1,
-  buyOption2: 5,
-  boughtSF: false,
-  boughtCE: false,
-  pledgeStatus: true,
-  scoreMult: 1,
-  DFChanceMult: 1,
-  gcRateMult: 1,
-}, () => {
-  Game.bakeryNameSet('soup enjoyer');
-  manualBuildings=  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-  buildingRelList=  [[-8, -33, -17, -17, -17, -26, -13, -20, -19, -19, -14, -23, -20, -12, -16, -32, -47, -39, -24],0,
-                    [-18, -22, -17, -17, -17, -19, -21, -18, -24, -16, -13, -27, -12, -15, -17, -34, -46, -33, -31],0]
-  buildingRelListEB=[[-4, -36, -17, -17, -18, -22, -17, -19, -19, -11, -25, -20, -20, -15, -16, -26, -51, -39, -28],-2,
-                    [-18, -22, -18, -17, -17, -19, -20, -21, -22, -5, -28, -23, -14, -16, -17, -26, -53, -34, -33],1]
-  CCCEMButtons['prefsRecord'].state = {"particles":0,"numbers":1,"autosave":0,"autoupdate":1,"milk":0,"fancy":0,"warn":1,"cursors":0,"focus":1,"popups":0,"format":0,"notifs":1,"animate":1,"wobbly":1,"monospace":0,"filters":0,"cookiesound":1,"crates":1,"altDraw":0,"showBackupWarning":0,"extraButtons":1,"askLumps":0,"customGrandmas":1,"timeout":0,"cloudSave":1,"bgMusic":1,"notScary":1,"fullscreen":0,"screenreader":1,"discordPresence":1};
-
-  Game.specialTab="dragon";
-}, ['useEB', 'useRebuy', 'wizCount', 'wizLevel', 'gardenLevel'], 'Setup combo', [0, 0]);
-
-new CCCEMPreset('initialization', {
-  //used for loading the mod for the first time, prompting user to select a preset
-  iniSeed: 'R',
-  importSave: initSave,
-  cookies: 0,
-  cookiesBTA: 0,
-  prestige: 0,
-  lumps: 0,
-  buildingCountAnchor: 0,
-  wizCount: 0,
-  wizLevel: 0,
-  useEB: false,
-  useRebuy: 0,
-  seedNats: true,
-  seedTicker: true,
-  clickCooldown: 20,
-  gcClickCount: 0,
-  reindeerCount: 0,
-  lumpType: 0,
-  leftAura: 0,
-  rightAura: 0,
-  scoreMult: 0,
-  scoreMultVerify: false,
-  heraldsN: 100,
-  startingSeason: 0,
-  scriedSeason: 0,
-  forceFtHoF: 0,
-  gardenSeed: 0,
-  gardenLevel: 0,
-  plant1: 0,
-  plant1Age: 0,
-  plant2: 0,
-  plant2Age: 0,
-  gardenRotation: 0,
-  office: 0,
-  diamondGod: 0,
-  rubyGod: 0,
-  jadeGod: 0,
-  buffs: "",
-  iniSpawn: false,
-  iniSpawnTimer: 1500,
-  iniGC: -1,
-  iniDO: false,
-  iniDEoRL: false,
-  iniGC2: -1,
-  iniGC3: -1,
-  fortuneChance: 4,
-  fortuneClaim: false,
-  buyOption1: 0,
-  buyOption2: 2,
-  boughtSF: false,
-  boughtCE: false,
-  pledgeStatus: false,
-  scoreMult: 1,
-  DFChanceMult: 1,
-  gcRateMult: 1,
-}, () => {
-  Game.bakeryNameSet(Game.GetBakeryName());
-  manualBuildings=  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-  buildingRelList=  [[-8, -33, -17, -17, -17, -26, -13, -20, -19, -19, -14, -23, -20, -12, -16, -32, -47, -39, -24],0,
-                    [-18, -22, -17, -17, -17, -19, -21, -18, -24, -16, -13, -27, -12, -15, -17, -34, -46, -33, -31],0]
-  buildingRelListEB=[[-4, -36, -17, -17, -18, -22, -17, -19, -19, -11, -25, -20, -20, -15, -16, -26, -51, -39, -28],-2,
-                    [-18, -22, -18, -17, -17, -19, -20, -21, -22, -5, -28, -23, -14, -16, -17, -26, -53, -34, -33],1]
-  CCCEMButtons['editPreset'].hidden = true;
-
-  CCCEMCategories['interfaceBegin'].hidden = true;
-  CCCEMCategories['savingControls'].hidden = true;
-
-  Game.specialTab="dragon";
-}, [], 'Initializing', [0, 0]);
+  const parts = [];
+  const units = [['year', years], ['day', days], ['hour', hours], ['minute', minutes], ['second', seconds]];
+  units.forEach(([name, val]) => {
+    if (val) parts.push(Beautify(val) + ' ' + name + (val === 1 ? '' : 's'));
+  });
+  return parts.length ? parts.join(', ') : '0 seconds';
+}
     
 var limitedReset = false;
 var noLoadCCCEMData = false;
@@ -718,7 +413,7 @@ function ResetGame(toFindRaw) {
   Game.shimmerTypes.golden.last=''
   Game.goldenClicks=GCCount
   Game.reindeerClicked=iniRein
-  Game.cookieClicks=0
+  Game.cookieClicks=100
   Game.fortuneGC=fortuneG
   Game.fortuneCPS=1
   Game.lumpCurrentType=chooseLump;
@@ -775,7 +470,7 @@ function ResetMinigames(toFindRaw) {
       if (((gardenR>=3 && (x+gardenR)%2) || (gardenR<3 && (y+gardenR)%2))) { gardenP1[0] && (Game.Objects['Farm'].minigame.plot[y][x]=[...parsePlantAge(...gardenP1)])} else { gardenP2[0] && (Game.Objects['Farm'].minigame.plot[y][x]=[...parsePlantAge(...gardenP2)])}
       }
     }
-  Game.Objects['Farm'].minigame.freeze=0;
+  Game.Objects['Farm'].minigame.freeze=get('gardenFrozen')?1:0;
   Game.Objects['Farm'].minigame.soil=2;
   Game.Objects['Farm'].minigame.computeStepT();
   if (toFindRaw == 1) {Game.Objects['Farm'].minigame.harvestAll()}
@@ -784,7 +479,7 @@ function ResetMinigames(toFindRaw) {
   Game.Objects['Farm'].minigame.computeEffs();
   if (!toFindRaw) {let nextTick = (window.PForPause?window.PForPause.cumulativeRealTime:Date.now())+(toNextTick?toNextTick:Math.round(Math.random()*900))*1000;
     if (!limitedReset) { Game.Objects['Farm'].minigame.nextStep=nextTick } else { MacadamiaModList.cccem.mod.nextTickRPC.send({ time: nextTick }); } }
-  Game.Objects['Farm'].minigame.seedSelected=gardenSeed;
+  if (gardenSeed != -1) Game.Objects['Farm'].minigame.seedSelected=gardenSeed;
   Game.Objects.Farm.minigame.buildPlot();
   Game.Objects.Farm.minigame.buildPanel();
   
@@ -891,7 +586,7 @@ function setGrimoireCasts() {
       break
       }
     }
-  if (forceFtHoF=='random' && !forcedCastCount[1]) {Game.Notify('FtHoF randomized','Your seed is '+Game.seed,[0, 7]);Game.Objects['Wizard tower'].minigame.spellsCastTotal = 0;}
+  if (forceFtHoF=='random' && !forcedCastCount[1]) {Game.Objects['Wizard tower'].minigame.spellsCastTotal = 0;}
   else if (chosen!=forceFtHoF && !forcedCastCount[1]) {Game.Notify('Failed to find a '+forceFtHoF,'Your seed is '+Game.seed,[15, 5])} else if (forcedCastCount[1]) {Game.Objects['Wizard tower'].minigame.spellsCastTotal=forcedCastCount[0];Game.Notify('FtHoF set','Cast count (all time): '+forcedCastCount[0],[22,11]);}
   } else if (autoExecute && !usingPreload) {
     Math.seedrandom(Game.seed+'+execute');
@@ -985,9 +680,11 @@ function ExportBuffs() {
 
 function ResetAll(manual) {
   if (hasHarbor && !netcodeSettingsExport.hosting) { MacadamiaModList.cccem.mod.tryAgainRequest.send(); return; }
+  let scoreFunc = null
+  let name = Game.bakeryName;
   if (manual) {
     FindMaxComboPow();
-    PrintScore();
+    scoreFunc = PrintScore();
     maxComboPow=1
     relComboPow=1
     maxBSCount=0
@@ -1008,11 +705,14 @@ function ResetAll(manual) {
   ResetGame();
   ResetMinigames();
   if (iniSeed=='R') {Game.seed=tempseed}
+  Game.CloseNotes();
+  if (scoreFunc) { scoreFunc(); }
   setGrimoireCasts();
   overrideBuildings(); 
   Game.CalculateGains();
   ImportBuffs(get('buffs'))
   SpawnGoldenCookies();
+  Game.bakeryNameSet(name);
   };
 
 function SetBuildings(buildCount, EB, rebuy) {
@@ -1162,7 +862,7 @@ function CheckMinigamesLoaded() {
   };
 
 function CheckModLoaded() {
-  if (typeof CCCEMUILoaded === "undefined" && CheckMinigamesLoaded()) {Game.Notify('Mod partially not loaded','Try reloading and clearing mod data, and maybe try later',[15, 5]," ")};
+  if (typeof CCCEMUILoaded === "undefined" && CheckMinigamesLoaded()) {Game.Notify('Mod partially not loaded','Assets loads experienced a timeout. Try again later.',[15, 5]," ")};
   };
 
 var gameSettings = [];
@@ -1409,15 +1109,16 @@ function throwCCCEMLoadIssue(str) {
 var CCCEMContainerModObj = null;
 Game.registerMod('CCCEMContainer', {
   init:function() { CCCEMContainerModObj = this; },
+  ready: false,
   save:function() { 
     if (!pureWriteSave) {
     	return getSettingsCode();
     }
     return '';
   },
-  load:function(str, noNotify) {
+  load:function(str, fromPreset) {
     if (noLoadCCCEMData) {return}
-    hasSettingsSet = true;
+    if (!fromPreset) { hasSettingsSet = true; }
     const TOP = '>>CCCEMContainerTop:';
     const BOTTOM = '>>ContainerEnd<<';
 
@@ -1439,11 +1140,11 @@ Game.registerMod('CCCEMContainer', {
     str = this.trimLoad(str);
     settingsToLoad = str;
 
-    if (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded) { 
-      this.applyLoad(str);
+    if (this.ready) { 
+      this.applyLoad(str, fromPreset);
     } else {
       const interval = setInterval(function(a) {
-        if (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded) {
+        if (CCCEMContainerModObj.ready) {
           a.applyLoad(settingsToLoad);
           clearInterval(interval);
         }
@@ -1477,14 +1178,14 @@ Game.registerMod('CCCEMContainer', {
 
     return str;
   },
-  applyLoad: function(str) {
+  applyLoad: function(str, fromPreset) {
     if (!str || noLoadCCCEMData) {return}
     let strs = str.split('|--+--+--|');
     try { let obj = JSON.parse(strs[0]);
     let s=false
     if (get('importSave')) s=true
     for (let i in obj) {
-      if (!CCCEMButtons[i]) { continue; }
+      if (!CCCEMButtons[i] || (fromPreset && CCCEMButtons[i].ignorePreset)) { continue; }
       CCCEMButtons[i].load(obj[i]);
     }
     if (s && !get('importSave')) Game.Notify("Save overridden","Settings contained empty save");
@@ -1492,20 +1193,77 @@ Game.registerMod('CCCEMContainer', {
       let categoryName = strs[i].split('(-_-)')[0];
       let modContent = JSON.parse(strs[i].split('(-_-)')[1]);
       if (CCCEMCategories[categoryName]) {
-        CCCEMCategories[categoryName].loadDataSlot(modContent);
+        CCCEMCategories[categoryName].loadDataSlot(modContent, fromPreset);
       } else {
         modDataSlotsYetToBeLoaded.set(categoryName, modContent);
       }
     } } catch(err) {
-      throwCCCEMLoadIssue('Unknown load error (saved settings discarded)<br>To restore default settings, click "Default" in "Batch settings"');
+      throwCCCEMLoadIssue('Unknown load error (saved settings discarded)');
       console.log(err);
       console.log(...strs);
+      CCCEMPresets.initialization.invoke();
     } 
   }
 });
 var modDataSlotsYetToBeLoaded = new Map();
 
 var cccemDir = window.locally_hosted?'./':'https://cursedsliver.github.io/CCCEM/';
+function loadAllPrerequisites() {
+  const list = [{
+    check: () => CheckMinigamesLoaded()
+  }, {
+    url: cccemDir+"cccemInterface.js",
+    check: () => (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded)
+  }, {
+    url: cccemDir+'cccemPresets.js',
+    check: () => (typeof __GENERATE_PRESETS__ !== 'undefined' && __GENERATE_PRESETS__),
+    exec: () => __GENERATE_PRESETS__()
+  }, {
+    exec: () => { CCCEMContainerModObj.ready = true; }
+  }];
+  return new Promise((resolve, reject) => {
+    const pollInterval = 50;
+    const perItemTimeout = 60000;
+
+    const processItem = (idx) => {
+      if (idx >= list.length) { resolve(); return; }
+
+      let item = list[idx];
+
+      if (!item.check) {
+        item.exec?.();
+        processItem(idx + 1); return;
+      }
+
+      try {
+        if (item.check()) { processItem(idx + 1); return; }
+      } catch (err) { reject(err); return; }
+
+      if (item.url) {
+        try { Game.LoadMod(item.url); } catch (err) { /* continue to polling anyway */ }
+      }
+
+      const start = Date.now();
+      const iv = setInterval(() => {
+        try {
+          if (item.check()) {
+            clearInterval(iv);
+            if (item.exec) { item.exec(); }
+            processItem(idx + 1);
+          } else if (performance.now() - start > perItemTimeout) {
+            clearInterval(iv);
+            reject(new Error('Timeout waiting for prerequisite #' + idx + (item.url ? ' ('+item.url+')' : '')));
+          }
+        } catch (err) {
+          clearInterval(iv);
+          reject('(#' + idx + ') ' + err?.message);
+        }
+      }, pollInterval);
+    };
+
+    processItem(0);
+  });
+}
 if (Game.ready && !l('topbarFrenzy')) {
   Game.CloseNotes()
   pureWriteSave=false;
@@ -1513,27 +1271,22 @@ if (Game.ready && !l('topbarFrenzy')) {
     Game.Objects[i].level = Math.max(Game.Objects[i].level, 1);
   }
   Game.LoadMinigames();
-  if (CheckMinigamesLoaded()) { 
-    Game.LoadMod(cccemDir+"cccemInterface.js"); 
-  } else { 
-    const interval = setInterval(function() { if (CheckMinigamesLoaded()) { Game.LoadMod(cccemDir+"cccemInterface.js"); clearInterval(interval); } }, 100);
-  }
-  const interval2 = setInterval(function() { if (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded) { InitializeMod(); clearInterval(interval2); } }, 50); 
+  loadAllPrerequisites().then(() => { 
+    InitializeMod();
+  }).catch((err) => { 
+    Game.Notify('CCCEM failed to load!', 'Error: '+err+'<br>Check your internet connection, and try remove adblockers.', [15, 5]);
+  });
 
-  setTimeout(CheckModLoaded, 1900);
+  setTimeout(CheckModLoaded, 10000);
 } else if (!l('topbarFrenzy')) {console.log("mod launch halted, game not loaded")};
 
 function InitializeMod() {
   InitBuffMod()
   console.log(hasSettingsSet)
-  Game.LoadSave(consistSave)
-  if (hasSettingsSet && get('importSave')) {
+  Game.Reset(1);
+  Game.bgType = 23;
+  if (hasSettingsSet) {
     ResetGame(1); 
-    //CCCEMPresets.grail.partialInvoke();
-  } else if (hasSettingsSet) {
-    //CCCEMPresets.consist.partialInvoke();
-    ResetGame(1); 
-    //CCCEMPresets.grail.partialInvoke();
   } else {
     CCCEMPresets.initialization.invoke();
     CCCEMButtons['revertPresetContainer'].changeState('');
@@ -1546,7 +1299,7 @@ function InitializeMod() {
   Game.CloseNotes();
   if (!hasSettingsSet) { 
     Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", (App?"Go to options to exit practice mode.":"Your save will return upon closing the game.")+'<br>'+'Select a preset via hovering the button at top left, and customize it to your liking.', [18, 6], " ") 
-  } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.", [19, 6], " ") }
+  } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.", [19, 6], " "); }
   Game.prefs.autosave=0
 }
 

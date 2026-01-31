@@ -518,7 +518,6 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
             new numberInputButton(2),
             new buttonInfo('Gamespeed multiplier', 'Sets the multiplier that will be applied when the gamespeed trigger is used.', [23, 11]),
             s => {
-                console.trace();
                 timeFactorWhenEnabled = s;
                 if (Game.keys[CCCEMButtons['gamespeedKey'].state] || CCCEMButtons['gamespeedKey'].state == -1) {
                     PForPause.changeGameSpeed(timeFactorWhenEnabled);
@@ -534,6 +533,8 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
         CCCEMButtons['gamespeed'].changeState(1);
         CCCEMButtons['gamespeedKey'].state = 0;
     });
+    CCCEMCategories.PForPause.complexityHideImmune = false;
+    CCCEMCategories.PForPause.presetBypass = true;
     CCCEMButtons['gamePause'].type.willSave = false;
     RedrawCCCEM();
 };

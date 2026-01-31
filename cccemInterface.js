@@ -294,11 +294,11 @@ function PrintScore() {
 
   var logArr = []
   logArr.push('Score: ' + originalScore.toPrecision(3) + ' (' + (score*100).toFixed(1) + '%)<br>')
-  logArr.push('Years of CpS: ' + Beautify(cookieGain/iniRaw/31536000) +'<br>')
+  logArr.push('CpS gained: ' + convertSeconds(cookieGain/iniRaw) +'<br>')
   logArr.push('Strength of Godzamok: ' + maxGodz.toPrecision(3) +'<br>')
   logArr.push(z+'Clicks: ' + Beautify(clicks) +'<br>')
   logArr.push(z+'Devastatedness: ' + Beautify(devastatedness) +'<br>')
-  logArr.push(z+'Click multiplier from rebuys: ' + rebuyedness.toFixed(3) +'<br>')
+  if (get('useRebuy')) { logArr.push(z+'Click multiplier from rebuys: ' + rebuyedness.toFixed(3) +'<br>') }
   logArr.push('<br>')
   logArr.push('Combo Strength: ' + Beautify(maxComboPow) +'<br>')
   logArr.push('Strength of non-divided buffs: ' + Beautify(relComboPow) +'<br>')
@@ -328,11 +328,13 @@ function PrintScore() {
   logStr=''
   for (i in logArr) logStr+=logArr[i].replace("<br>","\n").replace(z,"");
   console.log(logStr, invalidateScore)
-  if (invalidateScore==0) {Game.Notify(logArr[0],logArr[1]+logArr[2]+logArr[3]+logArr[4]+logArr[5].replace('<br>',''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6]); invalidateScore=0};
-  if (scoreCorNotify && clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
-    Game.Notify('Large score fault',logArr[logArr.length-4]+logArr[logArr.length-3]+logArr[logArr.length-2]+logArr[logArr.length-1],[1,7]);
-    };
-  if (scoreCorNotify && clickScore && incorrectEBwarn>0) {Game.Notify('EB setting fault','EB setting not matching usage of Elder Battalion',[1,7]);}
+  return function() { 
+    if (invalidateScore==0) {Game.Notify(logArr[0],logArr[1]+logArr[2]+logArr[3]+logArr[4]+logArr[5].replace('<br>',''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6]); invalidateScore=0};
+    if (scoreCorNotify && clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
+      Game.Notify('Large score fault',logArr[logArr.length-4]+logArr[logArr.length-3]+logArr[logArr.length-2]+logArr[logArr.length-1],[1,7]);
+      };
+    if (scoreCorNotify && clickScore && incorrectEBwarn>0) {Game.Notify('EB setting fault','EB setting not matching usage of Elder Battalion',[1,7]);}
+  }
   };
 
 function BuffsDesc(buffsStr) {//give a more readable description of the buff parameters in the prompt
@@ -475,7 +477,7 @@ var CCCEMCategories = {};
 var uncategorizedButtons = [];
 
 class CCCEMButton {
-  //options: newLine, preNewLine, watch, advanced
+  //options: newLine, preNewLine, watch, advanced, ignorePreset, nonInteractive
   constructor(key, name, type, info, updateVarFunc, options) {
     this.key = key;
     this.namesList = [].concat(name);
@@ -486,11 +488,19 @@ class CCCEMButton {
     this.info = info; //class info
     if (options === true) { options = { newLine: true }; }
     options = options ?? {};
-    this.newLine = options.newLine?'<div class="flexbreak"></div>':'';
-    this.preNewLine = options.preNewLine?'<div class="flexbreak"></div>':'';
+    if (options.newLine === true) { 
+      options.newLine = '<div class="flexbreak"></div>';
+    }
+    if (options.preNewLine === true) { 
+      options.preNewLine = '<div class="flexbreak"></div>';
+    }
+    this.newLine = options.newLine ?? '';
+    this.preNewLine = options.preNewLine ?? '';
     this.hidden = false;
     this.watch = options.watch; 
     this.advanced = options.advanced ?? true;
+    this.ignorePreset = options.ignorePreset ?? false;
+    this.nonInteractive = options.nonInteractive ?? false;
     //called every 5 frames with this keyword set to the button 
     // so state can be adjusted, mainly used in external categories, 
     // developing cccem itself shouldnt use it and it isnt functional 
@@ -506,9 +516,15 @@ class CCCEMButton {
     if (this.isHidden()) { return ''; }
     return this.preNewLine+'<a class="option '+this.type.getColorStr()+'" '+this.info.getTooltip(this)+' '+Game.clickStr+'="(CCCEMButtonsList['+this.id+'].triggerSetVar());">'+this.type.parse(this.namesList, this.state)+'</a>'+this.newLine;
   }
+  getLStrPure(onclick) {
+    return '<a data-buttonKey="'+this.key+'" class="option '+this.type.getColorStr()+'" '+this.info.getTooltip(this)+' '+Game.clickStr+'="'+onclick+'">'+this.type.parse(this.namesList, this.state)+'</a>'
+  }
 
   isHidden() {
-    return this.hidden || ((!this.category.complexityHideImmune) && (activePreset && (!activePreset.visibleButtons.has(this.key)) || (this.advanced && !advancedMode)));
+    const presetLimit = activePreset && !activePreset.visibleButtons.has(this.key);
+    return this.hidden || this.nonInteractive || 
+    ((!this.category.complexityHideImmune && !this.category.presetBypass) && presetLimit) || 
+    (!this.category.complexityHideImmune && this.advanced && !advancedMode && !(activePreset && !presetLimit));
   }
 
   changeState(value, update) {
@@ -548,6 +564,7 @@ class buttonCategory {
       this.associatedToggleButton = associatedToggleButton ?? null;
     }
     this.complexityHideImmune = true;
+    this.presetBypass = false;
     CCCEMCategories[key] = this;
     for (let i in this.buttons) {
       this.buttons[i].category = this;
@@ -555,9 +572,11 @@ class buttonCategory {
   }
   buttons = []
   external = false
-  register(button) {
-    this.buttons.push(button);
-    button.category = this;
+  register(...buttons) {
+    for (let i in arguments) {
+      arguments[i].category = this;
+      this.buttons.push(arguments[i]);
+    }
   }
   has(key) {
     for (let i in this.buttons) {
@@ -668,7 +687,7 @@ class presetButton extends buttonType {
     return 'Click to apply this preset.';
   }
   onClick() {
-    Game.Prompt('<id presetApplicationConfirm><h3>Confirm preset</h3><div class="line"></div><div class="block">You are about to apply the <b>'+this.preset.name+'</b> preset.</div>', [[loc('Confirm'), 'CCCEMPresets["'+this.preset.key+'"].invoke();Game.ClosePrompt();'], [loc('Nevermind'), 'Game.ClosePrompt();']]);
+    Game.Prompt('<id presetApplicationConfirm><h3>Confirm preset</h3><div class="line"></div><div class="block">You are about to apply the <b>'+this.preset.name+'</b> preset.'+(this.preset.additionalInfo?'<div class="line"></div><h4 style="margin-bottom: 3px;">Additional reminder</h4><br>'+this.preset.additionalInfo:'')+'</div>', [[loc('Confirm'), 'CCCEMPresets["'+this.preset.key+'"].invoke();Game.ClosePrompt();'], [loc('Nevermind'), 'Game.ClosePrompt();']]);
   }
 }
 class limeButton extends buttonType {
@@ -1033,11 +1052,15 @@ AddEvent(window, 'keyup', function (e) {
 class savingModule extends buttonType {
   constructor(savingFunc, loadingFunc) {
     super();
-    this.savingFunc = savingFunc;
-    this.loadingFunc = loadingFunc;
+    this.savingFunc = savingFunc ?? null;
+    this.loadingFunc = loadingFunc ?? null;
   }
   getColorStr() {
     return 'nonexistent';
+  }
+  default() {
+    this.parent.nonInteractive = true;
+    return '';
   }
   save() {
     return this.savingFunc();
@@ -1045,6 +1068,29 @@ class savingModule extends buttonType {
   load(str) {
     this.loadingFunc(str);
     if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
+  }
+}
+class HTML extends buttonType {
+  getColorStr() {
+    return 'nonexistent';
+  }
+  default() {
+    this.parent.nonInteractive = true;
+    return null;
+  }
+}
+class openExternal extends buttonType {
+  constructor(url) {
+    super();
+    this.url = url;
+  }
+  parse(names) {
+    return names[0] + '<span class="external"></span>';
+  }
+  onClick() {
+    window.open(this.url, '_blank', 'noopener,noreferrer');
+    l('devConsoleContent').classList.add('widthCapped');
+    l('devConsoleContent').classList.add('fadeOut');
   }
 }
 
@@ -1089,7 +1135,6 @@ class CCCEMExternalCategory extends buttonCategory {
     }
     this.associatedToggleButton = CCCEMButtons['optionsBatch'+modKey];
 
-    console.log(defaults);
     if (defaults) {
       defaults.call(this);
     }
@@ -1113,10 +1158,10 @@ class CCCEMExternalCategory extends buttonCategory {
     }
     return obj;
   }
-  loadDataSlot(obj) {
+  loadDataSlot(obj, fromPreset) {
     for (let i in obj) {
       for (let ii in this.buttons) {
-        if (this.buttons[ii].key == i) { 
+        if (this.buttons[ii].key == i && !(fromPreset && this.buttons[ii].ignorePreset)) { 
           this.buttons[ii].load(obj[i]);
           break;
         }
@@ -1284,7 +1329,7 @@ new buttonCategory('savingSettings', 2, [
   new CCCEMButton('saveSave','[##] save',
     new boolButton('Include', 'Exclude'),
     new buttonInfo('Export save', 'Whether the save currently used will be exported together with settings', [16, 5]),
-    s => CCCEMButtons['importSave'].type.willSave = s, { advanced: false }
+    s => CCCEMButtons['importSave'].type.willSave = s, { advanced: false, ignorePreset: true }
   )
 ], 'optionsBatch1');
 CCCEMCategories.savingSettings.complexityHideImmune = false;
@@ -1293,54 +1338,39 @@ CCCEMButtons['importSettings'].type.willSave = false;
 CCCEMButtons['clearImportedSave'].hidden = true;
 
 new buttonCategory('presetSettings', 3, [
-  new CCCEMButton('consistPreset', '100% consistency',
-    new presetButton('consist'),
-    new buttonInfo('100% consistency', 'Resets settings to a preset setting for a combo with a scried Click frenzy.', [12, 6]),
-    () => { }
-  ),
-  new CCCEMButton('bsScryPreset', 'BS scry',
-    new presetButton('bsScry'),
-    new buttonInfo('BS scry', 'Resets settings to a preset setting for a combo with a scried Building special.', [13, 6]),
-    () => { }
-  ),
-  new CCCEMButton('defaultPreset', 'Grail',
-    new presetButton('grail'),
-    new buttonInfo('Grail', 'Resets settings to a preset setting for a combo with a scried Elder frenzy, which if combined with Dragonflight and Click frenzy, is called a grail.', [14, 6]),
-    () => { }
-  ),
-  new CCCEMButton('soupPreset', 'Setup combo', 
-    new presetButton('soup'),
-    new buttonInfo('Setup combo', 'Resets settings to a present setting for a typical setup combo.', [9, 26]),
-    () => { }
-  ),
   new CCCEMButton('revertPreset', 'Undo preset', 
     new triggerButton(),
-    new buttonInfo('Undo preset', 'Revert your settings to what it was before.<br>Only records the settings before the most recent preset trigger.', [0, 0]),
+    new buttonInfo('Undo preset', 'Revert your settings to what it was before.<br>Only records the settings before the most recent preset trigger.', [8, 15]),
     function() { 
       cancelActivePreset();
       CCCEMContainerModObj.load(b64_to_utf8(unescape(CCCEMButtons['revertPresetContainer'].state)), true);
       ResetAll();
       Game.CloseNotes();
-      CCCEMButtons['revertPresetContainer'].seate = '';
+      CCCEMButtons['revertPresetContainer'].state = '';
       this.hidden = true;
     }, { preNewLine: true }
   ),
   new CCCEMButton('revertPresetContainer', 'Undo preset', 
-    new stringInputButton(),
+    new readonlyDisplayButton(),
     new buttonInfo('Savedata container', 'You are not supposed to see this.', [0, 0]),
     s => { 
 
-    }, { preNewLine: true }
+    }, { preNewLine: true, ignorePreset: true }
   ),
-  new CCCEMButton('editPreset', 'Unlock settings', 
+  new CCCEMButton('editPreset', 'Edit settings', 
     new triggerButton(),
-    new buttonInfo('Unlock settings', 'Unhides other settings, for further customization of the preset.', [0, 0]),
+    new buttonInfo('Unlock settings', 'Unhides other settings, for further customization of the preset.', [15, 7]),
     () => { cancelActivePreset(); }
   ),
   new CCCEMButton('advancedMode', 'Advanced mode [##]', 
     new boolButton(),
-    new buttonInfo('Advanced mode', 'Reveals even more buttons and customization options.', [0, 0]),
-    s => { advancedMode = s; }
+    new buttonInfo('Advanced mode', 'Reveals even more buttons and customization options.', [12, 27]),
+    s => { advancedMode = s }, { ignorePreset: true }
+  ),
+  new CCCEMButton('blockBeginningDiv', 'M', 
+    new HTML(),
+    new buttonInfo('', 'Hidden option', [12, 27]),
+    null, { newLine: '<div class="block">' }
   ),
 ], 'optionsBatch2'),
 CCCEMButtons['revertPreset'].hidden = true;
@@ -1388,7 +1418,7 @@ new buttonCategory('gameSettings', 4, [
     new buttonInfo('Lump type', 'The type of Sugar lump you start with each attempt.', [29, 27]),
     s => chooseLump = s
   ),
-  new CCCEMButton('gcClickCount', '[##] GC clicks',
+  new CCCEMButton('gcClickCount', '[##] Golden clicks',
     new numberInputButton(),
     new buttonInfo('Golden cookie click count', 'The amount of all time golden cookie clicks.', [23, 6]),
     s => GCCount = s
@@ -1514,8 +1544,9 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('prefsRecord', 'Record game settings', 
     new triggerButton(),
     new buttonInfo('Record game settings in options', 'Makes all subsequent resets set the game settings (as in the options in the options menu) to be the options at the time of clicking.', [11, 10]),
-    s => {
-      CCCEMButtons['prefsRecord'].state = getPrefsCompilation();
+    function() {
+      this.state = getPrefsCompilation();
+      Game.Notify('Game settings recorded!', 'You will get the same settings when you use try again.', 0);
     }, { advanced: false }
   )
 ], 'optionsBatch3');
@@ -1523,10 +1554,6 @@ CCCEMCategories.gameSettings.complexityHideImmune = false;
 CCCEMButtons['buildingSelect'].type.willSave = false;
 CCCEMButtons['overridingNumber'].type.willSave = false;
 CCCEMButtons['muteBuilding'].type.willSave = false;
-CCCEMButtons['reindeerCount'].hidden = true;
-CCCEMButtons['pledgeStatus'].hidden = true;
-CCCEMButtons['fortuneClaim'].hidden = true;
-CCCEMButtons['gcClickCount'].hidden = true;
 CCCEMButtons['heraldsOverride'].hidden = true;
 CCCEMButtons['prefsRecord'].state = {};
 
@@ -1569,7 +1596,8 @@ new buttonCategory('minigameSettings', 5, [
     s => { gardenLevel = s; }, { advanced: false }
   ),
   new CCCEMButton('gardenSeed', 'Holding [##]',
-    new cycleButton(0, 33, e => {
+    new cycleButton(-1, 33, e => {
+      if (e == -1) { return 'Nothing'; }
       const mg = Game.Objects['Farm'].minigame;
       if (!mg) { return ''; }
       return mg.plantsById[e].name;
@@ -1580,6 +1608,11 @@ new buttonCategory('minigameSettings', 5, [
   new CCCEMButton('gardenRotation', 'Rotation [##]',
     new cycleButton(0, 4, e => ['R', 'bottom', 'top', 'left', 'right'][e]),
     new buttonInfo('Rotation', 'The orientation of the garden upon starting an attempt.', [28, 18]),
+    s => { setGardenR = s; }
+  ),
+  new CCCEMButton('gardenFrozen', 'Garden [##]',
+    new boolButton('frozen', 'unfrozen'),
+    new buttonInfo('Freeze', 'Whether or not the garden is frozen initially.', [13, 10]),
     s => { setGardenR = s; }
   ),
   new CCCEMButton('toNextTick', 'Tick [##]',
@@ -1808,8 +1841,6 @@ new buttonCategory('gcSettings', 7, [
 ], 'optionsBatch6');
 CCCEMCategories.gcSettings.complexityHideImmune = false;
 CCCEMButtons['iniSpawnTimer'].hidden = true;
-CCCEMButtons['boughtCE'].hidden = true;
-CCCEMButtons['boughtSF'].hidden = true;
 
 new buttonCategory('savingControls', 1e6, [
   new CCCEMButton('saveSettings', 'Save current settings',
@@ -1900,14 +1931,23 @@ new buttonCategory('savingControls', 1e6, [
       src.discordPresence = spl[26] ? parseInt(spl[26]) : 1;
     }), new buttonInfo('Game prefs save', 'Saves game prefs (hidden button)', [0, 0])
   ),
+  new CCCEMButton('activePresetSave', '',
+    new savingModule(() => {
+      return (activePreset?activePreset.key:'N');
+    }, str => {
+      if (str != 'N') { CCCEMPresets[str].invoke(true); }
+    }),
+    new buttonInfo('Active preset save', 'Saves the active preset (hidden button)', [0, 0]), null, { ignorePreset: true }
+  ),
   new CCCEMButton('miscSaveData', '',
     new savingModule(() => {
-      return Game.volume + '_' + (App ? Game.volumeMusic : 'N') + '_' + (activePreset?activePreset.key:'N');
+      return Game.volume + '_' + (App ? Game.volumeMusic : 'N') + '_' + (activePreset?activePreset.key:'N') + '_' + utf8_to_b64(Game.bakeryName);
     }, str => {
       const strs = str.split('_');
       if (strs[0] && !isNaN(parseFloat(strs[0]))) { Game.volume = parseFloat(strs[0]); }
       if (strs[1] && !isNaN(parseFloat(strs[1]))) { Game.volumeMusic = parseFloat(strs[1]); }
       if (strs[2] && strs[2] != 'N') { CCCEMPresets[strs[2]].invoke(true); }
+      if (strs[3]) { Game.bakeryNameSet(b64_to_utf8(strs[3])); }
     }),
     new buttonInfo('Miscellaneous save', 'Saves other random stuff (hidden button)', [0, 0])
   )
@@ -1928,7 +1968,7 @@ function RedrawCCCEM(noinvalidate) {
   str+='<div class="icon" style="position:absolute;left:-9px;top:-6px;background-position:'+(-28*48)+'px '+(-12*48)+'px;"></div>';
   
   str+='<div id="devConsoleContent" class="'+(l('devConsoleContent')?((l('devConsoleContent').classList.contains('fadeOut') || l('devConsoleContent').classList.contains('initHidden'))?'initHidden':''):'initHidden')+'">';
-  str+='<div class="title" style="font-size:14px;margin:6px;">CCCEM interface</div><span class="flexbreak"></span>';
+  str+='<div class="title" style="font-size:14px;margin:6px;">CCCEM interface</div><div class="line"></div>';
   
   str+=compileAllButtons();
 
@@ -1996,6 +2036,16 @@ customStyles.push(`
     0%   { opacity: 1; transform: translateZ(0) scale(1); }
     70%  { opacity: 0.15; transform: translateZ(0) scale(0.995); }
     100% { opacity: 0; transform: translateZ(0) scale(0.99); pointer-events: none; visibility: hidden; }
+  }
+
+  .external:after {
+    content: "↗";
+    font-size: 0.8em;
+    margin-left: 0.25em;
+  }
+  h4.cccemPresetCategoryTitle {
+    text-decoration: underline;
+    margin-bottom: 2px;
   }
   `)
 customStyles.push(`

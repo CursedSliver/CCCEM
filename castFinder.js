@@ -681,6 +681,8 @@ if (typeof CCCEMUILoaded !== 'undefined') {
             new buttonInfo('Export preload','Exports preload code.',[17,2])
         ),
     ]);
+    CCCEMCategories.CastFinder.complexityHideImmune = false;
+    CCCEMCategories.CastFinder.presetBypass = true;
     CCCEMButtons['cfAutoExec'].changeState(true);
     CCCEMButtons['cfPreloadNum'].changeState(1);
     hasCCCEM = true;
