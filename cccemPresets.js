@@ -649,11 +649,11 @@ function applyExternalPreset(uuid) {
   const data = presetsData[uuid];
   const iData = presetsIndex[uuid];
   if (!data) { return; }
-  const preset = new externalPreset(uuid, b64_to_utf8(unescape(data.settings)), () => { }, data.visibleButtons, iData.ingame, iData.icon, iData.reminder);
+  const preset = new externalPreset(String(uuid), b64_to_utf8(unescape(data.settings)), () => { }, data.visibleButtons, iData.ingame, iData.icon, iData.reminder);
   Game.ClosePrompt();
   preset.openConfirmationMenu();
   CCCEMCategories.presetSettings.insert(new CCCEMButton('extPreset'+uuid, iData.name, 
-    new presetButton(uuid),
+    new presetButton(String(uuid)),
     new buttonInfo(iData.name, iData.ingame, iData.icon)  
   ), CCCEMCategories.presetSettings.buttons.indexOf(CCCEMButtons['createPreset']) + 1);
   RedrawCCCEM();
