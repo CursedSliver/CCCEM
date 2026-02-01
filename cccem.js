@@ -136,6 +136,9 @@ for (let i = 1; i < Game.goldenCookieChoices.length; i += 2) {
     FtHoFOutcomesMap[Game.goldenCookieChoices[i]] = Game.goldenCookieChoices[i - 1];
   }
 }
+FtHoFOutcomesMap['random'] = 'Random';
+FtHoFOutcomesMap['building special'] = 'Building special';
+FtHoFOutcomesMap['cookie storm drop'] = 'Cookie storm drop';
 
 eval('Game.Notify='+Game.Notify.toString().replace('quick=Math.min(6,quick);','if (typeof quick === "number") quick=Math.min(6,quick);'));
 
@@ -1203,6 +1206,7 @@ Game.registerMod('CCCEMContainer', {
       console.log(...strs);
       CCCEMPresets.initialization.invoke();
     } 
+    ResetAll();
   }
 });
 var modDataSlotsYetToBeLoaded = new Map();
@@ -1210,7 +1214,7 @@ var modDataSlotsYetToBeLoaded = new Map();
 var cccemDir = window.locally_hosted?'./':'https://cursedsliver.github.io/CCCEM/';
 function loadAllPrerequisites() {
   const list = [{
-    check: () => CheckMinigamesLoaded()
+    check: () => Game.ready && CheckMinigamesLoaded()
   }, {
     url: cccemDir+"cccemInterface.js",
     check: () => (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded)

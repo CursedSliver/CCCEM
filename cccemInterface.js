@@ -860,7 +860,7 @@ class cycleButton extends buttonType {
   }
   parseConvert = e => e;
   getTip() {
-    return 'Click to cycle. Ctrl-click to cycle in reverse.';
+    return 'Click to select a value.';
   }
   getColorStr() { 
     return 'neatoblue';
@@ -870,10 +870,96 @@ class cycleButton extends buttonType {
   }
   onClick() {
     invalidateScore = 1;
-    this.parent.state += (isCtrl()?-1:1);
-    if (this.parent.state < this.min) { this.parent.state = this.max; }
-    if (this.parent.state > this.max) { this.parent.state = this.min; }
+    Game.Prompt(`
+      <id chooseOption><h3>Select value</h3><div class="line"></div>
+      <div class="block">
+      <div style="display:flex;gap:3px;align-items:center;">
+        <input id="cccemSearch" type="search" placeholder="Type to search for the value..." class="framed" style="flex:1;box-sizing:border-box;padding:6px;margin-left: 5px;" />
+        <button id="cccemClear" class="framed" style="padding:4px 8px;height:34px;cursor:pointer;" onclick="l('cccemSearch').value='';l('cccemSearch').dispatchEvent(new Event('input'));l('cccemSearch').focus();">X</button>
+      </div>
+      <div id="cccemSearchResults" style="margin-top:6px;height:200px;overflow:auto;">${this.getEntries()}</div>
+      </div>
+    `, [[loc('Confirm'), 'CCCEMButtons[\''+this.parent.key+'\'].type.onInputConfirmation(l(\'cccemSearchResults\').childNodes[0].dataset.selectId);Game.ClosePrompt();'], [loc('Nevermind')]], 0, 'widePrompt');
+    AddEvent(l('cccemSearch'), 'input', e => {
+      l('cccemSearchResults').innerHTML = this.getEntries(e.target.value);
+    });
+    l('cccemSearch').focus();
   }
+  getEntries(searchString) {
+    let str = '';
+    if (!searchString) {
+      for (let i = this.min; i <= this.max; i = this.next(i)) {
+        str += this.getSearchButton(i);
+      }
+      return str;
+    }
+    const maxEntriesToDisplay = 5;
+    const list = new Array(maxEntriesToDisplay);
+    list.fill(null);
+    for (let i = this.min; i <= this.max; i = this.next(i)) {
+      const label = this.parseConvert(i);
+      if (!label) { continue; }
+      const d = this.levenshtein(searchString, label);
+      for (let ii = 0; ii < list.length; ii++) {
+        if (!list[ii]) { list[ii] = { i: i, d: d }; break; }
+        if (list[ii].d > d) { 
+          list.splice(ii, 0, { i: i, d: d });
+          list.pop();
+          break;
+        }
+      }
+    }
+    
+    let lim = Infinity;
+    for (let i in list) {
+      if (list[i].d > lim) { continue; }
+      str += this.getSearchButton(list[i].i);
+      if (i == 0 && list[i].d < 3) { lim = list[i].d; } 
+    }
+    return str;
+  }
+  next(from) {
+    return from + 1;
+  }
+  onInputConfirmation(value) {
+    this.parent.state = value;
+    this.triggerVarFunc();
+    RedrawCCCEM();
+  }
+  getSearchButton(value) {
+    return '<div id="cccemSearchEntry'+value+'" data-select-id="'+value+'" class="block cccemSearchDisplay" '+Game.clickStr+'="CCCEMButtons[\''+this.parent.key+'\'].type.onInputConfirmation(this.dataset.selectId);Game.ClosePrompt();">'+this.parseConvert(value)+'</div>';
+  }
+  levenshtein(matcher, matchee) {
+    matcher = matcher.toLowerCase();
+    matchee = matchee.toLowerCase();
+    const m = matcher.length, n = matchee.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+
+    let prev = new Array(n + 1);
+    for (let j = 0; j <= n; j++) prev[j] = j;
+
+    for (let i = 1; i <= m; i++) {
+      const cur = new Array(n + 1);
+      cur[0] = i;
+      const mi = matcher.charCodeAt(i - 1);
+      for (let j = 1; j <= n; j++) {
+      const cost = mi === matchee.charCodeAt(j - 1) ? 0 : 1;
+      const deletion = prev[j] + 1;
+      const insertion = cur[j - 1] + 1;
+      const substitution = prev[j - 1] + cost;
+      cur[j] = Math.min(deletion, insertion, substitution);
+      }
+      prev = cur;
+    }
+    
+    return Math.min(...prev);
+  }
+  triggerSetVar() {
+    this.onClick();
+    RedrawCCCEM();
+  }
+  
   load(str) {
     this.parent.state = parseFloat(str);
     if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
@@ -884,31 +970,20 @@ class cycleButton extends buttonType {
 }
 class twoStepCycle extends cycleButton {
   constructor(min, max, parseConvert) { super(min, max, parseConvert); }
-  onClick() {
-    invalidateScore = 1;
-    this.parent.state += (isCtrl() ? -2 : 2);
-    if (this.parent.state > this.max) this.parent.state = this.min;
-    if (this.parent.state < this.min) this.parent.state = this.max;
+  next(from) { 
+    return from + 2;
   }
   parseConvert = e => (e <= -1 ? 'R' : Game.goldenCookieChoices[e-1]);
 }
 class seasonalCycleButton extends cycleButton {
   constructor() {
-    super(-1, 210, e => (e ? Game.UpgradesById[e].season : 'none'));
+    super(0, 209, e => ((e > 0) ? Game.seasons[Game.UpgradesById[e].season].name : 'none'));
   }
-  onClick() {
-    invalidateScore = 1;
-    if (isCtrl()) {
-      this.parent.state--;
-      if (this.parent.state == -1) { this.parent.state = 209; }
-      if (this.parent.state == 208) { this.parent.state = 185; }
-      if (this.parent.state == 181) { this.parent.state = 0; }
-    } else { 
-      this.parent.state++; 
-      if (this.parent.state == 186) { this.parent.state = 209; }
-      if (this.parent.state == 210) { this.parent.state = 0; }
-      if (this.parent.state == 1) { this.parent.state = 182; }
-    }
+  next(from) {
+    from++; 
+    if (from == 186) { from = 209; }
+    if (from == 1) { from = 182; }
+    return from;
   }
 }
 class multiSelectButton extends buttonType {
@@ -1364,7 +1439,7 @@ new buttonCategory('presetSettings', 3, [
   ),
   new CCCEMButton('advancedMode', 'Advanced mode [##]', 
     new boolButton(),
-    new buttonInfo('Advanced mode', 'Reveals even more buttons and customization options.', [12, 27]),
+    new buttonInfo('Advanced mode', 'Reveal even more buttons and customization options.', [12, 27]),
     s => { advancedMode = s }, { ignorePreset: true }
   ),
   new CCCEMButton('blockBeginningDiv', 'M', 
@@ -1644,7 +1719,7 @@ new buttonCategory('minigameSettings', 5, [
     new buttonInfo('Plant 2 age', 'The age of the second plant at the start of each attempt.', [25, 20]),
     s => { gardenP2[1] = s; }, true
   ),
-  new CCCEMButton('office', 'Office [##]',
+  new CCCEMButton('office', 'Office level [##]',
     new cycleButton(0, 5, e => (e + 1)),
     new buttonInfo('Office', 'The Stock market Office level. The office level determines the amount of loans available.', [18, 33]),
     s => { officeL = s; }
@@ -1667,6 +1742,15 @@ new buttonCategory('minigameSettings', 5, [
 ], 'optionsBatch4');
 CCCEMCategories.minigameSettings.complexityHideImmune = false;
 
+function getProperBuffName(buff) {
+  const buffDisambiguator = {
+    'building buff': 'Building special',
+    'building debuff': 'Building rust'
+  };
+  if (buffDisambiguator[buff.name]) { return buffDisambiguator[buff.name]; }
+  try { return loc(buff.func(1, 1)?.name); }
+  catch { return buff.name; }
+}
 new buttonCategory('buffSettings', 6, [
   new CCCEMButton('buffs', 'Buffs',
     new stringInputButton(null, () => {
@@ -1678,12 +1762,12 @@ new buttonCategory('buffSettings', 6, [
       let len = s.split(";").length-1
       CCCEMButtons['buffs'].state = s
       CCCEMButtons['removeType'].hidden=hide
-      CCCEMButtons['removeBuff'].hidden=hide
+      //CCCEMButtons['removeBuff'].hidden=hide
       CCCEMButtons['clearBuffs'].hidden=hide
       CCCEMButtons['removeType'].type.max = Math.max(len-1,0)
       if (len) {
         CCCEMButtons['removeType'].state = Math.max(0, len-2)
-        CCCEMButtons['removeType'].triggerSetVar()
+        if (CCCEMButtons['removeType'].updateVarFunc) { CCCEMButtons['removeType'].updateVarFunc(); }
       }
     }, { advanced: false }
   ),
@@ -1692,9 +1776,11 @@ new buttonCategory('buffSettings', 6, [
     new buttonInfo('Snapshot', 'Will alter your starting buff settings to be the buffs you currently have active.', [30, 20]),
     () => CCCEMButtons['buffs'].changeState(ExportBuffs()), { newLine: true, advanced: false }
   ),
-  new CCCEMButton('buffType', 'Cycle Buffs',
-    new cycleButton(0, Game.buffTypes.length-1, e => Game.buffTypes[e]),
-    new buttonInfo('Cycle through buffs', 'Which type of buff to add. BS type is selectable after cycling to building buff or building debuff.', [0, 14]),
+  new CCCEMButton('buffType', 'Add buff',
+    new cycleButton(0, Game.buffTypes.length-1, e => {
+      return getProperBuffName(Game.buffTypes[e]);
+    }),
+    new buttonInfo('Add buff', 'Which type of buff to add. BS type is selectable after cycling to building buff or building debuff.', [0, 14]),
     s => {
       let name=""
       if ((s==9 || s==10) && get('buffObj') >= 0) {
@@ -1704,7 +1790,6 @@ new buttonCategory('buffSettings', 6, [
         name=Game.buffTypes[s].name
         }
       CCCEMButtons['buffObj'].hidden = (s==9 || s==10)?false:true
-      CCCEMButtons['addBuff'].state = name
       RedrawCCCEM();
       }, { advanced: false }
   ),
@@ -1713,7 +1798,7 @@ new buttonCategory('buffSettings', 6, [
     new buttonInfo('Cycle BS type', 'Cycle through BS types. If left at Building Buff or Building Debuff, a random one will be selected', [4, 14]),
     () => CCCEMButtons['buffType'].updateVarFunc(get('buffType')), { advanced: false }
   ),
-  new CCCEMButton('addBuff', 'Add [##]',
+  new CCCEMButton('addBuff', 'Confirm add [##]',
     new triggerButton(),
     new buttonInfo('Add starting buff', 'Will add another starting buff based on the subsequent settings (incl type, max time, time, power, BS type)', [33, 25]),
     () => AddStartBuff(get('buffType'), get('buffMaxTime'), get('buffTime'), get('buffPow'), get('buffObj')), { newLine: true, advanced: false }
@@ -1733,12 +1818,16 @@ new buttonCategory('buffSettings', 6, [
     new buttonInfo('Buff power', 'This is used to determine the strength of the added buff, if left at 0 the buff default will be used.', [30, 5]),
     null, { newLine: true }
   ),
-  new CCCEMButton('removeType', 'Cycle remove',
-    new cycleButton(0, 0),
+  new CCCEMButton('removeType', 'Select buff to remove',
+    new cycleButton(0, 0, e => {
+      const buff = Game.buffTypesByName[Game.buffTypes[get('buffs').split(';')[e].split(',')[0]].name];
+
+      return getProperBuffName(buff);
+    }),
     new buttonInfo('Cycle current buffs', 'Will cycle through all the buffs you are starting with, so that one can be removed with the remove buff button.', [0, 15]),
-    s => {CCCEMButtons['removeBuff'].state=Game.buffTypes[get('buffs').split(';')[s].split(',')[0]].name; RedrawCCCEM()},
+    s => {if (s) CCCEMButtons['removeBuff'].state=getProperBuffName[Game.buffTypesByName[Game.buffTypes[get('buffs').split(';')[s].split(',')[0]].name]]; CCCEMButtons['removeBuff'].hidden = false; },
   ),
-  new CCCEMButton('removeBuff', 'Remove [##]',
+  new CCCEMButton('removeBuff', 'Confirm remove [##]',
     new triggerButton(),
     new buttonInfo('Remove starting buff', 'Remove one starting buff. All current starting buffs can be cycled through with the cycle remove button.', [33, 24]),
     () => RemoveStartBuff(get("removeType"))
@@ -1953,12 +2042,12 @@ new buttonCategory('savingControls', 1e6, [
   )
 ]);
 
-CCCEMCategories['savingSettings'].hidden = true;
+/*CCCEMCategories['savingSettings'].hidden = true;
 CCCEMCategories['presetSettings'].hidden = true;
 CCCEMCategories['gameSettings'].hidden = true;
 CCCEMCategories['minigameSettings'].hidden = true;
 CCCEMCategories['buffSettings'].hidden = true;
-CCCEMCategories['gcSettings'].hidden = true;
+CCCEMCategories['gcSettings'].hidden = true;*/
 CCCEMButtons['buffType'].updateVarFunc(get('buffType'));
 CCCEMButtons['buffObj'].changeState(-1);
 
@@ -2046,6 +2135,15 @@ customStyles.push(`
   h4.cccemPresetCategoryTitle {
     text-decoration: underline;
     margin-bottom: 2px;
+  }
+
+  .cccemSearchDisplay { 
+    border: 1px solid white;
+    padding: 6px;
+    cursor: pointer;
+  }
+  .cccemSearchDisplay:hover {
+    background-color: #363535ff;
   }
   `)
 customStyles.push(`
