@@ -578,6 +578,10 @@ class buttonCategory {
       this.buttons.push(arguments[i]);
     }
   }
+  insert(button, location) {
+    button.category = this;
+    this.buttons.splice(location, 0, button);
+  }
   has(key) {
     for (let i in this.buttons) {
       if (this.buttons[i].key == key) { return this.buttons[i]; }

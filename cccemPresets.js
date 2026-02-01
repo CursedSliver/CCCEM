@@ -613,7 +613,7 @@ async function fetchPresetsIndex() {
   if (isFetchingIndex) { return; }
   isFetchingIndex = true;
   try {
-    const res = await fetch('./presetsStorage/presetsIndex.json', { cache: 'no-cache' });
+    const res = await fetch(cccemDir+'presetsStorage/presetsIndex.json', { cache: 'no-cache' });
     if (!res.ok) throw new Error('Failed to fetch presets index: ' + res.status);
     const json = await res.json();
     window.presetsIndex = json;
@@ -628,7 +628,7 @@ async function fetchPresetsData(toLoad) {
   if (isFetchingData) { return; }
   isFetchingData = true;
   try {
-    const res = await fetch('./presetsStorage/presetsData.json', { cache: 'no-cache' });
+    const res = await fetch(cccemDir+'presetsStorage/presetsData.json', { cache: 'no-cache' });
     if (!res.ok) throw new Error('Failed to fetch presets data: ' + res.status);
     const json = await res.json();
     window.presetsData = json;
@@ -646,9 +646,17 @@ function applyExternalPreset(uuid) {
     return;
   }
 
-  const preset = new externalPreset(uuid, b64_to_utf8(unescape(presetsData[uuid].settings)), () => { }, presetsData[uuid].visibleButtons, presetsIndex[uuid].ingame, presetsIndex[uuid].icon, presetsIndex[uuid].reminder);
+  const data = presetsData[uuid];
+  const iData = presetsIndex[uuid];
+  if (!data) { return; }
+  const preset = new externalPreset(uuid, b64_to_utf8(unescape(data.settings)), () => { }, data.visibleButtons, iData.ingame, iData.icon, iData.reminder);
   Game.ClosePrompt();
   preset.openConfirmationMenu();
+  CCCEMCategories.presetSettings.insert(new CCCEMButton('extPreset'+uuid, iData.name, 
+    new presetButton(uuid),
+    new buttonInfo(iData.name, iData.ingame, iData.icon)  
+  ));
+  RedrawCCCEM();
   PlaySound('snd/giftGet.mp3');
 }
 
