@@ -249,71 +249,7 @@ function customSave() {
 
 var CCCEMPresets = {};
 var activePreset = null;
-class CCCEMPreset {
-  constructor(key, settings, onTriggerFunc, visibleButtons, name, icon, additionalInfo) {
-    this.key = key;
-    this.settings = settings;
-    this.onTriggerFunc = onTriggerFunc;
-    this.visibleButtons = new Set(visibleButtons);
-    this.name = name;
-    this.icon = icon;
-    this.additionalInfo = additionalInfo ?? null;
 
-    CCCEMPresets[key] = this;
-  }
-
-  invoke(noStoreToUndo) {
-    console.log(this.key + ' invoked!');
-    if (!noStoreToUndo) { CCCEMButtons['revertPresetContainer'].type.willSave = false;
-    const saveSaveStatus = CCCEMButtons['saveSave'].state;
-    CCCEMButtons['saveSave'].changeState(true);
-    CCCEMButtons['revertPresetContainer'].changeState(escape(utf8_to_b64(getSettingsCode())));
-    CCCEMButtons['saveSave'].changeState(saveSaveStatus);
-    CCCEMButtons['revertPresetContainer'].type.willSave = true; }
-    if (typeof this.settings == 'object') { 
-      for (let i in this.settings) {
-        if (CCCEMButtons[i]) { CCCEMButtons[i].changeState(this.settings[i]); }
-      }
-    }
-    if (typeof this.settings == 'string') {
-      CCCEMContainerModObj.load(this.settings, true);
-    }
-
-    invalidateScore = 1;
-
-    activePreset = this;
-    CCCEMButtons['revertPreset'].hidden = false;
-    CCCEMButtons['editPreset'].hidden = false;
-    CCCEMButtons['advancedMode'].hidden = true;
-
-    CCCEMCategories['interfaceBegin'].hidden = false;
-    CCCEMCategories['savingControls'].hidden = false;
-    CCCEMButtons['loadPForPause'].hidden = false;
-    CCCEMButtons['loadCastFinder'].hidden = false;
-    CCCEMButtons['createPreset'].hidden = false;
-
-    ResetAll();
-    this.onTriggerFunc();
-    ResetAll();
-    Game.CloseNotes();
-
-    Game.Notify('Preset '+this.name+' set!', 'Remove or edit the setting changes through the presets option category.' + (this.additionalInfo?('<br><br><div class="block" style="border: 1px solid #ffffff; box-shadow: 0px 0px 3px 3px #ffffff;">' + this.additionalInfo + '</div>'):''), this.icon);
-    RedrawCCCEM();
-    invalidateScore = 0;
-  }
-
-  partialInvoke() {
-    this.onTriggerFunc();
-  }
-}
-window.CCCEMPreset = CCCEMPreset;
-function cancelActivePreset() {
-  activePreset = null;
-  if (!get('revertPresetContainer')) { CCCEMButtons['revertPreset'].hidden = true; }
-  CCCEMButtons['editPreset'].hidden = true;
-  CCCEMButtons['advancedMode'].hidden = false;
-  RedrawCCCEM();
-}
 
 function convertSeconds(inputSeconds) {
   const sec = Math.floor(inputSeconds);
@@ -559,7 +495,7 @@ function setGrimoireCasts() {
     if (backfireVal<0.5) {
       Math.random();
       Math.random();
-      if ((initCastFindSeason ?? setSeason) == 209 || (initCastFindSeason ?? setSeason) == 184) { Math.random(); } 
+      if ([183, 184, 185, 209].includes(initCastFindSeason ?? setSeason)) { Math.random(); } 
       var choices=[];
       choices.push('frenzy','multiply cookies');
       if (!Game.hasBuff('Dragonflight')) choices.push('click frenzy');
@@ -576,7 +512,7 @@ function setGrimoireCasts() {
     else if (backfireVal>0.85) {
       Math.random();
       Math.random();
-      if ((initCastFindSeason ?? setSeason) == 209 || (initCastFindSeason ?? setSeason) == 184) { Math.random(); } 
+      if ([183, 184, 185, 209].includes(initCastFindSeason ?? setSeason)) { Math.random(); } 
       var choices=[];
       choices.push('clot','ruin cookies');
       if (Math.random()<0.1) choices.push('cursed finger','blood frenzy');
@@ -1279,6 +1215,7 @@ if (Game.ready && !l('topbarFrenzy')) {
     InitializeMod();
   }).catch((err) => { 
     Game.Notify('CCCEM failed to load!', 'Error: '+err+'<br>Check your internet connection, and try remove adblockers.', [15, 5]);
+    console.error(err);
   });
 
   setTimeout(CheckModLoaded, 10000);

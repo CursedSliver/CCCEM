@@ -687,7 +687,7 @@ class presetButton extends buttonType {
     return 'Click to apply this preset.';
   }
   onClick() {
-    Game.Prompt('<id presetApplicationConfirm><h3>Confirm preset</h3><div class="line"></div><div class="block">You are about to apply the <b>'+this.preset.name+'</b> preset.'+(this.preset.additionalInfo?'<div class="line"></div><h4 style="margin-bottom: 3px;">Additional reminder</h4><br>'+this.preset.additionalInfo:'')+'</div>', [[loc('Confirm'), 'CCCEMPresets["'+this.preset.key+'"].invoke();Game.ClosePrompt();'], [loc('Nevermind'), 'Game.ClosePrompt();']]);
+    this.preset.openConfirmationMenu();
   }
 }
 class limeButton extends buttonType {
@@ -2024,13 +2024,13 @@ new buttonCategory('savingControls', 1e6, [
     new savingModule(() => {
       return (activePreset?activePreset.key:'N');
     }, str => {
-      if (str != 'N') { CCCEMPresets[str].invoke(true); }
+      if (str != 'N' && CCCEMPresets[str]) { CCCEMPresets[str].invoke(true); }
     }),
     new buttonInfo('Active preset save', 'Saves the active preset (hidden button)', [0, 0]), null, { ignorePreset: true }
   ),
   new CCCEMButton('miscSaveData', '',
     new savingModule(() => {
-      return Game.volume + '_' + (App ? Game.volumeMusic : 'N') + '_' + (activePreset?activePreset.key:'N') + '_' + utf8_to_b64(Game.bakeryName);
+      return Game.volume + '_' + (App ? Game.volumeMusic : 'N') + '_' + 'N' + '_' + utf8_to_b64(Game.bakeryName);
     }, str => {
       const strs = str.split('_');
       if (strs[0] && !isNaN(parseFloat(strs[0]))) { Game.volume = parseFloat(strs[0]); }
