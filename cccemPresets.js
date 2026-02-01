@@ -655,7 +655,7 @@ function applyExternalPreset(uuid) {
   CCCEMCategories.presetSettings.insert(new CCCEMButton('extPreset'+uuid, iData.name, 
     new presetButton(uuid),
     new buttonInfo(iData.name, iData.ingame, iData.icon)  
-  ));
+  ), CCCEMCategories.presetSettings.buttons.indexOf(CCCEMButtons['createPreset']) + 1);
   RedrawCCCEM();
   PlaySound('snd/giftGet.mp3');
 }
