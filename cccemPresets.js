@@ -487,6 +487,7 @@ let presetCreationStages = {
       CCCEMButtons['saveSave'].changeState(saveSaveStatus);
       CCCEMButtons['revertPresetContainer'].type.willSave = true;
       const str = JSON.stringify(presetCreationBufferObj);
+      str = str.replaceAll('\\n', '$$BR$$');
       presetCreationBufferObj = {};
 
       return '<div class="block">Now, go to <a href="https://forms.gle/HWgKFhrct7CZhXJp6" target="_blank">this form</a> and input the below code!</div><textarea id="textareaPrompt" style="width: 100%; height: 400px; font-size: 8px;" readonly>' + str + '</textarea>'
@@ -567,7 +568,7 @@ function openPresetDetails(uuid) {
   const py = - (parseInt(icon[1], 10) || 0) * 48;
   const title = esc(obj.extendedName || obj.name || obj.ingame || 'Unnamed preset');
   const creator = esc(obj.creator || '');
-  const desc = esc(obj.description || obj.ingame || '');
+  const desc = esc(obj.description || obj.ingame || '').replaceAll('$$BR$$', '<br>');
 
   let str = '<div class="cccem-preset-display cccem-preset-expanded-display">' +
     '<div class="row">' +
@@ -590,7 +591,7 @@ function getDisplayFromPreset(obj, uuid) {
   const py = - (parseInt(icon[1], 10) || 0) * 48;
   const title = esc(obj.extendedName || obj.name || obj.ingame || 'Unnamed preset');
   const creator = esc(obj.creator || '');
-  let desc = esc(obj.description || obj.ingame || '');
+  let desc = esc(obj.description || obj.ingame || '').replaceAll('$$BR$$', '<br>');
   if (desc.length > 300) {
     desc = desc.slice(0, 300) + '...<div style="color: #ffffff; font-size: 85%;">(Open to see more)</div>';
   }
