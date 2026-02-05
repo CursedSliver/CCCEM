@@ -61,11 +61,12 @@
 //version 3.11: added setup combo preset
 //version 3.2: made presets hide most settings, hidden most settings behind advanced mode, added revert preset, changed initial load screen
 //version 3.3: added basic combo preset, one half of the create preset functionality, overhauled ui slightly, refactored
+//version 3.4: added combo history
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3.3';
+var CCCEMVerReal = 'v3.4';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -652,6 +653,7 @@ function ResetAll(manual) {
   ImportBuffs(get('buffs'))
   SpawnGoldenCookies();
   Game.bakeryNameSet(name);
+  Game.specialTab = 'dragon';
   };
 
 function SetBuildings(buildCount, EB, rebuy) {

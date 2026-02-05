@@ -260,82 +260,592 @@ function AllConsistentBuffsPow() {
 
 function PrintScore() {
   if (!produceGrades) { return; }
+  if (invalidateScore) {
+    invalidateScore = 0;
+    return function() { Game.Notify('Score invalid', 'Settings changed since reset!',[10,6]); invalidateScore=0; };
+  }
   var cookieGain=Game.cookiesEarned-iniCE
   var clickGain=Game.handmadeCookies-iniHM
   var consistentPow = AllConsistentBuffsPow();
   var scoreRed=(maxComboPow*iniRaw*consistentPow/relComboPow);
   var score=(cookieGain/scoreRed)*scoreCorVal*autoScoreCor;
-  var icon=[12,8]
   var originalScore = score;
   score/=1.333e6;
-  if (score>2.75) {icon=[1,7]}
-  else if (score>2.5) {icon=[3,1,cccemSpritesheet]}
-  else if (score>2.25) {icon=[2,1,cccemSpritesheet]}
-  else if (score>2) {icon=[1,1,cccemSpritesheet]}
-  else if (score>1.75) {icon=[33,4]}
-  else if (score>1.5) {icon=[32,4]}
-  else if (score>1.25) {icon=[0,1,cccemSpritesheet]}
-  else if (score>1) {icon=[14,5]}
-  else if (score>0.85) {icon=[13,5]}
-  else if (score>0.7) {icon=[12,5]}
-  else if (score>0.6) {icon=[3,0,cccemSpritesheet]}
-  else if (score>0.5) {icon=[2,0,cccemSpritesheet]}
-  else if (score>0.4) {icon=[1,0,cccemSpritesheet]}
-  else if (score>0.3) {icon=[0,0,cccemSpritesheet]}
-  else if (score>0.2) {icon=[2,5]}
-  else if (score>0.1) {icon=[1,5]}
-  else if (score>0.01) {icon=[0,5]}
-  else if (score>0) {icon=[12,8]}
-  
+
   var z ='​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ '
   devastatedness = NormalizeDevastatedness(devastatedness);
   rebuyedness = NormalizeDevastatedness(rebuyedness)/devastatedness;
   var clicks = Math.trunc(0.000000001+(devastatedness/maxGodz));
 
-  var logArr = []
-  logArr.push('Score: ' + originalScore.toPrecision(3) + ' (' + (score*100).toFixed(1) + '%)<br>')
-  logArr.push('CpS gained: ' + convertSeconds(cookieGain/iniRaw) +'<br>')
-  logArr.push('Strength of Godzamok: ' + maxGodz.toPrecision(3) +'<br>')
-  logArr.push(z+'Clicks: ' + Beautify(clicks) +'<br>')
-  logArr.push(z+'Devastatedness: ' + Beautify(devastatedness) +'<br>')
-  if (get('useRebuy')) { logArr.push(z+'Click multiplier from rebuys: ' + rebuyedness.toFixed(3) +'<br>') }
-  logArr.push('<br>')
-  logArr.push('Combo Strength: ' + Beautify(maxComboPow) +'<br>')
-  logArr.push('Strength of non-divided buffs: ' + Beautify(relComboPow) +'<br>')
-  logArr.push('All Consistent Buffs power: ' + Beautify(consistentPow) +'<br>')
-  logArr.push('Number of BSs: ' + maxBSCount +'<br>')
-  logArr.push('<br>')
-  logArr.push('Cookie gained: ' + Beautify(cookieGain) +'<br>')
-  logArr.push('Handmade gain: ' + Beautify(clickGain) +'<br>')
-  logArr.push('Initial Raw CpS: ' + Beautify(iniRaw) +'<br>')
+  // Build history stats and push a new historyEntry
+  const scoreStatO = new scoreStat(originalScore, score * 100);
+  const stats = [
+    scoreStatO,
+    new cpsStat(cookieGain / iniRaw),
+    new godzStat(maxGodz),
+    new clicksStat(clicks),
+    new devastatednessStat(devastatedness),
+    new rebuyStat(rebuyedness),
+    new comboStat(maxComboPow),
+    new relComboStat(relComboPow),
+    new consistentPowStat(consistentPow),
+    new bsCountStat(maxBSCount),
+    new cookieGainStat(cookieGain),
+    new handmadeGainStat(clickGain),
+    new iniRawStat(iniRaw)
+  ];
 
-
-  var clickScore=score*(clickGain/cookieGain)*1.05
+  // compute click-based derived stats if possible (mirror later calculations)
+  let clickScore = (cookieGain > 0) ? score * (clickGain / cookieGain) * 1.05 : 0;
   if (clickScore) {
-    var clickDiffCor = (devastatedness/maxGodz)/clicks
-    var godzScore = clickScore/clickDiffCor
-    var trueDevastated = rebuyedness*clicks*maxGodz
-    var scorePerClick = (godzScore/trueDevastated)*1333000
-    var scoreCorrection = ((trueDevastated / 4250) / (godzScore))
-    var manualCor = scoreCorrection*scoreCorVal
-    logArr.push('<br>')
-    logArr.push('Score per Click: '+(scorePerClick).toPrecision(4) +'<br>')
-    logArr.push('Score correction value: '+scoreCorrection.toPrecision(4) +'<br>')
-    logArr.push(z+'Automatic score correction: '+autoScoreCor.toPrecision(4) +'<br>')
-    logArr.push(z+'Set score mult to: '+(manualCor).toPrecision(4) +'<br>')
-    };
+    const clickDiffCor = (devastatedness / maxGodz) / (clicks || 1);
+    const godzScore = clickScore / (clickDiffCor || 1);
+    const trueDevastated = rebuyedness * (clicks || 1) * maxGodz;
+    const scorePerClick = (godzScore && trueDevastated) ? (godzScore / trueDevastated) * 1333000 : 0;
+    const scoreCorrection = (godzScore) ? ((trueDevastated / 4250) / (godzScore)) : 0;
 
-  logStr=''
-  for (i in logArr) logStr+=logArr[i].replace("<br>","\n").replace(z,"");
-  console.log(logStr, invalidateScore)
+    stats.push(new scorePerClickStat(scorePerClick));
+    stats.push(new scoreCorrectionStat(scoreCorrection));
+  } else {
+    stats.push(new scorePerClickStat(0));
+    stats.push(new scoreCorrectionStat(0));
+  }
+
+  if (originalScore > historySettings.scoreRegisterThreshold) { new historyEntry(stats, {
+    startTimestamp: currentStartTimestamp,
+    timestamp: Date.now(),
+    presetUsed: activePreset
+  }); }
+
+  attemptsDone++;
+  currentStartTimestamp = Date.now();
+
+  logStr='';
+  for (let i in stats) {
+    if (stats[i] instanceof scoreStat) { continue; }
+    if (stats[i].constructor.noteworthy) { 
+      logStr += stats[i].getNotifStr();
+      logStr += '<br>';
+    }
+  }
   return function() { 
-    if (invalidateScore==0) {Game.Notify(logArr[0],logArr[1]+logArr[2]+logArr[3]+logArr[4]+logArr[5].replace('<br>',''),icon)} else {Game.Notify('Score invalid', 'Settings changed since reset',[10,6]); invalidateScore=0};
+    if (invalidateScore==0) {Game.Notify('Score: ' + SimpleBeautify(Math.floor(originalScore)) + ' (' + (score * 100).toFixed(1) + '%)', logStr + ((originalScore > historySettings.scoreRegisterThreshold)?'For more details, see history.':'Not enough score to register history. Gain at least '+SimpleBeautify(historySettings.scoreRegisterThreshold)+' score to register.'), scoreStatO.getIcon())}
     if (scoreCorNotify && clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
-      Game.Notify('Large score fault',logArr[logArr.length-4]+logArr[logArr.length-3]+logArr[logArr.length-2]+logArr[logArr.length-1],[1,7]);
+      Game.Notify('Large score fault',
+        'Score per click: ' + scorePerClick.toFixed(4) +
+        'Score correction value: ' + scoreCorrection.toFixed(4) +
+        z + 'Automatic score correction: ' + autoScoreCor.toFixed(4) +
+        z + 'Set score mult to: ' + scoreCorrection*scoreCorVal
+        ,[1,7]);
       };
     if (scoreCorNotify && clickScore && incorrectEBwarn>0) {Game.Notify('EB setting fault','EB setting not matching usage of Elder Battalion',[1,7]);}
   }
-  };
+};
+
+var historyEntries = [];
+var favoritedEntries = new Set();
+var attemptsDone = 0;
+var historySettings = {
+  scoreRegisterThreshold: 1,
+};
+var statTypesList = {};
+var currentStartTimestamp = Date.now();
+class historyEntry {
+  constructor(stats, configs) {
+    this.stats = [].concat(stats);
+
+    configs = configs ?? {};
+    this.name = configs.name ?? 'Attempt #' + Beautify(attemptsDone + 1);
+    this.startTimestamp = configs.startTimestamp ?? (0); //finish later
+    this.timestamp = configs.timestamp ?? Date.now();
+    this.presetUsed = configs.presetUsed ?? activePreset;
+
+    this.index = historyEntries.length;
+    historyEntries.push(this);
+  }
+  favorited = false
+
+  getLStr(extended) {
+    let statsList = [];
+    for (let i in this.stats) {
+      if (!extended && !this.stats[i].constructor.summaryworthy) { continue; }
+      statsList.push(this.stats[i]);
+    }
+
+    const columns = 2;
+    const gridStyle = 'grid-template-columns:repeat(' + columns + ',1fr);';
+
+    let cells = '';
+    let colPos = 0; 
+    for (let i = 0; i < statsList.length; i++) {
+      const wantSpan = Math.min(statsList[i].cellsOccupying, columns);
+      const remaining = columns - colPos || columns;
+      const span = Math.min(wantSpan, remaining);
+
+      cells += '<div class="statsCell" style="grid-column:span ' + span + ';">' + statsList[i].getLStr(extended) + '</div>';
+
+      colPos += span;
+      if (colPos >= columns) { colPos = 0; }
+    }
+
+    let str = '<div class="block historyEntry" '+Game.clickStr+'="openSpecificAttempt('+this.index+');">';
+    str += '<div id="topSection" style="width: 100%; height: 24px; text-align: left;">';
+    str += '<div class="title" style="font-size: 20px; display: inline-block;">' + this.name + '<div class="listing" style="display: inline-block;">' + (this.presetUsed ? 'Preset: ' + this.presetUsed.name : 'No preset') + '</div></div>' +
+      '<span style="float: right;">Duration: ' + Game.sayTime((this.timestamp - this.startTimestamp) / 1000 * Game.fps, -1) + '</span>';
+    str += '</div><div class="line"></div>';
+
+    str += '<div class="statsGrid" style="' + gridStyle + '">' + cells + '</div>';
+    return str + '</div>';
+  }
+
+  favorite() {
+    this.favorited = true;
+    favoritedEntries.add(this);
+  }
+}
+var toReloadHistory = false;
+function openHistory() {
+  let str = '<id history><h3>Combo history</h3><div id="historyMainSection"><div class="block">This is a list of your past combo attempts this session.</div><div class="block" style="height: 550px; overflow-y: scroll;">';
+
+  for (let i in historyEntries) {
+    str += historyEntries[i].getLStr();
+  }
+  if (!historyEntries.length) {
+    str += 'No combos done yet! Get at least <b>'+SimpleBeautify(Math.floor(historySettings.scoreRegisterThreshold))+'</b> score from an attempt to be stored here. Press try again to end an attempt.';
+  }
+
+  str += '</div></div>';
+  str += '<div id="historyExtendedView" style="display: none;"></div>';
+  str += '<div id="historySettings" style="display: none;"></div>'
+  Game.Prompt(str, [[loc('Go back'), 'switchToMenu(\'historyMainSection\');'], [loc('Close'), 'Game.ClosePrompt();'], [loc('Open history settings'), 'openSettings();']], 0, 'widePrompt');
+  l('prompt').classList.add('ultraWide');
+  l('promptOption0').style.display = 'none';
+}
+function switchToMenu(id) {
+  const list = [
+    'historyMainSection',
+    'historyExtendedView',
+    'historySettings'
+  ];
+  for (let i in list) {
+    l(list[i]).style.display = 'none';
+  }
+  l(id).style.display = '';
+  if (id == 'historyMainSection') {
+    l('promptOption0').style.display = 'none';
+    l('promptOption2').style.display = '';
+    if (toReloadHistory) {
+      toReloadHistory = false;
+      openHistory();
+    }
+  } else {
+    l('promptOption0').style.display = '';
+    l('promptOption2').style.display = 'none';
+  }
+}
+function openSpecificAttempt(id) {
+  switchToMenu('historyExtendedView');
+  if (!historyEntries[id]) { 
+    l('historyExtendedView').innerHTML = 'Unknown error';
+    return;
+  }
+  let str = '';
+  str += '<div class="block">';
+  str += historyEntries[id].getLStr(true);
+  str = str.replace('historyEntry', 'historyEntry alwaysHighlighted');
+  str += '</div>';
+  l('historyExtendedView').innerHTML = str;
+}
+function openSettings() {
+  switchToMenu('historySettings');
+  
+  let str = '';
+  str += '<div class="block">';
+  str += '<div class="title" style="height: 24px; font-size: 20px; margin-top: 5px;">Stats displayed in reset notification</div>';
+  for (let i in statTypesList) {
+    str += statTypesList[i].prototype.getSmallToggleButton('noteworthy');
+  }
+  str += '<div class="line"></div><div class="title" style="height: 24px; font-size: 20px; margin-top: 10px;">Stats displayed in history viewer</div>';
+  for (let i in statTypesList) {
+    str += statTypesList[i].prototype.getSmallToggleButton('summaryworthy');
+  }
+  str += '</div>';
+
+  l('historySettings').innerHTML = str;
+}
+function saveHistorySettings() {
+  let obj = {};
+  obj.normalSettings = escape(JSON.stringify(historySettings));
+  let str = '';
+  for (let i in statTypesList) {
+    str += statTypesList[i].save() + '_';
+  }
+  obj.statSettings = str;
+  return utf8_to_b64(JSON.stringify(obj));
+}
+function loadHistorySettings(str) {
+  if (!str) { return; }
+  try {
+    const obj = JSON.parse(b64_to_utf8(str));
+    if (obj.normalSettings) {
+      Object.assign(historySettings, JSON.parse(unescape(obj.normalSettings)));
+    }
+    if (obj.statSettings) {
+      const parts = (obj.statSettings || '').split('_');
+      let idx = 0;
+      for (let i in statTypesList) {
+        const part = parts[idx++] ?? '0';
+        if (statTypesList[i].load) statTypesList[i].load(part);
+      }
+    }
+  } catch (e) {
+    Game.Notify('History settings failed to load!', e?.message, [0, 7]);
+    console.error(e);
+  }
+}
+class stat {
+  //baseline class, to extend
+  constructor(detail) {
+    this.detail = detail;
+  }
+  static key = 'base';
+  static name = 'Stat';
+  static description = 'Stat description';
+  static cellsOccupying = 1;
+  static noteworthy = false; //displayed in notif
+  static summaryworthy = false; //displayed in history without opening details
+  detail = null;
+
+  getIcon() {
+    return [0, 0];
+  }
+  getLStr(extended) {
+    return '<div class="block stat">'
+      + '<div class="statIcon">'
+        + '<div class="statIconActual" style="'+writeIcon(this.getIcon())+'"></div>'
+      + '</div>'
+      + '<div style="flex:1;text-align:left;">'
+        + '<div class="title stat">'
+          + this.constructor.name
+          + '<span class="statDescription" title="' + (this.constructor.description || '') + '">?</span>'
+        + '</div>'
+        + '<div class="statDetails">'
+          + this.getDetailDisplay(extended)
+        + '</div>'
+      + '</div>'
+    + '</div>';
+  }
+  getSmallToggleButton(property) {
+    //small button containing that just identifies this stat
+    return `
+    <a class="option prefButton option${this.constructor[property]?'':' off'}" ${Game.clickStr}="statTypesList['${this.constructor.key}']['${property}'] = !statTypesList['${this.constructor.key}']['${property}']; openSettings(); toReloadHistory = true;">${this.constructor.name}</a>
+    `;
+  }
+  getNotifStr() {
+    return '<b>' + this.constructor.name + ':</b> ' + this.getDetailDisplay();
+  }
+  static save() {
+    //idk
+    return '' + (Number(this.noteworthy) * 2 + Number(this.summaryworthy));
+  }
+  static load(str) {
+    str = parseInt(str);
+    if (Math.floor(str / 2) % 2) { 
+      this.noteworthy = true;
+    } else {
+      this.noteworthy = false;
+    }
+    if (str % 2) {
+      this.summaryworthy = true;
+    } else {
+      this.summaryworthy = false;
+    }
+  }
+
+  register(cl) {
+    statTypesList[cl.key] = cl;
+  }
+}
+class scoreStat extends stat {
+  constructor(detail, percent) {
+    super(detail);
+    this.percent = percent;
+  }
+  static key = 'score';
+  static name = 'Score';
+  static description = 'An evaluation of your execution in terms of skill displayed. Luck (such as how many buffs) do not factor into the calculations.';
+  static noteworthy = true;
+  static summaryworthy = true;
+
+  getDetailDisplay() {
+    let scoreDisplay = '';
+    if (this.detail > 1e10) { 
+      scoreDisplay += Beautify(this.detail, 0);
+    } else { 
+      scoreDisplay += SimpleBeautify(Math.floor(this.detail));
+    }
+    if (this.percent < 1e6) { scoreDisplay += ' (' + SimpleBeautify(Math.floor(this.percent)) + '%)'; }
+    return scoreDisplay;
+  }
+  getIcon() {
+    const score = this.detail / 1.333e6;
+    let icon;
+    if (score > 2.75) { icon = [1, 7] }
+    else if (score > 2.5) { icon = [3, 1, cccemSpritesheet] }
+    else if (score > 2.25) { icon = [2, 1, cccemSpritesheet] }
+    else if (score > 2) { icon = [1, 1, cccemSpritesheet] }
+    else if (score > 1.75) { icon = [33, 4] }
+    else if (score > 1.5) { icon = [32, 4] }
+    else if (score > 1.25) { icon = [0, 1, cccemSpritesheet] }
+    else if (score > 1) { icon = [14, 5] }
+    else if (score > 0.85) { icon = [13, 5] }
+    else if (score > 0.7) { icon = [12, 5] }
+    else if (score > 0.6) { icon = [3, 0, cccemSpritesheet] }
+    else if (score > 0.5) { icon = [2, 0, cccemSpritesheet] }
+    else if (score > 0.4) { icon = [1, 0, cccemSpritesheet] }
+    else if (score > 0.3) { icon = [0, 0, cccemSpritesheet] }
+    else if (score > 0.2) { icon = [2, 5] }
+    else if (score > 0.1) { icon = [1, 5] }
+    else if (score > 0.01) { icon = [0, 5] }
+    else if (score > 0) { icon = [12, 8] }
+    else { icon = [12, 8]; }
+    return icon;
+  }
+  getSmallToggleButton(property) {
+    //small button containing that just identifies this stat
+    if (property == 'noteworthy') { return '';}
+    return `
+    <a class="option prefButton option${this.constructor[property]?'':' off'}" ${Game.clickStr}="statTypesList['${this.constructor.key}']['${property}'] = !statTypesList['${this.constructor.key}']['${property}']; openSettings(); toReloadHistory = true;">${this.constructor.name}</a>
+    `;
+  }
+  static { stat.prototype.register(this); }
+}
+//below icons are suggested by hellranger
+class cpsStat extends stat {
+  static key = 'cps';
+  static name = 'CpS gained';
+  static description = 'Amount of cookies in terms of CpS gained during the attempt.';
+  static summaryworthy = true;
+  getIcon() {
+    const years = this.detail / (365 * 24 * 60 * 60);
+    const map = {
+      1e15: [22, 0],
+      1e14: [21, 0],
+      1e13: [31, 2],
+      1e12: [30, 2],
+      1e11: [31, 1],
+      1e10: [30, 1],
+      1e9: [29, 1],
+      1e8: [28, 1],
+      1e7: [27, 1],
+      1e6: [26, 1],
+      1e5: [25, 1],
+      1e4: [24, 1],
+      1e3: [23, 1],
+      1e2: [22, 1],
+      10: [21, 1],
+      1: [20, 0],
+      0: [24, 18]
+    };
+    const mapM = Object.keys(map).reverse();
+    for (let i of mapM) {
+      if (Number(i) <= years) {
+        return map[i];
+      }
+    }
+    return [0, 7];
+  } 
+  getDetailDisplay(extended) {
+    return convertSeconds(this.detail).split(', ').slice(0, extended?Infinity:1).join(', ');
+  }
+  static { stat.prototype.register(this); }
+}
+class godzStat extends stat {
+  static key = 'godz';
+  static name = 'Strength of Godzamok';
+  static description = 'Maximum strength of the Devastation (Godzamok) buff.';
+  static summaryworthy = true;
+  getIcon() { return [23, 18]; } 
+  getDetailDisplay() {
+    return Beautify(this.detail);
+  }
+  static { stat.prototype.register(this); }
+}
+class clicksStat extends stat {
+  static key = 'clicks';
+  static name = 'Clicks';
+  static description = 'Estimated number of clicks useful in the attempt.';
+  getIcon() {
+    const map = {
+      70: [0, 35],
+      65: [0, 25],
+      60: [0, 21],
+      55: [0, 19],
+      50: [0, 18],
+      40: [0, 2],
+      30: [0, 1],
+      0: [0, 0]
+    }
+    for (let i in map) {
+      if (parseInt(i) <= this.detail) {
+        return map[i];
+      }
+    }
+    return [0, 7];
+  } // placeholder
+  getDetailDisplay() {
+    return Beautify(this.detail);
+  }
+  static { stat.prototype.register(this); }
+}
+class devastatednessStat extends stat {
+  static key = 'devastatedness';
+  static name = 'Devastatedness';
+  static description = 'Maximum Godzamok power, multiplied by the amount of clicks during devastation.';
+  static noteworthy = true;
+  static summaryworthy = true;
+  getIcon() { 
+    const map = {
+      8000: [11, 15],
+      7500: [11, 30],
+      7000: [11, 21],
+      6500: [11, 24],
+      6000: [11, 23],
+      5000: [11, 22],
+      3500: [11, 19],
+      2500: [11, 13],
+      1000: [11, 0],
+      0: [11, 15]
+    }
+    for (let i in map) {
+      if (parseInt(i) <= this.detail) {
+        return map[i];
+      }
+    }
+    return [0, 7];
+  }
+  getDetailDisplay() {
+    return Beautify(this.detail);
+  }
+  static { stat.prototype.register(this); }
+}
+class rebuyStat extends stat {
+  static key = 'rebuyMult';
+  static name = 'Rebuy multiplier';
+  static description = 'Multiplier contribution from rebuying behavior (if enabled).';
+  getIcon() { return [2, 6]; }
+  getDetailDisplay() {
+    if (!this.detail) { return 'Not rebuying'; }
+    return this.detail.toFixed(3);
+  }
+  static { stat.prototype.register(this); }
+}
+class comboStat extends stat {
+  static key = 'comboStrength';
+  static name = 'Combo strength';
+  static description = 'Maximum observed combo multiplier during the attempt.';
+  getIcon() { return [23, 6]; }
+  getDetailDisplay() {
+    return Beautify(this.detail);
+  }
+  static { stat.prototype.register(this); }
+}
+class relComboStat extends stat {
+  static key = 'relComboStrength';
+  static name = 'Strength of non-constant buffs';
+  static description = 'Cumulative strength of buffs that are not generally considered guaranteed.';
+  getIcon() { return [0, 14]; }
+  getDetailDisplay() {
+    return Beautify(this.detail);
+  }
+  static { stat.prototype.register(this); }
+}
+class consistentPowStat extends stat {
+  static key = 'consistentPow';
+  static name = 'Strength of constant buffs';
+  static description = 'Cumulative strength of buffs that are generally considered guaranteed.';
+  getIcon() { return [10, 14]; }
+  getDetailDisplay() {
+    return Beautify(this.detail);
+  }
+  static { stat.prototype.register(this); }
+}
+class bsCountStat extends stat {
+  static key = 'bsCount';
+  static name = 'Number of BSs';
+  static description = 'Number of building-special buffs observed in the attempt.';
+  getIcon() { return [5, 6]; } 
+  getDetailDisplay() {
+    return String(this.detail ?? '');
+  }
+  static { stat.prototype.register(this); }
+}
+class cookieGainStat extends stat {
+  static key = 'cookiesGained';
+  static name = 'Cookie gained';
+  static description = 'Total cookies gained during the attempt.';
+  getIcon() { return [26, 17]; }
+  getDetailDisplay() {
+    return Beautify(this.detail);
+  }
+  static { stat.prototype.register(this); }
+}
+class handmadeGainStat extends stat {
+  static key = 'handmadeGain';
+  static name = 'Handmade gain';
+  static description = 'Cookies directly produced by clicks during the attempt.';
+  getIcon() { return [11, 26]; } //placeholder?
+  getDetailDisplay() {
+    return Beautify(this.detail);
+  }
+  static { stat.prototype.register(this); }
+}
+class iniRawStat extends stat {
+  static key = 'initialRaw';
+  static name = 'Initial Raw CpS';
+  static description = 'Baseline raw cookies-per-second at the start of the attempt.';
+  getIcon() { return [3, 5]; } 
+  getDetailDisplay() {
+    return Beautify(this.detail);
+  }
+  static { stat.prototype.register(this); }
+}
+class scorePerClickStat extends stat {
+  static key = 'scorePerClick';
+  static name = 'Score per Click';
+  static description = 'Estimated contribution to score per effective click.';
+  getIcon() { 
+    const map = {
+      20000: [21, 32],
+      18000: [21, 25],
+      16000: [29, 6],
+      14000: [11, 8],
+      12000: [11, 7],
+      10000: [11, 6],
+      0: [10, 0]
+    }
+    for (let i in map) {
+      if (parseInt(i) <= this.detail) {
+        return map[i];
+      }
+    }
+    return [0, 7];
+  }
+  getDetailDisplay() {
+    return SimpleBeautify(Math.floor(this.detail));
+  }
+  static { stat.prototype.register(this); }
+}
+class scoreCorrectionStat extends stat {
+  static key = 'scoreCorrection';
+  static name = 'Score correction value';
+  static description = 'Automatic correction factor computed for score normalization.';
+  getIcon() { return [16, 5]; }
+  getDetailDisplay() {
+    return this.detail.toFixed(4);
+  }
+  static { stat.prototype.register(this); }
+}
 
 function BuffsDesc(buffsStr) {//give a more readable description of the buff parameters in the prompt
   let str=''
@@ -496,7 +1006,6 @@ class CCCEMButton {
     }
     this.newLine = options.newLine ?? '';
     this.preNewLine = options.preNewLine ?? '';
-    this.hidden = false;
     this.watch = options.watch; 
     this.advanced = options.advanced ?? true;
     this.ignorePreset = options.ignorePreset ?? false;
@@ -511,6 +1020,7 @@ class CCCEMButton {
     CCCEMButtons[this.key] = this;
   }
   updateVarFunc = () => {}
+  hidden = false
 
   getLStr() {
     if (this.isHidden()) { return ''; }
@@ -542,6 +1052,7 @@ class CCCEMButton {
   }
   triggerSetVar() {
     this.type.triggerSetVar();
+    PlaySound('snd/tick.mp3');
   }
   updateStateFromWatch() {
     if (!this.watch) { return; }
@@ -624,7 +1135,10 @@ class buttonCategory {
   }
 }
 
-
+function invalidateScoreS() {
+  if (!invalidateScore) { Game.Notify('Score invalidated', 'Settings changed, start another attempt to reenable scoring.', [15, 5]); }
+  invalidateScore = 1;
+}
 class buttonType {
   constructor() {
     //this.parent = button owning this type
@@ -642,7 +1156,7 @@ class buttonType {
     return names[0].replace('[##]', state);
   }
   onClick() {
-    invalidateScore = 1;
+    invalidateScoreS();
     //does things to change the variable idk
   }
   triggerVarFunc() {
@@ -677,6 +1191,17 @@ class triggerButton extends buttonType {
     return 'Click to activate.';
   }
 }
+class pesudoInputButton extends triggerButton {
+  getColorStr() {
+    return 'neatocyan';
+  }
+  getTip() {
+    return 'Click to view.';
+  }
+  onClick() {
+
+  }
+}
 class presetButton extends buttonType {
   willSave = false
   constructor(preset) {
@@ -709,15 +1234,20 @@ class limeButton extends buttonType {
   }
   willSave = false
 }
+class resetButton extends limeButton {
+  getColorStr() {
+    return 'neatolime massive';
+  }
+}
 class inputButton extends buttonType {
   //base class, should never be used in practice
   constructor(autoSet) {
     super();
     if (autoSet) { this.autoSet = autoSet; }
   }
-  heading = 'Input variable'
-  subHeading = 'Please input what you want the variable to be set to.'
-  readonly = false
+  static heading = 'Input variable'
+  static subHeading = 'Please input what you want the variable to be set to.'
+  static readonly = false
   getOptions() {
     return [[loc("Load"),`Game.ClosePrompt(); \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value.trim());\nRedrawCCCEM();`],[loc("Nevermind")]]
   }
@@ -746,13 +1276,13 @@ class inputButton extends buttonType {
     RedrawCCCEM();
   }
   onClick() {
-    invalidateScore = 1;
+    invalidateScoreS();
     Game.Prompt('<id NumImport><h3>'
-      + loc(this.heading)
+      + loc(this.constructor.heading)
       + '</h3><div class="block">'
-      + loc(this.subHeading)
+      + loc(this.constructor.subHeading)
       + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;"'
-      + (this.readonly?'readonly':'')
+      + (this.constructor.readonly?'readonly':'')
       + '>'
       + this.parent.state
       + '</textarea></div>',
@@ -774,9 +1304,9 @@ class numberInputButton extends inputButton {
     if (precision) { this.precision = precision; }
     if (autoSet) { this.autoSet = autoSet; }
   }
-  precision = 3
-  heading = 'Input number'
-  subHeading = 'Please input a number the variable should be equal to.'
+  static precision = 3
+  static heading = 'Input number'
+  static subHeading = 'Please input a number the variable should be equal to.'
   parse(names, state) {
     return names[0].replace('[##]', Beautify(state, this.precision));
   }
@@ -818,13 +1348,13 @@ class readonlyDisplayButton extends inputButton {
   getTip() {
     return 'Click to export value.';
   }
-  heading = 'Export variable'
-  subHeading = 'Copy the contents of the box below to export it.'
-  readonly = true
+  static heading = 'Export variable'
+  static subHeading = 'Copy the contents of the box below to export it.'
+  static readonly = true
 }
 class gardenPlantAgeSetButton extends inputButton {
-  header = 'Input plant ages'
-  subHeading = 'Input percentage, decimal, or words for plant stages (e.g. "mature" or "budding")'
+  static header = 'Input plant ages'
+  static subHeading = 'Input percentage, decimal, or words for plant stages (e.g. "mature" or "budding")'
   getTip() {
     return 'Click to input plant age.';
   }
@@ -873,7 +1403,7 @@ class cycleButton extends buttonType {
     return names[0].replace('[##]', this.parseConvert(state));
   }
   onClick() {
-    invalidateScore = 1;
+    invalidateScoreS();
     Game.Prompt(`
       <id chooseOption><h3>Select value</h3><div class="line"></div>
       <div class="block">
@@ -1027,7 +1557,7 @@ class boolButton extends buttonType {
     return names[0].replace('[##]', state?this.truthy:this.falsy);
   }
   onClick() {
-    invalidateScore = 1;
+    invalidateScoreS();
     this.parent.state = !this.parent.state;
   }
   save() {
@@ -1171,6 +1701,9 @@ class openExternal extends buttonType {
     l('devConsoleContent').classList.add('widthCapped');
     l('devConsoleContent').classList.add('fadeOut');
   }
+  getTip() {
+    return 'Click to open external resource in a new tab.';
+  }
 }
 
 class buttonInfo {
@@ -1295,16 +1828,21 @@ var advancedMode = false;
 
 new buttonCategory('interfaceBegin', 0, [
   new CCCEMButton('tryAgain', 'Try again',
-    new limeButton(),
+    new resetButton(),
     new buttonInfo('Try again', 'Resets everything and starts another attempt.', [21, 6]),
     () => {
       ResetAll(1); if (hasHarbor && netcodeSettingsExport.hosting) { MacadamiaModList.cccem.mod.tryAgainRPC.send(); }
-    }
+    }, true
   ),
   new CCCEMButton('resetKey','([##])',
     new keySelectButton(82),
     new buttonInfo('Reset key select', 'Selects the key that restarts the current attempt on press.', [0, 8]),
     down => { if (!down) { return; } ResetAll(1); }
+  ),
+  new CCCEMButton('history','History',
+    new pesudoInputButton(),
+    new buttonInfo('Combo history', 'The history of your combo attempts in the current session.', [28, 26]),
+    down => { openHistory(); }
   ),
 ]);
 
@@ -2028,9 +2566,17 @@ new buttonCategory('savingControls', 1e6, [
     new savingModule(() => {
       return (activePreset?activePreset.key:'N');
     }, str => {
-      if (str != 'N' && CCCEMPresets[str]) { CCCEMPresets[str].invoke(true); }
+      if (str != 'N' && CCCEMPresets[str]) { CCCEMPresets[str].partialInvoke(); }
     }),
     new buttonInfo('Active preset save', 'Saves the active preset (hidden button)', [0, 0]), null, { ignorePreset: true }
+  ),
+  new CCCEMButton('historySettingsSave', '',
+    new savingModule(() => {
+      return saveHistorySettings();
+    }, str => {
+      loadHistorySettings(str);
+    }),
+    new buttonInfo('History settings save', 'Saves the history settings (hidden button)', [0, 0]), null, { ignorePreset: true }
   ),
   new CCCEMButton('miscSaveData', '',
     new savingModule(() => {
@@ -2039,7 +2585,7 @@ new buttonCategory('savingControls', 1e6, [
       const strs = str.split('_');
       if (strs[0] && !isNaN(parseFloat(strs[0]))) { Game.volume = parseFloat(strs[0]); }
       if (strs[1] && !isNaN(parseFloat(strs[1]))) { Game.volumeMusic = parseFloat(strs[1]); }
-      if (strs[2] && strs[2] != 'N') { CCCEMPresets[strs[2]].invoke(true); }
+      if (strs[2] && strs[2] != 'N') { CCCEMPresets[strs[2]].partialInvoke(); }
       if (strs[3]) { Game.bakeryNameSet(b64_to_utf8(strs[3])); }
     }),
     new buttonInfo('Miscellaneous save', 'Saves other random stuff (hidden button)', [0, 0])
@@ -2149,6 +2695,60 @@ customStyles.push(`
   .cccemSearchDisplay:hover {
     background-color: #363535ff;
   }
+
+  .statsGrid {
+    display:grid;
+    gap: 5px;
+    align-items: start;
+  }
+  .statsCell {
+    min-width: 0;
+    line-height: 160%;
+  }
+  .block .historyEntry {
+    border-width: 2px;
+    cursor: pointer;
+  }
+  .block .historyEntry:hover { 
+    border: 2px solid white;
+  }
+  .block .historyEntry.alwaysHighlighted {
+    border: 2px solid white !important;
+  }
+  .block.stat {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .statIcon {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+  }
+  .statIconActual { 
+    width: 48px;
+    height: 48px;
+    background-repeat: no-repeat;
+    transform-origin: 0 0;
+    background-image: url('img/icons.png');
+  }
+  .title.stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 16px;
+  }
+  .statDescription {
+    text-decoration: underline;
+    cursor: help;
+    font-weight: 700;
+    margin-left: 6px;
+  }
+  .statDetails {
+    font-size: 24px;
+    font-weight: 700;
+    margin-top: 6px;
+  }
   `)
 customStyles.push(`
   .neatocyan, a.option.neatocyan {
@@ -2182,7 +2782,8 @@ customStyles.push(`
   .neatolime, a.option.neatolime {
     color: #00de35;
     border-color: #00de35;
-  }`)
+  }
+  .neatolime.massive { font-size: 140%; padding: 6px 11px; border-width: 2px; font-weight: bold; border-radius: 5px; }`)
 customStyles.push(`
   a.option.neatolime:hover {
     color: #26ff5a;

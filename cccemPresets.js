@@ -51,7 +51,7 @@ class CCCEMPreset {
     ResetAll();
     Game.CloseNotes();
 
-    Game.Notify('Preset '+this.name+' set!', 'Remove or edit the setting changes through the presets option category.' + (this.additionalInfo?('<br><br><div class="block" style="border: 1px solid #ffffff; box-shadow: 0px 0px 3px 3px #ffffff;">' + this.additionalInfo + '</div>'):''), this.icon);
+    Game.Notify('Preset '+this.name+' set!', 'Click "Try again" through the presets option category to restart practice or aim for higher scores.' + (this.additionalInfo?('<br><br><div class="block" style="border: 1px solid #ffffff; box-shadow: 0px 0px 3px 3px #ffffff;">' + this.additionalInfo + '</div>'):''), this.icon);
     RedrawCCCEM();
     invalidateScore = 0;
   }
@@ -61,7 +61,29 @@ class CCCEMPreset {
   }
 
   partialInvoke() {
+    console.log(this.key + ' invoked!');
+
+    invalidateScore = 1;
+
+    activePreset = this;
+    CCCEMButtons['revertPreset'].hidden = false;
+    CCCEMButtons['editPreset'].hidden = false;
+    CCCEMButtons['advancedMode'].hidden = true;
+
+    CCCEMCategories['interfaceBegin'].hidden = false;
+    CCCEMCategories['savingControls'].hidden = false;
+    CCCEMButtons['loadPForPause'].hidden = false;
+    CCCEMButtons['loadCastFinder'].hidden = false;
+    CCCEMButtons['createPreset'].hidden = false;
+
+    ResetAll();
     this.onTriggerFunc();
+    ResetAll();
+    Game.CloseNotes();
+
+    Game.Notify('Preset '+this.name+' set!', 'Remove or edit the setting changes through the presets option category.' + (this.additionalInfo?('<br><br><div class="block" style="border: 1px solid #ffffff; box-shadow: 0px 0px 3px 3px #ffffff;">' + this.additionalInfo + '</div>'):''), this.icon);
+    RedrawCCCEM();
+    invalidateScore = 0;
   }
 }
 class externalPreset extends CCCEMPreset {
@@ -106,7 +128,7 @@ const FCFPreset = `>>CCCEMContainerTop:v2.95<<{"resetKey":82,"importSave":"Mi4wN
 new CCCEMPreset('f+cf', FCFPreset, 
   () => {
     Game.bakeryNameSet('Basic combo');
-  }, ['buyOption1', 'buyOption2', 'prefsRecord'], 'Basic combo', [12, 0], 'Cast Force the Hand of Fate, sell buildings for godzamok, click!<br>For reliable execution, aim for <b>100% score</b> adjusted for <b>10 clicks/s</b>.' 
+  }, ['buyOption1', 'buyOption2', 'prefsRecord'], 'Basic combo', [12, 0], 'After finishing execution, click <b>Try again</b> in the menu to practice more or try for a higher score.<br>Check the Guide button for instructions.<br>For reliable execution, aim for <b>100% score</b> adjusted for <b>10 clicks/s</b>.' 
 )
 presetButtonsToRegister.push(new CCCEMButton('F+CFPreset', 'Basic combo', 
   new presetButton('f+cf'),
