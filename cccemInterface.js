@@ -1969,19 +1969,19 @@ new buttonCategory('presetSettings', 3, [
       Game.CloseNotes();
       CCCEMButtons['revertPresetContainer'].state = '';
       this.hidden = true;
-    }, { preNewLine: true }
+    }, { preNewLine: true, hidden: true }
   ),
   new CCCEMButton('revertPresetContainer', 'Undo preset', 
     new readonlyDisplayButton(),
     new buttonInfo('Savedata container', 'You are not supposed to see this.', [0, 0]),
     s => { 
 
-    }, { preNewLine: true, ignorePreset: true }
+    }, { preNewLine: true, ignorePreset: true, hidden: true }
   ),
   new CCCEMButton('editPreset', 'Edit settings', 
     new triggerButton(),
     new buttonInfo('Unlock settings', 'Unhides other settings, for further customization of the preset.', [15, 7]),
-    () => { cancelActivePreset(); }
+    () => { cancelActivePreset(); }, { hidden: true }
   ),
   new CCCEMButton('advancedMode', 'Advanced mode %1', 
     new boolButton(),
@@ -1994,9 +1994,6 @@ new buttonCategory('presetSettings', 3, [
     null, { newLine: '<div class="block">' }
   ),
 ], 'optionsBatch2'),
-CCCEMButtons['revertPreset'].hidden = true;
-CCCEMButtons['editPreset'].hidden = true;
-CCCEMButtons['revertPresetContainer'].hidden = true;
 
 new buttonCategory('gameSettings', 4, [
   new CCCEMButton('iniSeed', 'Initial seed %1',
@@ -2065,7 +2062,7 @@ new buttonCategory('gameSettings', 4, [
     s => useRebuy = s, { newLine: true, advanced: false }
   ),
   new CCCEMButton('buildingSelect', '%1:',
-    new cycleButton(0, Object.keys(Game.Objects).length - 1, e => Game.ObjectsById[e].name),
+    new cycleButton(0, Object.keys(Game.Objects).length - 1, e => Game.ObjectsById[e].dname),
     new buttonInfo('Select building', 'The specific building to override or mute. Once overridden, the anchor will not affect this building.', [35, 33]),
     s => {
       CCCEMButtons['overridingNumber'].changeState(manualBuildings[s]);
@@ -2120,7 +2117,7 @@ new buttonCategory('gameSettings', 4, [
   new CCCEMButton('heraldsN', 'Heralds %1',
     new numberInputButton(),
     new buttonInfo('Heralds', 'Changes the amount of Heralds you have.<br>Max 100, usually around 100.', [21, 29]),
-    s => { if (get('heraldsOverride') || !Game.realExternalDataLoaded) { Game.heralds = s; l('heraldsAmount').textContent = s; Game.recalculateGains = 1; } }
+    s => { if (get('heraldsOverride') || !Game.realExternalDataLoaded) { Game.heralds = s; l('heraldsAmount').textContent = s; Game.recalculateGains = 1; } }, { hidden: true }
   ),
   new CCCEMButton('leftAura', 'Left Aura %1',
     new cycleButton(0, 21, e => Game.dragonAuras[e].name),
@@ -2175,7 +2172,6 @@ CCCEMCategories.gameSettings.complexityHideImmune = false;
 CCCEMButtons['buildingSelect'].type.willSave = false;
 CCCEMButtons['overridingNumber'].type.willSave = false;
 CCCEMButtons['muteBuilding'].type.willSave = false;
-CCCEMButtons['heraldsOverride'].hidden = true;
 CCCEMButtons['prefsRecord'].state = {};
 
 var dataLoaded = Game.externalDataLoaded;
@@ -2197,7 +2193,7 @@ Game.UpdateHeralds();
 
 new buttonCategory('minigameSettings', 5, [
   new CCCEMButton('forceFtHoF', 'Force the Hand of Fate outcome: %1',
-    new cycleButton(0, FtHoFOutcomes.length - 1, e => FtHoFOutcomesMap[FtHoFOutcomes[e]]),
+    new cycleButton(0, FtHoFOutcomes.length - 1, e => loc(FtHoFOutcomesMap[FtHoFOutcomes[e]])),
     new buttonInfo('FtHoF outcome', 'The outcome of the first Force the Hand of Fate cast upon starting an attempt.', [27, 11]),
     s => { forceFtHoF = FtHoFOutcomes[s]; }, { advanced: false, newLine: true }
   ),
@@ -2227,7 +2223,7 @@ new buttonCategory('minigameSettings', 5, [
     s => { gardenSeed = s; }
   ),
   new CCCEMButton('gardenRotation', 'Rotation %1',
-    new cycleButton(0, 4, e => ['R', 'bottom', 'top', 'left', 'right'][e]),
+    new cycleButton(0, 4, e => loc(['random', 'bottom', 'top', 'left', 'right'][e])),
     new buttonInfo('Rotation', 'The orientation of the garden upon starting an attempt.', [28, 18]),
     s => { setGardenR = s; }
   ),
@@ -2242,7 +2238,7 @@ new buttonCategory('minigameSettings', 5, [
     s => { toNextTick = s; }
   ),
   new CCCEMButton('plant1', 'Plant 1 %1',
-    new cycleButton(0, 34, e => e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing'),
+    new cycleButton(0, 34, e => loc(e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing')),
     new buttonInfo('Plant 1', 'One of the plants in the garden at the start of each attempt.', [26, 20]),
     s => { gardenP1[0] = s; }
   ),
@@ -2256,7 +2252,7 @@ new buttonCategory('minigameSettings', 5, [
     new buttonInfo('Ghost Tulips', 'Adds ghost tulips in addition to other specified plants. Useful for starting an attempt in the middle of a combo, after you would already have replanted.', [26, 20])
   ),
   new CCCEMButton('plant2', 'Plant 2 %1',
-    new cycleButton(0, 34, e => e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing'),
+    new cycleButton(0, 34, e => loc(e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing')),
     new buttonInfo('Plant 2', 'The other plant in the garden at the start of each attempt.', [26, 20]),
     s => { gardenP2[0] = s; }
   ),
@@ -2271,17 +2267,17 @@ new buttonCategory('minigameSettings', 5, [
     s => { officeL = s; }
   ),
   new CCCEMButton('diamondGod', 'Diamond %1',
-    new cycleButton(0, 10, e => ['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]),
+    new cycleButton(0, 10, e => loc(['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e])),
     new buttonInfo('Pantheon Diamond slot', 'The god slotted within the Diamond slot of the Pantheon at the start of each attempt.', [23, 15]),
     s => { spirit1 = s; }, { advanced: false }
   ),
   new CCCEMButton('rubyGod', 'Ruby %1',
-    new cycleButton(0, 10, e => ['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]),
+    new cycleButton(0, 10, e => loc(['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e])),
     new buttonInfo('Pantheon Ruby slot', 'The god slotted within the Ruby slot of the Pantheon at the start of each attempt.', [25, 18]),
     s => { spirit2 = s; }, { advanced: false }
   ),
   new CCCEMButton('jadeGod', 'Jade %1',
-    new cycleButton(0, 10, e => ['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]),
+    new cycleButton(0, 10, e => loc(['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e])),
     new buttonInfo('Pantheon Jade slot', 'The god slotted within the Jade slot of the Pantheon at the start of each attempt.', [27, 18]),
     s => { spirit3 = s; }, { advanced: false }
   )
@@ -2293,7 +2289,7 @@ function getProperBuffName(buff) {
     'building buff': 'Building special',
     'building debuff': 'Building rust'
   };
-  if (buffDisambiguator[buff.name]) { return buffDisambiguator[buff.name]; }
+  if (buffDisambiguator[buff.name]) { return loc(buffDisambiguator[buff.name]); }
   try { return loc(buff.func(1, 1)?.name); }
   catch { return buff.name; }
 }
@@ -2331,7 +2327,7 @@ new buttonCategory('buffSettings', 6, [
       let name=""
       if ((s==9 || s==10) && get('buffObj') >= 0) {
         let obj=Game.ObjectsById[get('buffObj')].name; 
-        name=Game.goldenCookieBuildingBuffs[obj][s-9]} 
+        name=loc(Game.goldenCookieBuildingBuffs[obj][s-9])} 
       else {
         name=Game.buffTypes[s].name
         }
@@ -2340,9 +2336,9 @@ new buttonCategory('buffSettings', 6, [
       }, { advanced: false }
   ),
   new CCCEMButton('buffObj', 'Cycle BS',
-    new cycleButton(-1, Object.keys(Game.goldenCookieBuildingBuffs).length-1, e => Game.goldenCookieBuildingBuffs[e]),
+    new cycleButton(-1, Object.keys(Game.goldenCookieBuildingBuffs).length-1, e => loc(Game.goldenCookieBuildingBuffs[e])),
     new buttonInfo('Cycle BS type', 'Cycle through BS types. If left at Building Buff or Building Debuff, a random one will be selected', [4, 14]),
-    () => CCCEMButtons['buffType'].updateVarFunc(get('buffType')), { advanced: false }
+    () => CCCEMButtons['buffType'].updateVarFunc(get('buffType')), { advanced: false, hidden: true }
   ),
   new CCCEMButton('addBuff', 'Confirm add %1',
     new triggerButton(),
@@ -2372,29 +2368,26 @@ new buttonCategory('buffSettings', 6, [
     }),
     new buttonInfo('Cycle current buffs', 'Will cycle through all the buffs you are starting with, so that one can be removed with the remove buff button.', [0, 15]),
     s => {if (s) CCCEMButtons['removeBuff'].state=getProperBuffName[Game.buffTypesByName[Game.buffTypes[get('buffs').split(';')[s].split(',')[0]].name]]; CCCEMButtons['removeBuff'].hidden = false; },
+    { hidden: true }
   ),
   new CCCEMButton('removeBuff', 'Confirm remove %1',
     new triggerButton(),
     new buttonInfo('Remove starting buff', 'Remove one starting buff. All current starting buffs can be cycled through with the cycle remove button.', [33, 24]),
-    () => RemoveStartBuff(get("removeType"))
+    () => RemoveStartBuff(get("removeType")), { hidden: true }
   ),
   new CCCEMButton('clearBuffs', 'Clear buffs',
     new triggerButton(),
     new buttonInfo('Clear starting buffs', 'Will remove all starting buffs, making you have no buffs when resetting', [0, 31]),
-    () => CCCEMButtons['buffs'].changeState(""), { advanced: false }
+    () => CCCEMButtons['buffs'].changeState(""), { advanced: false, hidden: true }
   )
 ], 'optionsBatch5');
 CCCEMCategories.buffSettings.complexityHideImmune = false;
 for (let i in CCCEMCategories["buffSettings"].buttons) {
   CCCEMCategories["buffSettings"].buttons[i].type.willSave=false
   };
-CCCEMButtons['buffObj'].hidden=true
-CCCEMButtons['removeType'].hidden=true
-CCCEMButtons['removeBuff'].hidden=true
-CCCEMButtons['clearBuffs'].hidden=true
 CCCEMButtons['buffs'].type.willSave=true
-CCCEMButtons['buffs'].type.heading='Buffs'
-CCCEMButtons['buffs'].type.subHeading='Buffs that will be active when you reset'
+CCCEMButtons['buffs'].type.heading=loc('Buffs')
+CCCEMButtons['buffs'].type.subHeading=loc('Buffs that will be active when you reset');
 
 new buttonCategory('gcSettings', 7, [
   new CCCEMButton('seedNats', 'Seeding GC %1',

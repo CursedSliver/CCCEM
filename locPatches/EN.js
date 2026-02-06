@@ -160,6 +160,16 @@ CCCEMContainerModObj.addLang('EN', 'english', {
     "Press a key to set!": "Press a key to set!",
     "Key set: %1": "Key set: %1",
     "Click to open external resource in a new tab.": "Click to open external resource in a new tab.",
+    "random": "random",
+    "top": "top",
+    "bottom": "bottom",
+    "left": "left",
+    "right": "right",
+    "Nothing": "Nothing",
+    "Building special": "Building special",
+    "Building rust": "Building rust",
+    "Buffs": "Buffs",
+    "Buffs that will be active when you reset": "Buffs that will be active when you reset",
 
     //cccemInterface.js enumerable
     "Try again": "Try again",
