@@ -8,6 +8,9 @@ class CCCEMPreset {
     this.icon = icon;
     this.additionalInfo = additionalInfo ?? null;
 
+    addLoc(name);
+    addLoc(additionalInfo);
+
     this.registerInList();
   }
   external = false
@@ -51,13 +54,13 @@ class CCCEMPreset {
     ResetAll();
     Game.CloseNotes();
 
-    Game.Notify('Preset '+this.name+' set!', 'Click "Try again" through the presets option category to restart practice or aim for higher scores.' + (this.additionalInfo?('<br><br><div class="block" style="border: 1px solid #ffffff; box-shadow: 0px 0px 3px 3px #ffffff;">' + this.additionalInfo + '</div>'):''), this.icon);
+    Game.Notify(loc('Preset %1 set!', this.name), loc('Click "Try again" through the presets option category to restart practice or aim for higher scores.') + (this.additionalInfo?('<br><br><div class="block" style="border: 1px solid #ffffff; box-shadow: 0px 0px 3px 3px #ffffff;">' + this.additionalInfo + '</div>'):''), this.icon);
     RedrawCCCEM();
     invalidateScore = 0;
   }
   
   openConfirmationMenu() {
-    Game.Prompt('<id presetApplicationConfirm><h3>Confirm preset</h3><div class="line"></div><div class="block">You are about to apply the <b>'+this.name+'</b> preset.'+(this.additionalInfo?'<div class="line"></div><h4 style="margin-bottom: 3px;">Additional reminder</h4><br>'+this.additionalInfo:'')+'</div>', [[loc('Confirm'), 'CCCEMPresets["'+this.key+'"].invoke();Game.ClosePrompt();'], [loc('Nevermind'), 'Game.ClosePrompt();']]);
+    Game.Prompt('<id presetApplicationConfirm><h3>'+loc('Confirm preset')+'</h3><div class="line"></div><div class="block">'+loc('You are about to apply the <b>%1</b> preset.', this.name)+(this.additionalInfo?'<div class="line"></div><h4 style="margin-bottom: 3px;">'+loc('Additional reminder')+'</h4><br>'+this.additionalInfo:'')+'</div>', [[loc('Confirm'), 'CCCEMPresets["'+this.key+'"].invoke();Game.ClosePrompt();'], [loc('Nevermind'), 'Game.ClosePrompt();']]);
   }
 
   partialInvoke() {
@@ -81,7 +84,7 @@ class CCCEMPreset {
     ResetAll();
     Game.CloseNotes();
 
-    Game.Notify('Preset '+this.name+' set!', 'Remove or edit the setting changes through the presets option category.' + (this.additionalInfo?('<br><br><div class="block" style="border: 1px solid #ffffff; box-shadow: 0px 0px 3px 3px #ffffff;">' + this.additionalInfo + '</div>'):''), this.icon);
+    Game.Notify(loc('Preset %1 set!', this.name), loc('Click "Try again" through the presets option category to restart practice or aim for higher scores.') + (this.additionalInfo?('<br><br><div class="block" style="border: 1px solid #ffffff; box-shadow: 0px 0px 3px 3px #ffffff;">' + this.additionalInfo + '</div>'):''), this.icon);
     RedrawCCCEM();
     invalidateScore = 0;
   }
@@ -92,7 +95,7 @@ class externalPreset extends CCCEMPreset {
   }
   external = true
   openConfirmationMenu() {
-    Game.Prompt('<id presetApplicationConfirm><h3>Confirm preset (external!)</h3><div class="line"></div><div class="block">You are about to apply the <b>'+this.name+'</b> preset.'+(this.additionalInfo?'<div class="line"></div><h4 style="margin-bottom: 3px;">Additional reminder</h4><br>'+this.additionalInfo:'')+'</div>', [[loc('Confirm'), 'Game.ClosePrompt();'], [loc('Nevermind'), 'Game.ClosePrompt();']]);
+    Game.Prompt('<id presetApplicationConfirm><h3>'+loc('Confirm preset (external!)')+'</h3><div class="line"></div><div class="block">You are about to apply the <b>'+this.name+'</b> preset.'+(this.additionalInfo?'<div class="line"></div><h4 style="margin-bottom: 3px;">Additional reminder</h4><br>'+this.additionalInfo:'')+'</div>', [[loc('Confirm'), 'Game.ClosePrompt();'], [loc('Nevermind'), 'Game.ClosePrompt();']]);
     AddEvent(l('promptOption0'), 'click', e => {
       this.invoke();
     });
@@ -114,12 +117,12 @@ presetButtonsToRegister.push(new CCCEMButton('earlygameInfo', 'Guide',
   new triggerButton(),
   new buttonInfo('Basic combo instructions', 'Click to read about doing the basic combo. It\'s actually really simple, trust me.', [15, 9]),
   () => {
-    Game.Prompt(`<id FCFComboInfo><h3>Combo info</h3><div class="line"></div><div class="block" style="line-height: 120%;">
-      The <b>Force the Hand of Fate</b> Grimoire spell has an unusually high chance of giving Click frenzy (x777 clicks). If you cast it during a Frenzy (x7 CpS) and get Click frenzy, sell buildings to the Godzamok pantheon god, then click as fast as you can to get <b>a lot of cookies</b>!
+    Game.Prompt(`<id FCFComboInfo><h3>${loc('Combo info')}</h3><div class="line"></div><div class="block" style="line-height: 120%;">
+      ${loc('The <b>Force the Hand of Fate</b> Grimoire spell has an unusually high chance of giving Click frenzy (x777 clicks). If you cast it during a Frenzy (x7 CpS) and get Click frenzy, sell buildings to the Godzamok pantheon god, then click as fast as you can to get <b>a lot of cookies</b>!')}
       <div class="line"></div>
-      What should I sell for Godzamok? A useful rule is to sell <b>every building</b> making less than <b>2%</b> of your total CpS. If you quickly sell multiple times you might see the buff not increase in strength, but <b>it's actually lying</b>; the buff does get stronger as shown if you try clicking the big cookie. In this case, you should sell from cursors all the way up to temples, but when you are actually doing it, you may need to sell more or less.
+      ${loc('What should I sell for Godzamok? A useful rule is to sell <b>every building</b> making less than <b>2%</b> of your total CpS. If you quickly sell multiple times you might see the buff not increase in strength, but <b>it\'s actually lying</b>; the buff does get stronger as shown if you try clicking the big cookie. In this case, you should sell from cursors all the way up to temples, but when you are actually doing it, you may need to sell more or less.')}
       <div class="line"></div>
-      In the preset the spell is being forced to give Click frenzy, but in reality you only have about a ~25% chance of getting it each attempt. Still, it remains an extremely powerful cookie-making strategy.
+      ${loc('In the preset the spell is being forced to give Click frenzy, but in reality you only have about a ~25% chance of getting it each attempt. Still, it remains an extremely powerful cookie-making strategy.')}
       </div>`, [[loc('Got it!'), 'Game.ClosePrompt();']], 0, 'widePrompt');
   }, { preNewLine: getTitlePreNewLine('Earlygame combos', true) }
 ));
@@ -210,7 +213,7 @@ presetButtonsToRegister.push(
   ));
 
 presetButtonsToRegister.push(new CCCEMButton('findPreset', 'Find presets', 
-  new triggerButton(),
+  new pesudoInputButton(),
   new buttonInfo('Browse preset', 'Browse presets in the database.', [7, 31]),
   () => {
     browsePreset();
@@ -285,24 +288,24 @@ let presetCreationStages = {
     promptFunc: function() {
       const existingValues = presetCreationBufferObj;
       const esc = (s) => (s === undefined || s === null) ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-      return '<div id="fieldInfoDisplay" class="block" style="height: 26px; overflow-y: auto;">Enter information below about your preset.</div><div class="block cccem-preset-split">' +
+      return '<div id="fieldInfoDisplay" class="block" style="height: 26px; overflow-y: auto;">'+loc('Enter information below about your preset.')+'</div><div class="block cccem-preset-split">' +
         '<div class="left">' +
           '<label class="cccem-preset-label" for="cccem_preset_name">Ingame name</label>' +
-          '<input id="cccem_preset_name" class="cccem-name-input" type="text" maxlength="30" value="' + esc(existingValues.name) + '" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\'Name displayed in the notification and tooltip when applying your preset. Keep it short.\';">' +
+          '<input id="cccem_preset_name" class="cccem-name-input" type="text" maxlength="30" value="' + esc(existingValues.name) + '" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\''+loc('Name displayed in the notification and tooltip when applying your preset. Keep it short.')+'\';">' +
           '<div class="line"></div>' +
           '<label class="cccem-preset-label" for="cccem_preset_ingame">Button description</label>' +
-          '<textarea id="cccem_preset_ingame" type="text" class="cccem-desc-textarea" style="height: 140px;" maxlength="400" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\'A shortened version of the description for small tooltips. Displayed when hovering over the preset button. Keep it relatively short.\';">' + esc(existingValues.ingame) + '</textarea><div class="line"></div>' +
+          '<textarea id="cccem_preset_ingame" type="text" class="cccem-desc-textarea" style="height: 140px;" maxlength="400" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\''+loc('A shortened version of the description for small tooltips. Displayed when hovering over the preset button. Keep it relatively short.')+'\';">' + esc(existingValues.ingame) + '</textarea><div class="line"></div>' +
           '<label class="cccem-preset-label" for="cccem_preset_reminder">Reminder to player</label>' +
-          '<textarea id="cccem_preset_reminder" type="text" class="cccem-desc-textarea" style="height: 80px;" maxlength="140" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\'Displayed on the confirmation prompt when applying the preset, and in the notification afterwards.\';">' + esc(existingValues.reminder) + '</textarea>' +
+          '<textarea id="cccem_preset_reminder" type="text" class="cccem-desc-textarea" style="height: 80px;" maxlength="140" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\''+loc('Displayed on the confirmation prompt when applying the preset, and in the notification afterwards.')+'\';">' + esc(existingValues.reminder) + '</textarea>' +
         '</div>' +
         '<div class="right">' +
           '<label class="cccem-preset-label" for="cccem_preset_extendedName">Extended name</label>' +
-          '<input id="cccem_preset_extendedName" class="cccem-name-input" type="text" maxlength="80" value="' + esc(existingValues.extendedName) + '" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\'Only displayed in the preset browser.\';">' +
+          '<input id="cccem_preset_extendedName" class="cccem-name-input" type="text" maxlength="80" value="' + esc(existingValues.extendedName) + '" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\''+loc('Only displayed in the preset browser.')+'\';">' +
           '<div class="line"></div>' +
           '<label class="cccem-preset-label" for="cccem_preset_desc">Description</label>' +
-          '<textarea id="cccem_preset_desc" class="cccem-desc-textarea" rows="6" maxlength="3000" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\'Only displayed in the preset browser. Put information such as what it\\\'s for and how to use it in here. Up to 3000 characters.\';">' + esc(existingValues.description) + '</textarea><div class="line"></div>' +
+          '<textarea id="cccem_preset_desc" class="cccem-desc-textarea" rows="6" maxlength="3000" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\''+loc('Only displayed in the preset browser. Put information such as what it\\\'s for and how to use it in here. Up to 3000 characters.')+'\';">' + esc(existingValues.description) + '</textarea><div class="line"></div>' +
           '<label class="cccem-preset-label" for="cccem_preset_creator">Creator</label>' +
-          '<input id="cccem_preset_creator" type="text" style="width :100%; padding: 4px; text-align: center;" maxlength="80" value="' + esc(existingValues.creator) + '" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\'Put your name here (or what you would like others to refer to you). Optional.\';">' +
+          '<input id="cccem_preset_creator" type="text" style="width :100%; padding: 4px; text-align: center;" maxlength="80" value="' + esc(existingValues.creator) + '" onmouseover="l(\'fieldInfoDisplay\').innerHTML=\''+loc('Put your name here (or what you would like others to refer to you). Optional.')+'\';">' +
         '</div>' +
         '</div>';
     },
@@ -324,7 +327,7 @@ let presetCreationStages = {
     title: 'Set visible settings',
     promptFunc: function() {
       let str = '<div class="block">Choose buttons that will be visible and modifiable when your preset is used.<br>Note: buttons are always inserted at the end of the list.</div><div class="block" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">';
-      str += '<div class="block" style=""><h4>Hidden</h4><div class="line"></div><div id="buttonsHidden" style="max-height: 400px; overflow-y: scroll;">'
+      str += '<div class="block" style=""><h4>'+loc('Hidden')+'</h4><div class="line"></div><div id="buttonsHidden" style="max-height: 400px; overflow-y: scroll;">'
       for (let i in CCCEMButtons) {
         if (CCCEMButtons[i].category.complexityHideImmune || 
           CCCEMButtons[i].category.presetBypass || 
@@ -336,7 +339,7 @@ let presetCreationStages = {
 
         str += CCCEMButtons[i].getLStrPure('switchVisibleSettingButtonLocation(this);');
       }
-      str += '</div></div><div class="block" style=""><h4>Visible</h4><div class="line"></div><div id="buttonsVisible" style="max-height: 400px; overflow-y: scroll;">'
+      str += '</div></div><div class="block" style=""><h4>'+loc('Visible')+'</h4><div class="line"></div><div id="buttonsVisible" style="max-height: 400px; overflow-y: scroll;">'
       if (presetCreationBufferObj.visibleButtons) {
         for (let i in presetCreationBufferObj.visibleButtons) {
           str += CCCEMButtons[presetCreationBufferObj.visibleButtons[i]].getLStrPure('switchVisibleSettingButtonLocation(this);');
@@ -363,7 +366,7 @@ let presetCreationStages = {
   3: {
     title: 'Select an icon',
     promptFunc: function() {
-      return '<div id="cccem_icon_results" class="block">Click an icon to select it. No selection yet.</div>' +
+      return '<div id="cccem_icon_results" class="block">'+loc('Click an icon to select it. No selection yet.')+'</div>' +
         '<div class="block" style="text-align:center;">' +
         '<canvas id="cccem_icon_canvas" style="max-width:820px; max-height:520px; width:100%; height:auto; display:block; margin: 8px auto; border: 1px solid #555;"></canvas>' +
         '</div>';
@@ -443,7 +446,7 @@ let presetCreationStages = {
 
           results.dataset.iconX = ix;
           results.dataset.iconY = iy;
-          results.innerHTML = 'Click on an icon to select it. Selected icon coordinates: <b>(' + ix + ', ' + iy + ')</b>.';
+          results.innerHTML = loc('Click on an icon to select it. Selected icon coordinates: <b>(%1, %2)</b>.', [ix, iy]);
         };
 
         if (canvas._cccem_icon_handler) {
@@ -512,7 +515,7 @@ let presetCreationStages = {
       str = str.replaceAll('\\n', '$$BR$$');
       presetCreationBufferObj = {};
 
-      return '<div class="block">Now, go to <a href="https://forms.gle/HWgKFhrct7CZhXJp6" target="_blank">this form</a> and input the below code!</div><textarea id="textareaPrompt" style="width: 100%; height: 400px; font-size: 8px;" readonly>' + str + '</textarea>'
+      return '<div class="block">'+loc('Now, go to <a href=\"%1\" target=\"_blank\">this form</a> and input the below code!', 'https://forms.gle/HWgKFhrct7CZhXJp6')+'</div><textarea id="textareaPrompt" style="width: 100%; height: 400px; font-size: 8px;" readonly>' + str + '</textarea>'
     },
     afterPrompt: function() {
       l('textareaPrompt').focus();
@@ -524,7 +527,7 @@ let presetCreationStages = {
   100: {
     title: 'Done!',
     promptFunc: function() {
-      return '<div class="block">The preset was successfully submitted.</div>';
+      return '<div class="block">'+loc('The preset was successfully submitted.')+'</div>';
     },
     options: []
   }
@@ -559,7 +562,7 @@ injectCSS(`
 var presetsIndex = null;
 var presetsData = null;
 function produceWaitingPrompt() {
-  Game.Prompt('<id waitingPrompt><div class="block" style="font-family: \'Merriweather\', Georgia,serif; font-size: 18px; font-weight: bold;">Please wait...</div>', [])
+  Game.Prompt('<id waitingPrompt><div class="block" style="font-family: \'Merriweather\', Georgia,serif; font-size: 18px; font-weight: bold;">'+loc('Please wait...')+'</div>', [])
 }
 function esc(s) { return (s === undefined || s === null) ? '' : String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -575,7 +578,7 @@ function browsePreset() {
     str += getDisplayFromPreset(presetsIndex[i], i);
   }
 
-  Game.Prompt('<id presetsBrowser><h3>Browse presets</h3><div class="line"></div><div id="browserMain" class="block" style="overflow-y: scroll; height: 320px;">'+str+'</div><div id="itemDetails" class="block"  style="overflow-y: scroll; height: 320px; display: none;"></div>', 
+  Game.Prompt('<id presetsBrowser><h3>'+loc('Browse presets')+'</h3><div class="line"></div><div id="browserMain" class="block" style="overflow-y: scroll; height: 320px;">'+str+'</div><div id="itemDetails" class="block"  style="overflow-y: scroll; height: 320px; display: none;"></div>', 
     [[loc('Go back'), "PlaySound(\'snd/tickOff.mp3\');l('itemDetails').style.display = 'none';l('browserMain').style.display = '';l('promptOption0').style.display = 'none';"], [loc('Close'), 'PlaySound(\'snd/tick.mp3\');']], 0, 'widePrompt');
   l('promptOption0').style.display = 'none';
 }
@@ -588,7 +591,7 @@ function openPresetDetails(uuid) {
   const icon = Array.isArray(obj.icon) && obj.icon.length >= 2 ? obj.icon : [16, 5];
   const px = - (parseInt(icon[0], 10) || 0) * 48;
   const py = - (parseInt(icon[1], 10) || 0) * 48;
-  const title = esc(obj.extendedName || obj.name || obj.ingame || 'Unnamed preset');
+  const title = esc(obj.extendedName || obj.name || obj.ingame || loc('Unnamed preset'));
   const creator = esc(obj.creator || '');
   const desc = esc(obj.description || obj.ingame || '').replaceAll('$$BR$$', '<br>');
 
@@ -597,13 +600,13 @@ function openPresetDetails(uuid) {
     '<div class="cccem-preset-icon" style="background-position: ' + px + 'px ' + py + 'px;"></div>' +
     '<div style="flex:1;">' +
     '<div class="title">' + title + '</div>' +
-    (creator ? '<div class="creator">By: ' + creator + '</div>' : '') +
+    (creator ? '<div class="creator">'+loc('By: %1', creator) + '</div>' : '') +
     '</div>' +
     '</div>' +
     '<div class="line"></div>' +
     '<div class="desc" style="overflow-y: min-height: 100px;">' + desc + '</div>' +
     '<div style="margin-top: 10px;">' +
-    '<a class="option cccem-preset-load-button" '+Game.clickStr+'="applyExternalPreset('+uuid+')">' + 'Try it out' + '</a>' + 
+    '<a class="option cccem-preset-load-button" '+Game.clickStr+'="applyExternalPreset('+uuid+')">' + loc('Try it out') + '</a>' + 
     '</div></div>';
   l('itemDetails').innerHTML = str;
 }
@@ -615,7 +618,7 @@ function getDisplayFromPreset(obj, uuid) {
   const creator = esc(obj.creator || '');
   let desc = esc(obj.description || obj.ingame || '').replaceAll('$$BR$$', '<br>');
   if (desc.length > 300) {
-    desc = desc.slice(0, 300) + '...<div style="color: #ffffff; font-size: 85%;">(Open to see more)</div>';
+    desc = desc.slice(0, 300) + '...<div style="color: #ffffff; font-size: 85%;">'+loc('(Open to see more)')+'</div>';
   }
 
   return '<div class="block cccem-preset-display" '+Game.clickStr+'="PlaySound(\'snd/tick.mp3\');openPresetDetails('+uuid+');">' +

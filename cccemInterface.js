@@ -46,7 +46,8 @@
 
 var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
 
-Game.sesame=0 //this prevents a crash if opensesame is open, but doesn't get rid of the fps counter. Not sure what to do about that
+Game.sesame=0 
+if (l('fpsGraph')) { l('fpsGraph').style.display = 'none'; }
 var promptN=0
 var maxComboPow=1
 var relComboPow=1
@@ -391,7 +392,7 @@ class historyEntry {
     let str = '<div class="block historyEntry" '+Game.clickStr+'="openSpecificAttempt('+this.index+');">';
     str += '<div id="topSection" style="width: 100%; height: 24px; text-align: left;">';
     str += '<div class="title" style="font-size: 20px; display: inline-block;">' + this.name + '<div class="listing" style="display: inline-block;">' + (this.presetUsed ? 'Preset: ' + this.presetUsed.name : 'No preset') + '</div></div>' +
-      '<span style="float: right;">Duration: ' + Game.sayTime((this.timestamp - this.startTimestamp) / 1000 * Game.fps, -1) + '</span>';
+      '<span style="float: right;">'+loc('Duration: %1', Game.sayTime((this.timestamp - this.startTimestamp) / 1000 * Game.fps, -1)) + '</span>';
     str += '</div><div class="line"></div>';
 
     str += '<div class="statsGrid" style="' + gridStyle + '">' + cells + '</div>';
@@ -405,13 +406,13 @@ class historyEntry {
 }
 var toReloadHistory = false;
 function openHistory() {
-  let str = '<id history><h3>Combo history</h3><div id="historyMainSection"><div class="block">This is a list of your past combo attempts this session.</div><div class="block" style="height: 550px; overflow-y: scroll;">';
+  let str = '<id history><h3>'+loc('Combo history')+'</h3><div id="historyMainSection"><div class="block">'+loc('This is a list of your past combo attempts this session.')+'</div><div class="block" style="height: 550px; overflow-y: scroll;">';
 
   for (let i in historyEntries) {
     str += historyEntries[i].getLStr();
   }
   if (!historyEntries.length) {
-    str += 'No combos done yet! Get at least <b>'+SimpleBeautify(Math.floor(historySettings.scoreRegisterThreshold))+'</b> score from an attempt to be stored here. Press try again to end an attempt.';
+    str += loc('Get at least <b>%1</b> score from an attempt to be stored here. Press try again to end an attempt.', SimpleBeautify(Math.floor(historySettings.scoreRegisterThreshold)));
   }
 
   str += '</div></div>';
@@ -446,7 +447,7 @@ function switchToMenu(id) {
 function openSpecificAttempt(id) {
   switchToMenu('historyExtendedView');
   if (!historyEntries[id]) { 
-    l('historyExtendedView').innerHTML = 'Unknown error';
+    l('historyExtendedView').innerHTML = loc('Unknown error');
     return;
   }
   let str = '';
@@ -461,11 +462,11 @@ function openSettings() {
   
   let str = '';
   str += '<div class="block">';
-  str += '<div class="title" style="height: 24px; font-size: 20px; margin-top: 5px;">Stats displayed in reset notification</div>';
+  str += '<div class="title" style="height: 24px; font-size: 20px; margin-top: 5px;">'+loc('Stats displayed in reset notification')+'</div>';
   for (let i in statTypesList) {
     str += statTypesList[i].prototype.getSmallToggleButton('noteworthy');
   }
-  str += '<div class="line"></div><div class="title" style="height: 24px; font-size: 20px; margin-top: 10px;">Stats displayed in history viewer</div>';
+  str += '<div class="line"></div><div class="title" style="height: 24px; font-size: 20px; margin-top: 10px;">'+loc('Stats displayed in history viewer')+'</div>';
   for (let i in statTypesList) {
     str += statTypesList[i].prototype.getSmallToggleButton('summaryworthy');
   }
@@ -499,7 +500,7 @@ function loadHistorySettings(str) {
       }
     }
   } catch (e) {
-    Game.Notify('History settings failed to load!', e?.message, [0, 7]);
+    Game.Notify(loc('History settings failed to load!'), e?.message, [0, 7]);
     console.error(e);
   }
 }
@@ -526,8 +527,8 @@ class stat {
       + '</div>'
       + '<div style="flex:1;text-align:left;">'
         + '<div class="title stat">'
-          + this.constructor.name
-          + '<span class="statDescription" title="' + (this.constructor.description || '') + '">?</span>'
+          + loc(this.constructor.name())
+          + '<span class="statDescription" title="' + loc(this.constructor.description || '') + '">?</span>'
         + '</div>'
         + '<div class="statDetails">'
           + this.getDetailDisplay(extended)
@@ -538,11 +539,11 @@ class stat {
   getSmallToggleButton(property) {
     //small button containing that just identifies this stat
     return `
-    <a class="option prefButton option${this.constructor[property]?'':' off'}" ${Game.clickStr}="statTypesList['${this.constructor.key}']['${property}'] = !statTypesList['${this.constructor.key}']['${property}']; openSettings(); toReloadHistory = true;">${this.constructor.name}</a>
+    <a class="option prefButton option${this.constructor[property]?'':' off'}" ${Game.clickStr}="statTypesList['${this.constructor.key}']['${property}'] = !statTypesList['${this.constructor.key}']['${property}']; openSettings(); toReloadHistory = true;">${loc(this.constructor.name)}</a>
     `;
   }
   getNotifStr() {
-    return '<b>' + this.constructor.name + ':</b> ' + this.getDetailDisplay();
+    return loc('<b>%1:</b> %2', [this.constructor.name, this.getDetailDisplay()]);
   }
   static save() {
     //idk
@@ -1006,10 +1007,11 @@ class CCCEMButton {
     }
     this.newLine = options.newLine ?? '';
     this.preNewLine = options.preNewLine ?? '';
-    this.watch = options.watch; 
     this.advanced = options.advanced ?? true;
     this.ignorePreset = options.ignorePreset ?? false;
     this.nonInteractive = options.nonInteractive ?? false;
+    this.hidden = options.hidden ?? false;
+    this.watch = options.watch ?? null; 
     //called every 5 frames with this keyword set to the button 
     // so state can be adjusted, mainly used in external categories, 
     // developing cccem itself shouldnt use it and it isnt functional 
@@ -1020,7 +1022,6 @@ class CCCEMButton {
     CCCEMButtons[this.key] = this;
   }
   updateVarFunc = () => {}
-  hidden = false
 
   getLStr() {
     if (this.isHidden()) { return ''; }
@@ -1153,7 +1154,7 @@ class buttonType {
   }
   parse(names, state) {
     //returns name of button based on namesList and whatever
-    return names[0].replace('[##]', state);
+    return loc(names[0]);
   }
   onClick() {
     invalidateScoreS();
@@ -1188,7 +1189,7 @@ class triggerButton extends buttonType {
   //default green buttons that does something on click
   willSave = false
   getTip() {
-    return 'Click to activate.';
+    return loc('Click to activate.');
   }
 }
 class pesudoInputButton extends triggerButton {
@@ -1196,7 +1197,7 @@ class pesudoInputButton extends triggerButton {
     return 'neatocyan';
   }
   getTip() {
-    return 'Click to view.';
+    return loc('Click to view.');
   }
   onClick() {
 
@@ -1213,7 +1214,7 @@ class presetButton extends buttonType {
     return 'neatofire';
   }
   getTip() {
-    return 'Click to apply this preset.';
+    return loc('Click to apply this preset.');
   }
   onClick() {
     this.preset.openConfirmationMenu();
@@ -1227,7 +1228,7 @@ class limeButton extends buttonType {
     return 'neatolime';
   }
   getTip() {
-    return 'Click to activate. Will not invalidate score.';
+    return loc('Click to activate. Will not invalidate score.');
   }
   onClick() {
 
@@ -1245,14 +1246,14 @@ class inputButton extends buttonType {
     super();
     if (autoSet) { this.autoSet = autoSet; }
   }
-  static heading = 'Input variable'
-  static subHeading = 'Please input what you want the variable to be set to.'
+  static heading = loc('Input variable')
+  static subHeading = loc('Please input what you want the variable to be set to.')
   static readonly = false
   getOptions() {
     return [[loc("Load"),`Game.ClosePrompt(); \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value.trim());\nRedrawCCCEM();`],[loc("Nevermind")]]
   }
   getTip() {
-    return 'Click to input value.';
+    return loc('Click to input value.');
   }
   afterCall() {
     if (this.autoSet) { l('textareaPrompt').value = this.autoSet.call(this) }
@@ -1269,7 +1270,7 @@ class inputButton extends buttonType {
     return 'neatocyan';
   }
   parse(names, state) {
-    return names[0].replace('[##]', state);
+    return loc(names[0], state);
   }
   triggerSetVar() {
     this.onClick();
@@ -1305,20 +1306,23 @@ class numberInputButton extends inputButton {
     if (autoSet) { this.autoSet = autoSet; }
   }
   static precision = 3
-  static heading = 'Input number'
-  static subHeading = 'Please input a number the variable should be equal to.'
+  static heading = loc('Input number')
+  static subHeading = loc('Please input a number the variable should be equal to.')
   parse(names, state) {
-    return names[0].replace('[##]', Beautify(state, this.precision));
+    return loc(names[0], Beautify(state, this.precision));
   }
   onInputConfirmation(content) {
     if (isNaN(Number(content))) { 
-      Game.Notify('Setting value failed!', 'The value set was not a number!', [7, 7]);
+      Game.Notify(loc('Setting value failed!'), loc('The value set was not a number!'), [7, 7]);
       return; 
     }
     this.parent.state = Number(content);
     if (this.parent.updateVarFunc) {
       this.parent.updateVarFunc.call(this.parent, this.parent.state);
     }
+  }
+  getTip() {
+    return loc('Click to input number.');
   }
   load(str) {
     this.parent.state = Number(str);
@@ -1337,7 +1341,7 @@ class stringInputButton extends inputButton {
   }
   parseConvert = e => e;
   parse(names, state) {
-    return names[0].replace('[##]', this.parseConvert(state));
+    return loc(names[0], this.parseConvert(state));
   }
 }
 class readonlyDisplayButton extends inputButton {
@@ -1346,17 +1350,17 @@ class readonlyDisplayButton extends inputButton {
     return [loc("All done!")]
   }
   getTip() {
-    return 'Click to export value.';
+    return loc('Click to export value.');
   }
-  static heading = 'Export variable'
-  static subHeading = 'Copy the contents of the box below to export it.'
+  static heading = loc('Export variable')
+  static subHeading = loc('Copy the contents of the box below to export it.')
   static readonly = true
 }
 class gardenPlantAgeSetButton extends inputButton {
-  static header = 'Input plant ages'
-  static subHeading = 'Input percentage, decimal, or words for plant stages (e.g. "mature" or "budding")'
+  static header = loc('Input plant ages')
+  static subHeading = loc('Input percentage, decimal, or words for plant stages (e.g. "mature" or "budding")')
   getTip() {
-    return 'Click to input plant age.';
+    return loc('Click to input plant age.');
   }
   onInputConfirmation(content) {
     content = content.toLowerCase();
@@ -1394,18 +1398,18 @@ class cycleButton extends buttonType {
   }
   parseConvert = e => e;
   getTip() {
-    return 'Click to select a value.';
+    return loc('Click to select a value.');
   }
   getColorStr() { 
     return 'neatoblue';
   }
   parse(names, state) {
-    return names[0].replace('[##]', this.parseConvert(state));
+    return loc(names[0], this.parseConvert(state));
   }
   onClick() {
     invalidateScoreS();
     Game.Prompt(`
-      <id chooseOption><h3>Select value</h3><div class="line"></div>
+      <id chooseOption><h3>${loc('Select value')}</h3><div class="line"></div>
       <div class="block">
       <div style="display:flex;gap:3px;align-items:center;">
         <input id="cccemSearch" type="search" placeholder="Type to search for the value..." class="framed" style="flex:1;box-sizing:border-box;padding:6px;margin-left: 5px;" />
@@ -1507,11 +1511,11 @@ class twoStepCycle extends cycleButton {
   next(from) { 
     return from + 2;
   }
-  parseConvert = e => (e <= -1 ? 'R' : Game.goldenCookieChoices[e-1]);
+  parseConvert = e => (e <= -1 ? loc('Random') : Game.goldenCookieChoices[e-1]);
 }
 class seasonalCycleButton extends cycleButton {
   constructor() {
-    super(0, 209, e => ((e > 0) ? Game.seasons[Game.UpgradesById[e].season].name : 'none'));
+    super(0, 209, e => ((e > 0) ? Game.seasons[Game.UpgradesById[e].season].name : loc('none')));
   }
   next(from) {
     from++; 
@@ -1532,7 +1536,7 @@ class multiSelectButton extends buttonType {
 
   }
   getTip() {
-    return 'Click to select options.';
+    return loc('Click to select options.');
   }
   getColorStr() { 
     return 'neatoblue';
@@ -1545,16 +1549,16 @@ class boolButton extends buttonType {
     if (truthy) { this.truthy = truthy; }
     if (falsy) { this.falsy = falsy; }
   }
-  truthy = 'On'
-  falsy = 'Off'
+  truthy = loc('On')
+  falsy = loc('Off')
   getColorStr() {
     return this.parent.state?'neatoorange':'neatoyellow';
   }
   getTip() {
-    return 'Click to toggle.';
+    return loc('Click to toggle.');
   }
   parse(names, state) {
-    return names[0].replace('[##]', state?this.truthy:this.falsy);
+    return loc(names[0], state?this.truthy:this.falsy)
   }
   onClick() {
     invalidateScoreS();
@@ -1577,14 +1581,14 @@ class categoryToggleButton extends buttonType {
     this.categoryToToggle = category;
   }
   getTip() {
-    return 'Click to hide/unhide category.';
+    return loc('Click to hide/unhide category.');
   }
   getColorStr() {
     if (!CCCEMCategories[this.categoryToToggle]) { return ''; }
     return CCCEMCategories[this.categoryToToggle].hidden?'neatogray':'neatowhite';
   }
   parse(names, state) {
-    return names[0].replace('[##]', CCCEMCategories[this.categoryToToggle].hidden?'hidden':'visible');
+    return loc(names[0], CCCEMCategories[this.categoryToToggle].hidden?'hidden':'visible')
   }
   onClick() {
     CCCEMCategories[this.categoryToToggle].hidden = !CCCEMCategories[this.categoryToToggle].hidden;
@@ -1603,17 +1607,17 @@ class keySelectButton extends buttonType {
   defaultKey = 0
   
   parse(names, state) {
-    return names[0].replace('[##]', this.parseConvert(state));
+    return loc(names[0], this.parseConvert(state));
   }
   getTip() {
-    return 'Click to make the next key press set the key.';
+    return loc('Click to make the next key press set the key.');
   }
   getColorStr() {
     return 'neatopurple';
   }
   onClick() {
     window.toChangeKeyBind = this.parent.key;
-    Game.Notify('Press a key to set!', '');
+    Game.Notify(loc('Press a key to set!'), '');
   }
   default() {
     window.keyBindEvents.push(this.parent);
@@ -1632,7 +1636,7 @@ class keySelectButton extends buttonType {
   onKeyConfirmation(e) {
     this.parent.state = e.keyCode;
     window.toChangeKeyBind = null;
-    Game.Notify('Key set: '+e.key.toUpperCase(), '');
+    Game.Notify(loc('Key set: %1', e.key.toUpperCase()), '');
   }
 }
 AddEvent(window, 'keydown', function (e) {
@@ -1694,7 +1698,7 @@ class openExternal extends buttonType {
     this.url = url;
   }
   parse(names) {
-    return names[0] + '<span class="external"></span>';
+    return loc(names[0]) + '<span class="external"></span>';
   }
   onClick() {
     window.open(this.url, '_blank', 'noopener,noreferrer');
@@ -1702,14 +1706,14 @@ class openExternal extends buttonType {
     l('devConsoleContent').classList.add('fadeOut');
   }
   getTip() {
-    return 'Click to open external resource in a new tab.';
+    return loc('Click to open external resource in a new tab.');
   }
 }
 
 class buttonInfo {
   constructor(header, content, icon) {
-    this.header = header;
-    this.content = content;
+    this.header = loc(header);
+    this.content = loc(content);
     this.icon = icon;
   }
 
@@ -1740,7 +1744,7 @@ class CCCEMExternalCategory extends buttonCategory {
     if (CCCEMCategories['categoryTogglePanel'].has('optionsBatch'+modKey)) {
       CCCEMCategories['categoryTogglePanel'].has('optionsBatch'+modKey).hidden = false;
     } else {
-      CCCEMCategories['categoryTogglePanel'].register(new CCCEMButton('optionsBatch'+modKey, modName+' options [##]', 
+      CCCEMCategories['categoryTogglePanel'].register(new CCCEMButton('optionsBatch'+modKey, modName+' options %1', 
         new categoryToggleButton(modKey),
         categoryToggleInfo
       ));
@@ -1834,7 +1838,7 @@ new buttonCategory('interfaceBegin', 0, [
       ResetAll(1); if (hasHarbor && netcodeSettingsExport.hosting) { MacadamiaModList.cccem.mod.tryAgainRPC.send(); }
     }, true
   ),
-  new CCCEMButton('resetKey','([##])',
+  new CCCEMButton('resetKey','(%1)',
     new keySelectButton(82),
     new buttonInfo('Reset key select', 'Selects the key that restarts the current attempt on press.', [0, 8]),
     down => { if (!down) { return; } ResetAll(1); }
@@ -1847,29 +1851,29 @@ new buttonCategory('interfaceBegin', 0, [
 ]);
 
 new buttonCategory('categoryTogglePanel', 1, [
-  new CCCEMButton('optionsBatch1', 'Save/Load [##]',
+  new CCCEMButton('optionsBatch1', 'Save/Load %1',
     new categoryToggleButton('savingSettings'),
     new buttonInfo('Options group: Save/Load settings', 'Options related to saving and loading. ', [27, 29])
   ),
-  new CCCEMButton('optionsBatch2', 'Presets [##]',
+  new CCCEMButton('optionsBatch2', 'Presets %1',
     new categoryToggleButton('presetSettings'),
     new buttonInfo('Options group: Presets', 'Options related to wide-spread setting changes. ', [27, 29]),
     null, true
   ),
-  new CCCEMButton('optionsBatch3', 'Game settings options [##]',
+  new CCCEMButton('optionsBatch3', 'Game settings options %1',
     new categoryToggleButton('gameSettings'),
     new buttonInfo('Options group: Game settings', 'Options related to the game\'s core features, including adjusting cookies, buildings, and lumps. ', [28, 29]),
   ),
-  new CCCEMButton('optionsBatch4', 'Minigame options [##]',
+  new CCCEMButton('optionsBatch4', 'Minigame options %1',
     new categoryToggleButton('minigameSettings'),
     new buttonInfo('Options group: Minigames', 'Options related to the four minigames. ', [28, 29]),
     null, true
   ),
-  new CCCEMButton('optionsBatch5', 'Buff options [##]',
+  new CCCEMButton('optionsBatch5', 'Buff options %1',
     new categoryToggleButton('buffSettings'),
     new buttonInfo('Options group: Buffs', 'Settings related to starting golden cookie buffs', [28, 29])
   ),
-  new CCCEMButton('optionsBatch6', 'GC options [##]',
+  new CCCEMButton('optionsBatch6', 'GC options %1',
     new categoryToggleButton('gcSettings'),
     new buttonInfo('Options group: GCs', 'Options related to buffs and Golden cookies. Also includes many randomness-related options.', [28, 29]),
     null, true
@@ -1881,7 +1885,7 @@ new buttonCategory('categoryTogglePanel', 1, [
       Game.LoadMod(pForPausePath); if (hasHarbor) { MacadamiaModList.cccem.mod.loadModRPC.send({ path: pForPausePath }); } this.hidden = true;
     }
   ),
-  new CCCEMButton('optionsBatchPForPause', 'P for Pause options [##]',
+  new CCCEMButton('optionsBatchPForPause', 'P for Pause options %1',
     new categoryToggleButton('PForPause'),
     new buttonInfo('Extras: P for Pause', 'Options related to the P for Pause mod. ', [28, 26])
   ),
@@ -1892,7 +1896,7 @@ new buttonCategory('categoryTogglePanel', 1, [
       Game.LoadMod(castFinderPath); if (hasHarbor) { MacadamiaModList.cccem.mod.loadModRPC.send({ path: castFinderPath }); } this.hidden = true;
     }
   ),
-  new CCCEMButton('optionsBatchCastFinder', 'Cast Finder options [##]',
+  new CCCEMButton('optionsBatchCastFinder', 'Cast Finder options %1',
     new categoryToggleButton('CastFinder'),
     new buttonInfo('Extras: Cast Finder', 'Options related to the Cast Finder mod. ', [28, 26])
   ),
@@ -1943,7 +1947,7 @@ new buttonCategory('savingSettings', 2, [
     new buttonInfo('Export settings', 'Opens a prompt that allows you to store and reuse a setting for later.', [0, 32]), null,
      { advanced: false }
   ),
-  new CCCEMButton('saveSave','[##] save',
+  new CCCEMButton('saveSave','%1 save',
     new boolButton('Include', 'Exclude'),
     new buttonInfo('Export save', 'Whether the save currently used will be exported together with settings', [16, 5]),
     s => CCCEMButtons['importSave'].type.willSave = s, { advanced: false, ignorePreset: true }
@@ -1979,7 +1983,7 @@ new buttonCategory('presetSettings', 3, [
     new buttonInfo('Unlock settings', 'Unhides other settings, for further customization of the preset.', [15, 7]),
     () => { cancelActivePreset(); }
   ),
-  new CCCEMButton('advancedMode', 'Advanced mode [##]', 
+  new CCCEMButton('advancedMode', 'Advanced mode %1', 
     new boolButton(),
     new buttonInfo('Advanced mode', 'Reveal even more buttons and customization options.', [12, 27]),
     s => { advancedMode = s }, { ignorePreset: true }
@@ -1995,72 +1999,72 @@ CCCEMButtons['editPreset'].hidden = true;
 CCCEMButtons['revertPresetContainer'].hidden = true;
 
 new buttonCategory('gameSettings', 4, [
-  new CCCEMButton('iniSeed', 'Initial seed [##]',
+  new CCCEMButton('iniSeed', 'Initial seed %1',
     new stringInputButton(),
     new buttonInfo('Initial seed', 'Seed to determine RNG outcomes, or leave as \'R\' for random. <br>Also requires either toggling on Force cast count or change FtHoF to \'random\'.', [25, 25]),
     s => iniSeed = s
   ),
-  new CCCEMButton('cookies', 'Cookies [##]',
+  new CCCEMButton('cookies', 'Cookies %1',
     new numberInputButton(),
     new buttonInfo('Cookies', 'The amount of cookies you start with each attempt.', [10, 0]),
     s => iniC = s
   ),
-  new CCCEMButton('cookiesBTA', 'CookiesBTA [##]',
+  new CCCEMButton('cookiesBTA', 'CookiesBTA %1',
     new numberInputButton(),
     new buttonInfo('Cookies Baked All Time', 'The Cookies Baked All Time statistic. Tied to your prestige level.', [29, 4]),
     s => iniCE = s
   ),
-  new CCCEMButton('prestige', 'Prestige [##]',
+  new CCCEMButton('prestige', 'Prestige %1',
     new numberInputButton(),
     new buttonInfo('Prestige', 'Sets the amount of prestige you have.', [20, 7]),
     s => iniP = s
   ),
-  new CCCEMButton('scoreMult', 'Score mult x[##]',
+  new CCCEMButton('scoreMult', 'Score mult x%1',
     new numberInputButton(),
     new buttonInfo('Correction value', 'The value the score should be multiplied by to better match standard values.', [16, 5]),
     s => scoreCorVal = s, { advanced: false }
   ),
-  new CCCEMButton('scoreMultVerify', 'Score info [##]',
+  new CCCEMButton('scoreMultVerify', 'Score info %1',
     new boolButton(),
     new buttonInfo('Score correction notifications', 'Whether to notify when the score does not conform to the baseline.', [1, 7]),
     s => scoreCorNotify = s, { advanced: false }
   ),
-  new CCCEMButton('lumps', 'Lumps [##]',
+  new CCCEMButton('lumps', 'Lumps %1',
     new numberInputButton(),
     new buttonInfo('Lumps', 'The amount of Sugar lumps you start with each attempt.', [29, 14]),
     s => iniLumps = s
   ),
-  new CCCEMButton('lumpType', 'Lump type [##]',
+  new CCCEMButton('lumpType', 'Lump type %1',
     new cycleButton(0, 4, e => ["Normal", "Bifurcated", "Golden", "Meaty", "Caramel"][e]),
     new buttonInfo('Lump type', 'The type of Sugar lump you start with each attempt.', [29, 27]),
     s => chooseLump = s
   ),
-  new CCCEMButton('gcClickCount', '[##] Golden clicks',
+  new CCCEMButton('gcClickCount', '%1 Golden clicks',
     new numberInputButton(),
     new buttonInfo('Golden cookie click count', 'The amount of all time golden cookie clicks.', [23, 6]),
     s => GCCount = s
   ),
-  new CCCEMButton('clickCooldown', 'Click cooldown [##]ms',
+  new CCCEMButton('clickCooldown', 'Click cooldown %1ms',
     new numberInputButton(),
     new buttonInfo('Click cooldown', 'The minimum amount of milliseconds between each click.', [0, 15]),
     s => clickWait = s
   ),
-  new CCCEMButton('buildingCountAnchor', 'Building count anchor [##]',
+  new CCCEMButton('buildingCountAnchor', 'Building count anchor %1',
     new numberInputButton(),
     new buttonInfo('Building count anchor', 'The amount of Cursors you start with each attempt. Other buildings scale off this value.', [33, 6]),
     s => iniBC = s, { advanced: false }
   ),
-  new CCCEMButton('useEB', '[##]',
+  new CCCEMButton('useEB', '%1',
     new boolButton('Use EB', 'No EB'),
     new buttonInfo('Elder Battalion strategy', 'Changes the building distribution to better fit an Elder Battalion strategy.', [1, 25]),
     s => useEB = s, { advanced: false }
   ),
-  new CCCEMButton('useRebuy', '[##]',
+  new CCCEMButton('useRebuy', '%1',
     new boolButton('Rebuy', 'No Rebuy'),
     new buttonInfo('Elder Battalion rebuy', 'Changes the building distribution to better fit a strategy rebuying after godzamok.', [1, 27]),
     s => useRebuy = s, { newLine: true, advanced: false }
   ),
-  new CCCEMButton('buildingSelect', '[##]:',
+  new CCCEMButton('buildingSelect', '%1:',
     new cycleButton(0, Object.keys(Game.Objects).length - 1, e => Game.ObjectsById[e].name),
     new buttonInfo('Select building', 'The specific building to override or mute. Once overridden, the anchor will not affect this building.', [35, 33]),
     s => {
@@ -2068,42 +2072,42 @@ new buttonCategory('gameSettings', 4, [
       CCCEMButtons['muteBuilding'].changeState(muteBuildings[s]);
     }, { advanced: false, preNewLine: true }
   ),
-  new CCCEMButton('overridingNumber', 'Overriding number [##]',
+  new CCCEMButton('overridingNumber', 'Overriding number %1',
     new numberInputButton(),
     new buttonInfo('Overriding count', 'The number of that building you start with each attempt. An assignment of 0 disables override.', [29, 21]),
     s => { manualBuildings[get('buildingSelect')] = s; }, { advanced: false }
   ),
-  new CCCEMButton('muteBuilding', '[##]',
+  new CCCEMButton('muteBuilding', '%1',
     new boolButton('Muted', 'Unmuted'),
     new buttonInfo('Mute', 'Whether a building should start muted. Minigames will always unmute unless that option is disabled.', [28, 6]),
     s => { muteBuildings[get('buildingSelect')] = s?1:0; }
   ),
-  new CCCEMButton('unmuteMinigames', 'Minigame [##]',
+  new CCCEMButton('unmuteMinigames', 'Minigame %1',
     new boolButton('Unmuted', 'Muteable'),
     new buttonInfo('Unmute minigames', 'Forces minigames to be unmuted on reset. If disabled, minigames can be freely muted and unmuted with the mute option.', [23, 15]),
     s => unmuteMinigames = s, true
   ),
-  new CCCEMButton('wizCount', 'Wizard towers [##]',
+  new CCCEMButton('wizCount', 'Wizard towers %1',
     new numberInputButton(),
     new buttonInfo('Wizard towers', 'The amount of Wizard towers you start with each attempt.', [17, 0]),
     s => { wizCount = s; }, { advanced: false }
   ),
-  new CCCEMButton('wizLevel', 'Tower Level [##]',
+  new CCCEMButton('wizLevel', 'Tower Level %1',
     new numberInputButton(),
     new buttonInfo('Tower Level', 'The level of Wizard towers you start with each attempt.', [17, 26]),
     s => { wizLevel = s; }, { newLine: true, advanced: false }
   ),
-  new CCCEMButton('buyOption1', '[##]',
+  new CCCEMButton('buyOption1', '%1',
     new cycleButton(0, 1, e => e ? 'Sell' : 'Buy'),
     new buttonInfo('Sell/Buy select', 'Selects whether you are selecting \'Sell\' or \'Buy\' on the building list with the start of each attempt.', [9, 9]),
     s => { buyOption1 = s; }, { advanced: false }
   ),
-  new CCCEMButton('buyOption2', '[##]',
+  new CCCEMButton('buyOption2', '%1',
     new cycleButton(2, 5, e => (e > 4 ? 'All' : String(Math.pow(10, e - 2)))),
     new buttonInfo('Sell/Buy amount', 'Selects the bulk-buying amount you are selecting at the start of each attempt.', [1, 6]),
     s => { buyOption2 = s; }, { advanced: false }
   ),
-  new CCCEMButton('heraldsOverride', 'Herald override [##]', 
+  new CCCEMButton('heraldsOverride', 'Herald override %1', 
     new boolButton(),
     new buttonInfo('Heralds override', 'Whether or not to override the amount of heralds to a fixed value.', [21, 29]),
     s => { if (!CCCEMButtons['heraldsOverride'].hidden) { 
@@ -2113,47 +2117,47 @@ new buttonCategory('gameSettings', 4, [
       } 
     }
   ),
-  new CCCEMButton('heraldsN', 'Heralds [##]',
+  new CCCEMButton('heraldsN', 'Heralds %1',
     new numberInputButton(),
     new buttonInfo('Heralds', 'Changes the amount of Heralds you have.<br>Max 100, usually around 100.', [21, 29]),
     s => { if (get('heraldsOverride') || !Game.realExternalDataLoaded) { Game.heralds = s; l('heraldsAmount').textContent = s; Game.recalculateGains = 1; } }
   ),
-  new CCCEMButton('leftAura', 'Left Aura [##]',
+  new CCCEMButton('leftAura', 'Left Aura %1',
     new cycleButton(0, 21, e => Game.dragonAuras[e].name),
     new buttonInfo('Left Aura', 'The Dragon Aura you start with for the slot on the left.', [2, 25]),
     s => { d2Aura = s; }
   ),
-  new CCCEMButton('rightAura', 'Right Aura [##]',
+  new CCCEMButton('rightAura', 'Right Aura %1',
     new cycleButton(0, 21, e => Game.dragonAuras[e].name),
     new buttonInfo('Right Aura', 'The Dragon Aura you start with for the slot on the right.', [8, 25]),
     s => { d1Aura = s; }
   ),
-  new CCCEMButton('fortuneChance', 'Fortune chance: [##]%',
+  new CCCEMButton('fortuneChance', 'Fortune chance: %1%',
     new numberInputButton(0),
     new buttonInfo('Fortune chance', 'The chance for a natural News ticker scroll to be a Fortune. No O fortuna: 2%. Enter in terms of percentage.', [10, 32]),
     s => { forceFortune = s / 100; }
   ),
-  new CCCEMButton('fortuneClaim', 'Fortune [##] claimed',
+  new CCCEMButton('fortuneClaim', 'Fortune %1 claimed',
     new boolButton('already', 'not yet'),
     new buttonInfo('Fortune claim', 'Whether or not the GC fortune (Today is your lucky day!) has already been claimed (and thus won\'t appear again).', [10, 32]),
     s => { fortuneG = s; }
   ),
-  new CCCEMButton('startingSeason', 'Starting season: [##]',
+  new CCCEMButton('startingSeason', 'Starting season: %1',
     new seasonalCycleButton(),
     new buttonInfo('Starting season', 'The season that you start with upon trying again.', [16, 6]),
     s => { setSeason = s; }
   ),
-  new CCCEMButton('scriedSeason', 'Scried season: [##]',
+  new CCCEMButton('scriedSeason', 'Scried season: %1',
     new seasonalCycleButton(),
     new buttonInfo('Scried season', 'The season that the starting effect is scried (or predicted) in.', [16, 6]),
     s => { initCastFindSeason = (s === 210 ? null : s); }
   ),
-  new CCCEMButton('reindeerCount', 'Popped [##] reindeer',
+  new CCCEMButton('reindeerCount', 'Popped %1 reindeer',
     new numberInputButton(),
     new buttonInfo('Reindeers popped', 'The amount of reindeers popped.', [12, 9]),
     s => { iniRein = s; }
   ),
-  new CCCEMButton('pledgeStatus', 'Elder Pledge [##]',
+  new CCCEMButton('pledgeStatus', 'Elder Pledge %1',
     new boolButton(),
     new buttonInfo('Elder Pledge activity', 'Whether of not Elder Pledge is active.', [9, 9]),
     s => { setPledge = s; }
@@ -2192,27 +2196,27 @@ Game.externalDataLoaded = true;
 Game.UpdateHeralds();
 
 new buttonCategory('minigameSettings', 5, [
-  new CCCEMButton('forceFtHoF', 'Force the Hand of Fate outcome: [##]',
+  new CCCEMButton('forceFtHoF', 'Force the Hand of Fate outcome: %1',
     new cycleButton(0, FtHoFOutcomes.length - 1, e => FtHoFOutcomesMap[FtHoFOutcomes[e]]),
     new buttonInfo('FtHoF outcome', 'The outcome of the first Force the Hand of Fate cast upon starting an attempt.', [27, 11]),
     s => { forceFtHoF = FtHoFOutcomes[s]; }, { advanced: false, newLine: true }
   ),
-  new CCCEMButton('forceCastToggle', 'Force cast count [##]',
+  new CCCEMButton('forceCastToggle', 'Force cast count %1',
     new boolButton('On', 'Off'),
     new buttonInfo('Force cast count', 'Forces the Grimoire\'s Spells casted all time stat to be whatever you choose.', [22, 11]),
     s => { forcedCastCount[1] = s; }
   ),
-  new CCCEMButton('forcedCastValue', 'Forced cast count [##]',
+  new CCCEMButton('forcedCastValue', 'Forced cast count %1',
     new numberInputButton(),
     new buttonInfo('Forced cast count', 'The value to assign to the Grimoire\'s Spells casted all time.', [30, 5]),
     s => { forcedCastCount[0] = s; }
   ),
-  new CCCEMButton('gardenLevel', 'Farm Level [##]',
+  new CCCEMButton('gardenLevel', 'Farm Level %1',
     new numberInputButton(),
     new buttonInfo('Farm Level', 'The level of your Farm, which controls the size of your garden.', [2, 26]),
     s => { gardenLevel = s; }, { advanced: false }
   ),
-  new CCCEMButton('gardenSeed', 'Holding [##]',
+  new CCCEMButton('gardenSeed', 'Holding %1',
     new cycleButton(-1, 33, e => {
       if (e == -1) { return 'Nothing'; }
       const mg = Game.Objects['Farm'].minigame;
@@ -2222,61 +2226,61 @@ new buttonCategory('minigameSettings', 5, [
     new buttonInfo('Holding seed', 'The seed you are holding.', [0, 0]),
     s => { gardenSeed = s; }
   ),
-  new CCCEMButton('gardenRotation', 'Rotation [##]',
+  new CCCEMButton('gardenRotation', 'Rotation %1',
     new cycleButton(0, 4, e => ['R', 'bottom', 'top', 'left', 'right'][e]),
     new buttonInfo('Rotation', 'The orientation of the garden upon starting an attempt.', [28, 18]),
     s => { setGardenR = s; }
   ),
-  new CCCEMButton('gardenFrozen', 'Garden [##]',
+  new CCCEMButton('gardenFrozen', 'Garden %1',
     new boolButton('frozen', 'unfrozen'),
     new buttonInfo('Freeze', 'Whether or not the garden is frozen initially.', [13, 10]),
     s => { setGardenR = s; }
   ),
-  new CCCEMButton('toNextTick', 'Tick [##]',
+  new CCCEMButton('toNextTick', 'Tick %1',
     new numberInputButton(),
     new buttonInfo('Tick', 'Progress to next tick in seconds.', [24, 18]),
     s => { toNextTick = s; }
   ),
-  new CCCEMButton('plant1', 'Plant 1 [##]',
+  new CCCEMButton('plant1', 'Plant 1 %1',
     new cycleButton(0, 34, e => e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing'),
     new buttonInfo('Plant 1', 'One of the plants in the garden at the start of each attempt.', [26, 20]),
     s => { gardenP1[0] = s; }
   ),
-  new CCCEMButton('plant1Age', 'Plant 1 age [##]',
+  new CCCEMButton('plant1Age', 'Plant 1 age %1',
     new gardenPlantAgeSetButton(),
     new buttonInfo('Plant 1 age', 'The age of the first plant at the start of each attempt.', [25, 20]),
     s => { gardenP1[1] = s; }, true
   ),
-  new CCCEMButton('gTulips', '[##] Ghost Tulips',
+  new CCCEMButton('gTulips', '%1 Ghost Tulips',
     new boolButton('Add', 'No'),
     new buttonInfo('Ghost Tulips', 'Adds ghost tulips in addition to other specified plants. Useful for starting an attempt in the middle of a combo, after you would already have replanted.', [26, 20])
   ),
-  new CCCEMButton('plant2', 'Plant 2 [##]',
+  new CCCEMButton('plant2', 'Plant 2 %1',
     new cycleButton(0, 34, e => e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing'),
     new buttonInfo('Plant 2', 'The other plant in the garden at the start of each attempt.', [26, 20]),
     s => { gardenP2[0] = s; }
   ),
-  new CCCEMButton('plant2Age', 'Plant 2 age [##]',
+  new CCCEMButton('plant2Age', 'Plant 2 age %1',
     new gardenPlantAgeSetButton(),
     new buttonInfo('Plant 2 age', 'The age of the second plant at the start of each attempt.', [25, 20]),
     s => { gardenP2[1] = s; }, true
   ),
-  new CCCEMButton('office', 'Office level [##]',
+  new CCCEMButton('office', 'Office level %1',
     new cycleButton(0, 5, e => (e + 1)),
     new buttonInfo('Office', 'The Stock market Office level. The office level determines the amount of loans available.', [18, 33]),
     s => { officeL = s; }
   ),
-  new CCCEMButton('diamondGod', 'Diamond [##]',
+  new CCCEMButton('diamondGod', 'Diamond %1',
     new cycleButton(0, 10, e => ['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]),
     new buttonInfo('Pantheon Diamond slot', 'The god slotted within the Diamond slot of the Pantheon at the start of each attempt.', [23, 15]),
     s => { spirit1 = s; }, { advanced: false }
   ),
-  new CCCEMButton('rubyGod', 'Ruby [##]',
+  new CCCEMButton('rubyGod', 'Ruby %1',
     new cycleButton(0, 10, e => ['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]),
     new buttonInfo('Pantheon Ruby slot', 'The god slotted within the Ruby slot of the Pantheon at the start of each attempt.', [25, 18]),
     s => { spirit2 = s; }, { advanced: false }
   ),
-  new CCCEMButton('jadeGod', 'Jade [##]',
+  new CCCEMButton('jadeGod', 'Jade %1',
     new cycleButton(0, 10, e => ['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]),
     new buttonInfo('Pantheon Jade slot', 'The god slotted within the Jade slot of the Pantheon at the start of each attempt.', [27, 18]),
     s => { spirit3 = s; }, { advanced: false }
@@ -2340,22 +2344,22 @@ new buttonCategory('buffSettings', 6, [
     new buttonInfo('Cycle BS type', 'Cycle through BS types. If left at Building Buff or Building Debuff, a random one will be selected', [4, 14]),
     () => CCCEMButtons['buffType'].updateVarFunc(get('buffType')), { advanced: false }
   ),
-  new CCCEMButton('addBuff', 'Confirm add [##]',
+  new CCCEMButton('addBuff', 'Confirm add %1',
     new triggerButton(),
     new buttonInfo('Add starting buff', 'Will add another starting buff based on the subsequent settings (incl type, max time, time, power, BS type)', [33, 25]),
     () => AddStartBuff(get('buffType'), get('buffMaxTime'), get('buffTime'), get('buffPow'), get('buffObj')), { newLine: true, advanced: false }
   ),
-  new CCCEMButton('buffMaxTime', 'Max Time [##]',
+  new CCCEMButton('buffMaxTime', 'Max Time %1',
     new numberInputButton(),
     new buttonInfo('Maximum buff duration', 'How much maximum time the added buff has, if left at 0 the buff default will be used.', [23, 11]),
     null
   ),
-  new CCCEMButton('buffTime', 'Time [##]',
+  new CCCEMButton('buffTime', 'Time %1',
     new numberInputButton(),
     new buttonInfo('Buff duration', 'How much remaining time the added buff has, if left at 0 max time will be used.', [23, 11]),
     null, { advanced: false }
   ),
-  new CCCEMButton('buffPow', 'Power [##]',
+  new CCCEMButton('buffPow', 'Power %1',
     new numberInputButton(),
     new buttonInfo('Buff power', 'This is used to determine the strength of the added buff, if left at 0 the buff default will be used.', [30, 5]),
     null, { newLine: true }
@@ -2369,7 +2373,7 @@ new buttonCategory('buffSettings', 6, [
     new buttonInfo('Cycle current buffs', 'Will cycle through all the buffs you are starting with, so that one can be removed with the remove buff button.', [0, 15]),
     s => {if (s) CCCEMButtons['removeBuff'].state=getProperBuffName[Game.buffTypesByName[Game.buffTypes[get('buffs').split(';')[s].split(',')[0]].name]]; CCCEMButtons['removeBuff'].hidden = false; },
   ),
-  new CCCEMButton('removeBuff', 'Confirm remove [##]',
+  new CCCEMButton('removeBuff', 'Confirm remove %1',
     new triggerButton(),
     new buttonInfo('Remove starting buff', 'Remove one starting buff. All current starting buffs can be cycled through with the cycle remove button.', [33, 24]),
     () => RemoveStartBuff(get("removeType"))
@@ -2393,22 +2397,22 @@ CCCEMButtons['buffs'].type.heading='Buffs'
 CCCEMButtons['buffs'].type.subHeading='Buffs that will be active when you reset'
 
 new buttonCategory('gcSettings', 7, [
-  new CCCEMButton('seedNats', 'Seeding GC [##]',
+  new CCCEMButton('seedNats', 'Seeding GC %1',
     new boolButton('On', 'Off'),
     new buttonInfo('Seeded natural Golden cookies toggle', 'Whether naturally spawned Golden cookies will have their effects be determined by the current game seed.', [22, 6]),
     s => { seedNats = s; }
   ),
-  new CCCEMButton('seedTicker', 'Seeding News [##]',
+  new CCCEMButton('seedTicker', 'Seeding News %1',
     new boolButton('On', 'Off'),
     new buttonInfo('Seeded News ticker messages toggle', 'Whether Fortune appearances in the News ticker are seeded by the current game seed.', [29, 8]),
     s => { seedTicker = s; }
   ),
-  new CCCEMButton('gSwitch', 'Golden Switch [##]',
+  new CCCEMButton('gSwitch', 'Golden Switch %1',
     new boolButton('On', 'Off'),
     new buttonInfo('Golden switch state', 'Whether golden switch will start on or off', [20, 10]),
     null, true
   ),
-  new CCCEMButton('iniSpawn', 'Natural GC [##]',
+  new CCCEMButton('iniSpawn', 'Natural GC %1',
     new boolButton('On', 'Off'),
     new buttonInfo('Initial natural Golden cookie spawn toggle', 'Whether a Golden Cookie will spawn at the start of each attempt.', [23, 6]),
     function (s) {
@@ -2416,55 +2420,55 @@ new buttonCategory('gcSettings', 7, [
       CCCEMButtons['iniSpawnTimer'].hidden = s;
     }, { advanced: false }
   ),
-  new CCCEMButton('iniSpawnTimer', 'Nat spawn timer: [##]',
+  new CCCEMButton('iniSpawnTimer', 'Nat spawn timer: %1',
     new numberInputButton(),
     new buttonInfo('Natural spawn timer', 'The amount of time after each reset for the first Golden cookie to naturally spawn (in frames, this game is 30 fps).', [22, 6]),
     s => { iniTimer = s; }, { advanced: false }
   ),
-  new CCCEMButton('iniDO', 'Dragon Orbs [##]',
+  new CCCEMButton('iniDO', 'Dragon Orbs %1',
     new boolButton('On', 'Off'),
     new buttonInfo('Initial Dragon Orbs spawn toggle', 'Whether a Golden cookie from Dragon Orbs usage will spawn at the start of each attempt.', [33, 25]),
     s => { iniDO = s; }
   ),
-  new CCCEMButton('iniDEoRL', 'DEoRL [##]',
+  new CCCEMButton('iniDEoRL', 'DEoRL %1',
     new boolButton('On', 'Off'),
     new buttonInfo('Initial Distilled Essence of Redoubled Luck spawn toggle', 'Whether an invoke of DEoRL at the start of each attempt will be successful.', [27, 12]),
     s => { iniDEoRL = s; }
   ),
-  new CCCEMButton('iniGC', 'GC1 [##]',
+  new CCCEMButton('iniGC', 'GC1 %1',
     new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
     new buttonInfo('First Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial natural Golden cookie spawn.', [0, 10]),
     s => { s=(s%2 === 0)?s-1:s;
       CCCEMButtons['iniGC'].state=s}, { advanced: false }
   ),
-  new CCCEMButton('iniGC2', 'GC2 [##]',
+  new CCCEMButton('iniGC2', 'GC2 %1',
     new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
     new buttonInfo('Second Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial Dragon Orbs Golden cookie spawn.', [1, 10]),
     s => { s=(s%2 === 0)?s-1:s;
       CCCEMButtons['iniGC2'].state=s}
   ),
-  new CCCEMButton('iniGC3', 'GC3 [##]',
+  new CCCEMButton('iniGC3', 'GC3 %1',
     new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
     new buttonInfo('Third Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial, successful invoke of DEoRL.', [2, 10]),
     s => { s=(s%2 === 0)?s-1:s;
       CCCEMButtons['iniGC3'].state=s}
   ),
-  new CCCEMButton('boughtSF', 'Sugar frenzy [##]',
+  new CCCEMButton('boughtSF', 'Sugar frenzy %1',
     new boolButton('used', 'unused'),
     new buttonInfo('Sugar frenzy state', 'Whether sugar frenzy has been used before, determining whether it is available to use.', [22, 17]),
     s => { boughtSF = s; }
   ),
-  new CCCEMButton('boughtCE', 'Chocolate egg [##]',
+  new CCCEMButton('boughtCE', 'Chocolate egg %1',
     new boolButton('bought', 'available'),
     new buttonInfo('Chocolate egg purchasability', 'Whether chocolate egg has been purchased already, thus determining whether it can be purchased again.', [18, 12]),
     s => { boughtCE = s; }
   ),
-  new CCCEMButton('DFChanceMult', 'Dragonflight chance x[##]',
+  new CCCEMButton('DFChanceMult', 'Dragonflight chance x%1',
     new numberInputButton(),
     new buttonInfo('Dragonflight chance', 'Sets a multiplier to Dragonflight (buff) chance.', [5, 25]),
     s => { DFChanceMult = s; }, { advanced: false }
   ),
-  new CCCEMButton('gcRateMult', 'Golden cookie spawnrate x[##]',
+  new CCCEMButton('gcRateMult', 'Golden cookie spawnrate x%1',
     new numberInputButton(),
     new buttonInfo('Golden cookie spawnrate', 'Sets a multiplier to the spawn rate of golden cookies.', [10, 14]),
     s => { gcRateMult = s; }
@@ -2479,7 +2483,7 @@ new buttonCategory('savingControls', 1e6, [
     new buttonInfo('Save current settings', 'Saves the settings in the CCCEM interface to the save before CCCEM was loaded, as mod data.<br>You can change the saved setting by saving again.<br>You can remove it by clearing mod data with the options menu while CCCEM is not loaded.', [25, 7]),
     () => { customSave(); }
   ),
-  new CCCEMButton('autosave', 'Auto save [##]',
+  new CCCEMButton('autosave', 'Auto save %1',
     new boolButton(),
     new buttonInfo('Auto Save', 'If on, the game will save CCCEM settings (identical to pressing the Save current settings button) every minute.', [26, 7]),
     s => autoSaveCCCEM = s

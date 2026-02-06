@@ -14,7 +14,8 @@
     "cccemPresets.js",
     "PForPause.js",
     "castFinder.js",
-    "testFile.js"
+    "testFile.js",
+    "locPatches/**/*"
   ],
   "exclude": [
     "main.js",

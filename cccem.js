@@ -62,11 +62,12 @@
 //version 3.2: made presets hide most settings, hidden most settings behind advanced mode, added revert preset, changed initial load screen
 //version 3.3: added basic combo preset, one half of the create preset functionality, overhauled ui slightly, refactored
 //version 3.4: added combo history
+//version 3.41: added localization support
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3.4';
+var CCCEMVerReal = 'v3.41';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -154,6 +155,11 @@ AddEvent(l('bigCookie'), 'click', Game.ClickCookie);
 //gets rid of language select
 Game.ClosePrompt();
 
+var locContainer = {};
+function addLoc(str, value) {
+  locContainer[str] = value ?? str;
+}
+
 //literally just orteils code, idk man couldnt be bothered to dynamically copy the part of the code over, its not like anyone is using cccem with other mods anywyays
 function retrieveSave(data, ignoreVersionIssues) {
     if (typeof data!=='undefined') str=unescape(data);
@@ -238,7 +244,7 @@ function customSave() {
 					if (App) App.save(str);
 					if (document.cookie.indexOf(Game.SaveTo)<0)
 					{
-						Game.Notify("Failed to save CCCEM settings","Force close the game (or reload on web) to return to your save.",'',0,1);
+						Game.Notify(loc("Failed to save CCCEM settings"),loc("Force close the game (or reload on web) to return to your save."),'',0,1);
 					}
 					else if (document.hasFocus())
 					{
@@ -507,7 +513,7 @@ function setGrimoireCasts() {
       var chosen=choose(choices);
       if (chosen!=forceFtHoF) {continue;};
       Game.Objects['Wizard tower'].minigame.spellsCastTotal=i
-      Game.Notify('Successfully found a '+forceFtHoF,'Your seed is '+Game.seed,[11,5]);
+      Game.Notify(loc('Successfully found a %1', forceFtHoF),loc('Your seed is %1', Game.seed),[11,5]);
       break
       }
     else if (backfireVal>0.85) {
@@ -522,12 +528,14 @@ function setGrimoireCasts() {
       var chosen=choose(choices);
       if (chosen!=forceFtHoF) {continue;};
       Game.Objects['Wizard tower'].minigame.spellsCastTotal=i
-      Game.Notify('Successfully found a '+forceFtHoF,'Your seed is '+Game.seed,[11,5])
+      Game.Notify(loc('Successfully found a %1', forceFtHoF),loc('Your seed is %1', Game.seed),[11,5]);
       break
       }
     }
   if (forceFtHoF=='random' && !forcedCastCount[1]) {Game.Objects['Wizard tower'].minigame.spellsCastTotal = 0;}
-  else if (chosen!=forceFtHoF && !forcedCastCount[1]) {Game.Notify('Failed to find a '+forceFtHoF,'Your seed is '+Game.seed,[15, 5])} else if (forcedCastCount[1]) {Game.Objects['Wizard tower'].minigame.spellsCastTotal=forcedCastCount[0];Game.Notify('FtHoF set','Cast count (all time): '+forcedCastCount[0],[22,11]);}
+  else if (chosen!=forceFtHoF && !forcedCastCount[1]) {Game.Notify(loc('Failed to find a %1', forceFtHoF),loc('Your seed is %1', Game.seed),[15, 5])} else if (forcedCastCount[1]) {
+    Game.Objects['Wizard tower'].minigame.spellsCastTotal=forcedCastCount[0];
+    Game.Notify(loc('FtHoF set'),loc('Cast count (all time): %1', forcedCastCount[0]),[22,11]);}
   } else if (autoExecute && !usingPreload) {
     Math.seedrandom(Game.seed+'+execute');
     let casting = interpret(Math.floor(Math.sqrt(Math.random())*limit), chooseSequence());
@@ -538,7 +546,7 @@ function setGrimoireCasts() {
   }
   } else if (usingPreload) {
     loadPreLoadedSeeds();
-    Game.Notify('Preloaded seeds loaded!','',0)
+    Game.Notify(loc('Preloaded seeds loaded!'),'',0)
   }
   if (hasHarbor ) { MacadamiaModList.cccem.mod.setGrimoireRPC.send({ seed: Game.seed, spellsCastTotal: Game.Objects['Wizard tower'].minigame.spellsCastTotal }); }
 }
@@ -803,7 +811,7 @@ function CheckMinigamesLoaded() {
   };
 
 function CheckModLoaded() {
-  if (typeof CCCEMUILoaded === "undefined" && CheckMinigamesLoaded()) {Game.Notify('Mod partially not loaded','Assets loads experienced a timeout. Try again later.',[15, 5]," ")};
+  if (typeof CCCEMUILoaded === "undefined" && CheckMinigamesLoaded()) {Game.Notify(loc('Mod partially not loaded'),loc('Assets loads experienced a timeout. Try again later.'),[15, 5]," ")};
   };
 
 var gameSettings = [];
@@ -820,7 +828,7 @@ function getSettingsCode() {
     CCCEMCategories[i].addSaveData(obj);
   }
   try { str += JSON.stringify(obj); }
-  catch(err) { Game.Notify('Saving failed!', '', 0); console.log(obj); throw err; }
+  catch(err) { Game.Notify(loc('Saving failed!'), '', 0); console.log(obj); throw err; }
   for (let i in CCCEMCategories) {
     let thing = CCCEMCategories[i].dataSlot();
     if (!thing) { continue; }
@@ -894,7 +902,7 @@ function oldLoadFunc(str, noNotify) {
         Game.deleteModData('CCCEMContainer'); Game.WriteSave(); return 0;*/
     }    
     if (strs[0] !== CCCEMVer && noNotify) { 
-    	Game.Notify('Warning', 'You imported a settings code from an older version, which may cause some values to be set to bad values. Re-setting such values should usually fix the problem. Code version: '+strs[0]+'; current version: '+CCCEMVer+'.', 0);
+    	Game.Notify(loc('Warning'), loc('You imported a settings code from an older version, which may cause some values to be set to bad values. Re-setting such values should usually fix the problem. Code version: %1; current version: %2.', [strs[0], CCCEMVer]), 0);
     }
     if (strs.length < 123) { return 0; }
     
@@ -1045,12 +1053,13 @@ function oldLoadFunc(str, noNotify) {
 var settingsToLoad = '';
 
 function throwCCCEMLoadIssue(str) {
-  Game.Prompt('<id CCCEMLoadIssue><h3>CCCEM Settings load failed!</h3><div class="line"></div><div class="block">'+str+'</div>', [[loc('OK')]]);
+  Game.Prompt('<id CCCEMLoadIssue><h3>'+loc('CCCEM Settings load failed!')+'</h3><div class="line"></div><div class="block">'+str+'</div>', [[loc('OK')]]);
 }
 var CCCEMContainerModObj = null;
 Game.registerMod('CCCEMContainer', {
   init:function() { CCCEMContainerModObj = this; },
   ready: false,
+  locReady: false,
   save:function() { 
     if (!pureWriteSave) {
     	return getSettingsCode();
@@ -1097,6 +1106,7 @@ Game.registerMod('CCCEMContainer', {
     const TOP = '>>CCCEMContainerTop:';
     const BOTTOM = '>>ContainerEnd<<';
 
+    //no loc for now since not useful information
     if (!str.startsWith(TOP)) { throwCCCEMLoadIssue('CCCEMContainer load: top marker not found'); return; }
     const midIdx = str.indexOf('<<', TOP.length);
     if (midIdx === -1) { throwCCCEMLoadIssue('CCCEMContainer load: malformed top marker (missing <<)'); return; }
@@ -1109,10 +1119,10 @@ Game.registerMod('CCCEMContainer', {
     const versionAhead = currentVer < pastVer;
     
     if (versionBehind) {
-      Game.Notify('Warning: outdated settings', 'The settings may not cover every setting. (current: '+CCCEMVer+', settings was created with: '+importedCCCEMVersion+')<br>Export settings again to obtain an up-to-date setting.', [1, 7]);
+      Game.Notify(loc('Warning: outdated settings'), loc('The settings may not cover every setting. (current: %1, settings was created with: %2)<br>Export settings again to obtain an up-to-date setting.', [CCCEMVer, importedCCCEMVersion]), [1, 7]);
     }
     if (versionAhead) {
-      Game.Notify('Warning: outdated mod', 'The settings are made in a future version of the mod (current: '+CCCEMVer+', settings was created with: '+importedCCCEMVersion+')', [1, 7]);
+      Game.Notify(loc('Warning: outdated mod'), loc('The settings are made in a future version of the mod (current: %1, settings was created with: %2)', [CCCEMVer, importedCCCEMVersion]), [1, 7]);
     }
 
     str = str.slice(midIdx + 2, str.length - BOTTOM.length).trim();
@@ -1129,7 +1139,7 @@ Game.registerMod('CCCEMContainer', {
       if (!CCCEMButtons[i] || (fromPreset && CCCEMButtons[i].ignorePreset)) { continue; }
       CCCEMButtons[i].load(obj[i]);
     }
-    if (s && !get('importSave')) Game.Notify("Save overridden","Settings contained empty save");
+    if (s && !get('importSave')) Game.Notify(loc("Save overridden"),loc("Settings contained empty save"));
     for (let i = 1; i < strs.length; i++) {
       let categoryName = strs[i].split('(-_-)')[0];
       let modContent = JSON.parse(strs[i].split('(-_-)')[1]);
@@ -1139,20 +1149,31 @@ Game.registerMod('CCCEMContainer', {
         modDataSlotsYetToBeLoaded.set(categoryName, modContent);
       }
     } } catch(err) {
-      throwCCCEMLoadIssue('Unknown load error (saved settings discarded)');
+      throwCCCEMLoadIssue(loc('Unknown load error (saved settings discarded)'));
       console.log(err);
       console.log(...strs);
       CCCEMPresets.initialization.invoke();
     } 
     ResetAll();
+  },
+  addLang: function(key, name, json) {
+    AddLanguage(key, name, json, true);
+    this.locReady = true;
   }
 });
 var modDataSlotsYetToBeLoaded = new Map();
 
 var cccemDir = window.locally_hosted?'./':'https://cursedsliver.github.io/CCCEM/';
 function loadAllPrerequisites() {
+  const supportedLang = [
+    'EN'
+  ];
+  const curLang = localStorageGet('CookieClickerLang') ?? 'EN';
   const list = [{
     check: () => Game.ready && CheckMinigamesLoaded()
+  }, {
+    url: supportedLang.includes(curLang)?(cccemDir+'locPatches/'+(curLang)+'.js'):(cccemDir+'locPatches/'+('EN')+'.js'),
+    check: () => CCCEMContainerModObj && CCCEMContainerModObj.locReady
   }, {
     url: cccemDir+"cccemInterface.js",
     check: () => (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded)
@@ -1194,7 +1215,7 @@ function loadAllPrerequisites() {
             processItem(idx + 1);
           } else if (performance.now() - start > perItemTimeout) {
             clearInterval(iv);
-            reject(new Error('Timeout waiting for prerequisite #' + idx + (item.url ? ' ('+item.url+')' : '')));
+            reject(new Error(loc('Timeout waiting for prerequisite #%1', idx + (item.url ? ' ('+item.url+')' : ''))));
           }
         } catch (err) {
           clearInterval(iv);
@@ -1216,7 +1237,7 @@ if (Game.ready && !l('topbarFrenzy')) {
   loadAllPrerequisites().then(() => { 
     InitializeMod();
   }).catch((err) => { 
-    Game.Notify('CCCEM failed to load!', 'Error: '+err+'<br>Check your internet connection, and try remove adblockers.', [15, 5]);
+    Game.Notify(loc('CCCEM failed to load!'), loc('Error: %1<br>Check your internet connection, and try remove adblockers.', err?.message), [15, 5]);
     console.error(err);
   });
 
@@ -1241,8 +1262,8 @@ function InitializeMod() {
   ResetAll();
   Game.CloseNotes();
   if (!hasSettingsSet) { 
-    Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", (App?"Go to options to exit practice mode.":"Your save will return upon closing the game.")+'<br>'+'Select a preset via hovering the button at top left, and customize it to your liking.', [18, 6], " ") 
-  } else { Game.Notify("CCCEM "+CCCEMVerReal+" Loaded!", "Stored settings successfully loaded.", [19, 6], " "); }
+    Game.Notify(loc("CCCEM %1 Loaded!", CCCEMVerReal), (App?loc("Go to options to exit practice mode."):loc("Your save will return upon closing the game."))+'<br>'+loc('Select a preset via hovering the button at top left, and customize it to your liking.'), [18, 6], " ") 
+  } else { Game.Notify(loc("CCCEM %1 Loaded!", CCCEMVerReal), loc("Stored settings successfully loaded."), [19, 6], " "); }
   Game.prefs.autosave=0
 }
 
