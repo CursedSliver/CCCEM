@@ -64,13 +64,14 @@
 //version 3.4: added combo history
 //version 3.41: added localization support
 //version 3.42: overhauled code to support steam, added stuff in options
+//version 3.43: removed save and load and dispersed options into other categories, made the practice mode text not display on web
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 window.PRACTICE_MODE = true;
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3.42';
+var CCCEMVerReal = 'v3.43';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
