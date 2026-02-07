@@ -363,7 +363,7 @@ CCCEMContainerModObj.addLang('EN', 'english', {
     "Garden %1": "Garden %1",
     "Tick": "Tick",
     "Progress to next tick in seconds.": "Progress to next tick in seconds.",
-    "Tick %1": "Tick %1",
+    "Tick %1s": "Tick %1s",
     "Plant 1": "Plant 1",
     "One of the plants in the garden at the start of each attempt.": "One of the plants in the garden at the start of each attempt.",
     "Plant 1 %1": "Plant 1 %1",

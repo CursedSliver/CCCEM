@@ -91,6 +91,9 @@ if (typeof CCCEMUILoaded === 'undefined') {
   //find combo multipliers when a buff or golden cookie dies
   eval("Game.shimmer.prototype.die="+Game.shimmer.prototype.die.toString().replace("Game.shimmersL.removeChild(this.l);","if (!isClickedGC) {FindMaxComboPow()}; isClickedGC=false; Game.shimmersL.removeChild(this.l);"))
   eval("Game.updateBuffs="+Game.updateBuffs.toString().replace("if (buff.onDie) buff.onDie();","if (buff.onDie) buff.onDie(); FindMaxComboPow();"))
+
+  //promptinprompt support
+  eval('Game.ClosePrompt='+Game.ClosePrompt.toString().replace('Game.promptNoClose=false;', 'Game.promptNoClose=false; l(\'prompt\').style.display = \'\'; if (l(\'prompt\'+(l(\'promptAnchor\').dataset.layers-1))) { l(\'prompt\'+(l(\'promptAnchor\').dataset.layers-1)).remove(); } l(\'promptAnchor\').dataset.layers = 1;'))
   };
 
 l('promptAnchor').dataset.layers = 1;
@@ -107,6 +110,7 @@ function transientPromptInPrompt(promptStr, options, classes) {
   const optionsDiv = contentDiv.querySelector('.optionBox');
   l('prompt').dataset.layer = 0; //just in case
   if (!l('promptAnchor').dataset.layers) { l('promptAnchor').dataset.layers = 1; }
+  if (l('prompt' + anchorDiv.dataset.layers)) { l('prompt' + anchorDiv.dataset.layers).remove(); }
   options = promptParseOptions([[loc('Go back'), 'restorePromptLayer();']].concat(options));
 
   const newLayerDiv = document.createElement('div');
@@ -130,7 +134,6 @@ function restorePromptLayer() {
   anchorDiv.dataset.layers = layer + 1;
   anchorDiv.querySelector('[data-layer="'+(layer)+'"]').style.display = '';
 }
-eval('Game.ClosePrompt='+Game.ClosePrompt.toString().replace('Game.promptNoClose=false;', 'Game.promptNoClose=false; l(\'prompt\').style.display = \'\'; l(\'prompt\'+(l(\'promptAnchor\').dataset.layers-1)).remove(); l(\'promptAnchor\').dataset.layers = 1;'));
 function promptParseString(content) {
   //taken from main.js
   var str='';
@@ -2311,7 +2314,7 @@ new buttonCategory('minigameSettings', 5, [
     new buttonInfo('Freeze', 'Whether or not the garden is frozen initially.', [13, 10]),
     s => { setGardenR = s; }
   ),
-  new CCCEMButton('toNextTick', 'Tick %1',
+  new CCCEMButton('toNextTick', 'Tick %1s',
     new numberInputButton(),
     new buttonInfo('Tick', 'Progress to next tick in seconds.', [24, 18]),
     s => { toNextTick = s; }
