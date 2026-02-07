@@ -9,9 +9,11 @@
   },
   "include": [
     "types/**/*",
-    "cccem.js",
+    "cccemCore.js",
     "cccemInterface.js",
     "cccemPresets.js",
+    "steamWrapper.js",
+    "cccem.js",
     "PForPause.js",
     "castFinder.js",
     "testFile.js",

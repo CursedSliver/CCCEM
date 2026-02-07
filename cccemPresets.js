@@ -552,7 +552,7 @@ injectCSS(`
   .cccem-preset-expanded-display:hover { border: 0px !important; }
   .cccem-preset-display { border-radius: 8px; padding: 10px; cursor: pointer; }
   .cccem-preset-display:hover { border: 1px solid white; }
-  .cccem-preset-display .row { display:flex; gap:12px; align-items:flex-start; padding-bottom: 0px; }
+  .cccem-preset-display .row2 { display:flex; gap:12px; align-items:flex-start; padding-bottom: 0px; }
   .cccem-preset-display .cccem-preset-icon { width:48px; height:48px; background-image: url('img/icons.png'); background-repeat:no-repeat; border-radius:6px; flex:0 0 48px; box-shadow: 0 1px 0 rgba(0,0,0,0.2) inset; }
   .cccem-preset-display .title { font-size: 14px; margin:0 0 4px 0; text-align: left; font-weight: bold; text-shadow:0px 1px 3px #d2faff82; }
   .cccem-preset-display .creator { font-size: 12px; color: #ccc; margin-bottom: 2px; text-align: left; font-variant: small-caps; font-family: 'Merriweather', Georgia,serif; }
@@ -596,7 +596,7 @@ function openPresetDetails(uuid) {
   const desc = esc(obj.description || obj.ingame || '').replaceAll('$$BR$$', '<br>');
 
   let str = '<div class="cccem-preset-display cccem-preset-expanded-display">' +
-    '<div class="row">' +
+    '<div class="row2">' +
     '<div class="cccem-preset-icon" style="background-position: ' + px + 'px ' + py + 'px;"></div>' +
     '<div style="flex:1;">' +
     '<div class="title">' + title + '</div>' +
@@ -622,7 +622,7 @@ function getDisplayFromPreset(obj, uuid) {
   }
 
   return '<div class="block cccem-preset-display" '+Game.clickStr+'="PlaySound(\'snd/tick.mp3\');openPresetDetails('+uuid+');">' +
-    '<div class="row">' +
+    '<div class="row2">' +
     '<div class="cccem-preset-icon" style="background-position: ' + px + 'px ' + py + 'px;"></div>' +
     '<div style="flex:1;">' +
     '<div class="title">' + title + '</div>' +

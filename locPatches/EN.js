@@ -1,5 +1,21 @@
-CCCEMContainerModObj.addLang('EN', 'english', {
-    //cccem.js
+Game.mods['CCCEMLoader'].registerLang('EN', 'english', {
+    //cccem.js and steamWrapper.js
+    "CCCEM ready": "CCCEM ready",
+    "Go to the options menu to enter practice mode!": "Go to the options menu to enter practice mode!",
+    "Enter practice mode": "Enter practice mode",
+    "CCCEM": "CCCEM",
+    "Entering practice mode will load you into a new save that can be adjusted by a new interface at top left of the screen. Your save will be restored when you exit practice mode, which you can do here.": "Entering practice mode will load you into a new save that can be adjusted by a new interface at top left of the screen. Your save will be restored when you exit practice mode, which you can do here.",
+    "You are currently in practice mode.": "You are currently in practice mode.",
+    "You are currently NOT in practice mode.": "You are currently NOT in practice mode.",
+    "Save settings & exit practice mode": "Save settings & exit practice mode",
+    "Exit practice mode": "Exit practice mode",
+    "Hold up!": "Hold up!",
+    "It looks like you have other unknown mods enabled alongside CCCEM.": "It looks like you have other unknown mods enabled alongside CCCEM.",
+    "Most likely it won\'t cause any issues, but if you want to really make sure of the integrity of your save, you should unload them or back up your save first.": "Most likely it won\'t cause any issues, but if you want to really make sure of the integrity of your save, you should unload them or back up your save first.",
+    "To exit practice mode, simply unload the mod by reloading the game or removing it from your mod manager.": "To exit practice mode, simply unload the mod by reloading the game or removing it from your mod manager.",
+    "Questions, concerns, or want to discuss? You will be most likely to find other CCCEM users <a href=\"%1\" target=\"_blank\">in the official cookie clicker discord server</a>. Channels are #cookie-clicker or #dashnet-modding.": "Questions, concerns, or want to discuss? You will be most likely to find other CCCEM users <a href=\"%1\" target=\"_blank\">in the official cookie clicker discord server</a>. Channels are #cookie-clicker or #dashnet-modding.",
+
+    //cccemCore.js
     "Failed to save CCCEM settings": "Failed to save CCCEM settings",
     "Force close the game (or reload on web) to return to your save.": "Force close the game (or reload on web) to return to your save.",
     "Successfully found a %1": "Successfully found a %1",
@@ -85,6 +101,7 @@ CCCEMContainerModObj.addLang('EN', 'english', {
     "Initializing": "Initializing",
 
     //cccemInterface.js nontrivial
+    "PRACTICE MODE": "PRACTICE MODE",
     "CCCEM interface": "CCCEM interface",
     "Combo history": "Combo history",
     "This is a list of your past combo attempts this session.": "This is a list of your past combo attempts this session.",
@@ -470,6 +487,12 @@ CCCEMContainerModObj.addLang('EN', 'english', {
     "Auto Save": "Auto Save",
     "If on, the game will save CCCEM settings (identical to pressing the Save current settings button) every minute.": "If on, the game will save CCCEM settings (identical to pressing the Save current settings button) every minute.",
     "Auto save %1": "Auto save %1",
+    "Exit practice": "Exit practice",
+    "Exit practice mode": "Exit practice mode",
+    "Unloads CCCEM without saving its current setting, returning you to your original save.": "Unloads CCCEM without saving its current setting, returning you to your original save.",
+    "Save and Exit": "Save and Exit",
+    "Save and exit": "Save and exit",
+    "Saves CCCEM settings, then unloads the changes, returning you to your original save.": "Saves CCCEM settings, then unloads the changes, returning you to your original save.",
     "Building related info save": "Building related info save",
     "Saves building override and mute related information (hidden button)": "Saves building override and mute related information (hidden button)",
     "Game prefs save": "Game prefs save",

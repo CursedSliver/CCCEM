@@ -17358,5 +17358,6 @@ window.onload=function()
 		else loadLangAndLaunch(lang);
 	}
 
-	window.PRESETMODS = ['cccemWrapper.js'];
+	window.PRESETMODS = ['cccem.js'];
+	window.locally_hosted = true;
 };

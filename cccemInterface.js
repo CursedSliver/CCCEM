@@ -44,8 +44,6 @@
 //version 3.02: fixing muteBuildings
 //version 3.03: Made building muting and overriding selectors not save
 
-var cccemSpritesheet=App?this.dir+"/cccemAsset.png":"https://raw.githack.com/CursedSliver/asdoindwalk/main/cccemAsset.png"
-
 Game.sesame=0 
 if (l('fpsGraph')) { l('fpsGraph').style.display = 'none'; }
 var promptN=0
@@ -98,6 +96,23 @@ if (typeof CCCEMUILoaded === 'undefined') {
 
 l('promptAnchor').dataset.layers = 1;
 if (l('prompt')) { l('prompt').dataset.layer = 0; }
+{
+  let div = document.createElement('div');
+
+  div.id = 'practiceModeIndicator';
+  div.innerHTML = loc('PRACTICE MODE');
+  div.style.position = 'absolute';
+  div.style.top = App?'10px':'40px';
+  div.style.right = '30px';
+  div.style.textAlign = 'right';
+  div.style.fontSize = '60px';
+  div.style.fontFamily = "'Merriweather', Georgia,serif";
+  div.style.zIndex = 1000000;
+  div.style.textShadow = '0px -1px 6px #1ef7ffff, 0px 1px 6px #1e87ffff';
+  div.style.pointerEvents = 'none';
+
+  l('wrapper').appendChild(div);
+}
 function transientPromptInPrompt(promptStr, options, classes) {
   //"overwrites" the current prompt with a new one, 
   //allows the old one to be restored by a "go back" button, 
@@ -698,9 +713,9 @@ class scoreStat extends stat {
     <a class="option prefButton option${this.constructor[property]?'':' off'}" ${Game.clickStr}="statTypesList['${this.constructor.key}']['${property}'] = !statTypesList['${this.constructor.key}']['${property}']; openSettings(); toReloadHistory = true;">${this.constructor.name}</a>
     `;
   }
-  static { stat.prototype.register(this); }
 }
-//below icons are suggested by hellranger
+stat.prototype.register(scoreStat);
+//some of below icons are suggested by hellranger
 class cpsStat extends stat {
   static key = 'cps';
   static name = 'CpS gained';
@@ -738,8 +753,8 @@ class cpsStat extends stat {
   getDetailDisplay(extended) {
     return convertSeconds(this.detail).split(', ').slice(0, extended?Infinity:1).join(', ');
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(cpsStat);
 class godzStat extends stat {
   static key = 'godz';
   static name = 'Strength of Godzamok';
@@ -749,8 +764,8 @@ class godzStat extends stat {
   getDetailDisplay() {
     return Beautify(this.detail);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(godzStat);
 class clicksStat extends stat {
   static key = 'clicks';
   static name = 'Clicks';
@@ -777,8 +792,8 @@ class clicksStat extends stat {
   getDetailDisplay() {
     return Beautify(this.detail);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(clicksStat);
 class devastatednessStat extends stat {
   static key = 'devastatedness';
   static name = 'Devastatedness';
@@ -809,8 +824,8 @@ class devastatednessStat extends stat {
   getDetailDisplay() {
     return Beautify(this.detail);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(devastatednessStat);
 class rebuyStat extends stat {
   static key = 'rebuyMult';
   static name = 'Rebuy multiplier';
@@ -820,8 +835,8 @@ class rebuyStat extends stat {
     if (!this.detail) { return 'Not rebuying'; }
     return this.detail.toFixed(3);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(rebuyStat);
 class comboStat extends stat {
   static key = 'comboStrength';
   static name = 'Combo strength';
@@ -830,8 +845,8 @@ class comboStat extends stat {
   getDetailDisplay() {
     return Beautify(this.detail);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(comboStat);
 class relComboStat extends stat {
   static key = 'relComboStrength';
   static name = 'Strength of non-constant buffs';
@@ -840,8 +855,8 @@ class relComboStat extends stat {
   getDetailDisplay() {
     return Beautify(this.detail);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(relComboStat);
 class consistentPowStat extends stat {
   static key = 'consistentPow';
   static name = 'Strength of constant buffs';
@@ -850,8 +865,8 @@ class consistentPowStat extends stat {
   getDetailDisplay() {
     return Beautify(this.detail);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(consistentPowStat);
 class bsCountStat extends stat {
   static key = 'bsCount';
   static name = 'Number of BSs';
@@ -860,8 +875,8 @@ class bsCountStat extends stat {
   getDetailDisplay() {
     return String(this.detail ?? '');
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(bsCountStat);
 class cookieGainStat extends stat {
   static key = 'cookiesGained';
   static name = 'Cookie gained';
@@ -870,8 +885,8 @@ class cookieGainStat extends stat {
   getDetailDisplay() {
     return Beautify(this.detail);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(cookieGainStat);
 class handmadeGainStat extends stat {
   static key = 'handmadeGain';
   static name = 'Handmade gain';
@@ -880,8 +895,8 @@ class handmadeGainStat extends stat {
   getDetailDisplay() {
     return Beautify(this.detail);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(handmadeGainStat);
 class iniRawStat extends stat {
   static key = 'initialRaw';
   static name = 'Initial Raw CpS';
@@ -890,8 +905,8 @@ class iniRawStat extends stat {
   getDetailDisplay() {
     return Beautify(this.detail);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(iniRawStat);
 class scorePerClickStat extends stat {
   static key = 'scorePerClick';
   static name = 'Score per Click';
@@ -917,8 +932,8 @@ class scorePerClickStat extends stat {
   getDetailDisplay() {
     return SimpleBeautify(Math.floor(this.detail));
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(scorePerClickStat);
 class scoreCorrectionStat extends stat {
   static key = 'scoreCorrection';
   static name = 'Score correction value';
@@ -927,8 +942,8 @@ class scoreCorrectionStat extends stat {
   getDetailDisplay() {
     return this.detail.toFixed(4);
   }
-  static { stat.prototype.register(this); }
 }
+stat.prototype.register(scoreCorrectionStat);
 
 function BuffsDesc(buffsStr) {//give a more readable description of the buff parameters in the prompt
   let str=''
@@ -2269,7 +2284,7 @@ Game.registerHook('check', function() {
   }
 });
 Game.realExternalDataLoaded = Game.externalDataLoaded;
-eval('Game.UpdateHeralds='+Game.UpdateHeralds.toString().replaceAll('Game.externalDataLoaded=true;', 'Game.externalDataLoaded=true; Game.realExternalDataLoaded=true;'));
+if (Game.UpdateHeralds) { eval('Game.UpdateHeralds='+Game.UpdateHeralds.toString().replaceAll('Game.externalDataLoaded=true;', 'Game.externalDataLoaded=true; Game.realExternalDataLoaded=true;')); } 
 Game.externalDataLoaded = true;
 Game.UpdateHeralds();
 
@@ -2562,6 +2577,16 @@ new buttonCategory('savingControls', 1e6, [
     new boolButton(),
     new buttonInfo('Auto Save', 'If on, the game will save CCCEM settings (identical to pressing the Save current settings button) every minute.', [26, 7]),
     s => autoSaveCCCEM = s
+  ),
+  new CCCEMButton('quit', 'Exit practice',
+    new limeButton(),
+    new buttonInfo('Exit practice mode', 'Unloads CCCEM without saving its current setting, returning you to your original save.', [2, 7]),
+    () => { location.reload(); }, { hidden: !App || !window.locally_hosted, prevNewLine: true }
+  ),
+  new CCCEMButton('saveAndQuit', 'Save and Exit',
+    new limeButton(),
+    new buttonInfo('Save and exit', 'Saves CCCEM settings, then unloads the changes, returning you to your original save.', [2, 7]),
+    () => { customSave(); location.reload(); }, { hidden: !App || !window.locally_hosted }
   ),
   new CCCEMButton('buildingRelatedSaveData', '', 
     new savingModule(() => {
