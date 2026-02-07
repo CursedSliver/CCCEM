@@ -1263,6 +1263,7 @@ function InitializeMod() {
     Game.Notify(loc("CCCEM %1 Loaded!", CCCEMVerReal), (App?loc("Go to options to exit practice mode."):loc("Your save will return upon closing the game."))+'<br>'+loc('Select a preset via hovering the button at top left, and customize it to your liking.'), [18, 6], " ") 
   } else { Game.Notify(loc("CCCEM %1 Loaded!", CCCEMVerReal), loc("Stored settings successfully loaded."), [19, 6], " "); }
   Game.prefs.autosave=0
+  Game.SaveTo = Game.mods['CCCEMLoader'].saveToDestination;
 }
 
 var hasHarbor = false; 

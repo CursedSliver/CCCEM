@@ -38,6 +38,7 @@ const __CCCEM_INIT_FUNCTION__ = function() {
             init: __CCCEM_INIT_FUNCTION__,
             langLoaded: false,
             initializationAllowed: true,
+            saveToDestination: '',
             registerLang: function(a, b, c) {
                 AddLanguage(a, b, c, true);
                 this.langLoaded = true;
@@ -49,6 +50,8 @@ const __CCCEM_INIT_FUNCTION__ = function() {
             initialize: function() {
                 if (!this.initializationAllowed) { return; }
                 let toModWarn = false;
+                this.saveToDestination = Game.SaveTo;
+                Game.SaveTo = 'GARBAGE';
                 const allowedMods = [
                     'CCCEMLoader',
                     'CCCEMContainer',
