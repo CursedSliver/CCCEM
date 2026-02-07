@@ -105,13 +105,14 @@ if (l('prompt')) { l('prompt').dataset.layer = 0; }
   div.style.top = App?'10px':'40px';
   div.style.right = '30px';
   div.style.textAlign = 'right';
-  div.style.fontSize = '60px';
+  div.style.fontSize = '30px';
   div.style.fontFamily = "'Merriweather', Georgia,serif";
   div.style.zIndex = 1000000;
   div.style.textShadow = '0px -1px 6px #1ef7ffff, 0px 1px 6px #1e87ffff';
   div.style.pointerEvents = 'none';
 
-  l('wrapper').appendChild(div);
+  l('wrapper').appendChild(div); 
+  if (!App) { div.style.display = 'none'; }
 }
 function transientPromptInPrompt(promptStr, options, classes) {
   //"overwrites" the current prompt with a new one, 
@@ -2206,7 +2207,7 @@ new buttonCategory('gameSettings', 4, [
     new buttonInfo('Heralds override', 'Whether or not to override the amount of heralds to a fixed value.', [21, 29]),
     s => { if (!CCCEMButtons['heraldsOverride'].hidden) { 
         CCCEMButtons['heraldsN'].hidden = !s; 
-        if ((!s) && Game.realExternalDataLoaded) { Game.UpdateHeralds(); } else if (s) { CCCEMButtons['heraldsN'].type.triggerVarFunc(); } 
+        if ((!s) && Game.realExternalDataLoaded && Game.UpdateHeralds) { Game.UpdateHeralds(); } else if (s) { CCCEMButtons['heraldsN'].type.triggerVarFunc(); } 
         RedrawCCCEM();
       } 
     }
@@ -2286,7 +2287,7 @@ Game.registerHook('check', function() {
 Game.realExternalDataLoaded = Game.externalDataLoaded;
 if (Game.UpdateHeralds) { eval('Game.UpdateHeralds='+Game.UpdateHeralds.toString().replaceAll('Game.externalDataLoaded=true;', 'Game.externalDataLoaded=true; Game.realExternalDataLoaded=true;')); } 
 Game.externalDataLoaded = true;
-Game.UpdateHeralds();
+if (Game.UpdateHeralds) { Game.UpdateHeralds(); }
 
 new buttonCategory('minigameSettings', 5, [
   new CCCEMButton('forceFtHoF', 'Force the Hand of Fate outcome: %1',
@@ -2581,12 +2582,12 @@ new buttonCategory('savingControls', 1e6, [
   new CCCEMButton('quit', 'Exit practice',
     new limeButton(),
     new buttonInfo('Exit practice mode', 'Unloads CCCEM without saving its current setting, returning you to your original save.', [2, 7]),
-    () => { location.reload(); }, { hidden: !App || !window.locally_hosted, prevNewLine: true }
+    () => { Game.toReload = true; }, { hidden: !App || !window.locally_hosted, preNewLine: true }
   ),
   new CCCEMButton('saveAndQuit', 'Save and Exit',
     new limeButton(),
     new buttonInfo('Save and exit', 'Saves CCCEM settings, then unloads the changes, returning you to your original save.', [2, 7]),
-    () => { customSave(); location.reload(); }, { hidden: !App || !window.locally_hosted }
+    () => { customSave(); Game.toReload = true; }, { hidden: !App || !window.locally_hosted }
   ),
   new CCCEMButton('buildingRelatedSaveData', '', 
     new savingModule(() => {

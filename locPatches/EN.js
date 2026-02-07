@@ -14,6 +14,7 @@ Game.mods['CCCEMLoader'].registerLang('EN', 'english', {
     "Most likely it won\'t cause any issues, but if you want to really make sure of the integrity of your save, you should unload them or back up your save first.": "Most likely it won\'t cause any issues, but if you want to really make sure of the integrity of your save, you should unload them or back up your save first.",
     "To exit practice mode, simply unload the mod by reloading the game or removing it from your mod manager.": "To exit practice mode, simply unload the mod by reloading the game or removing it from your mod manager.",
     "Questions, concerns, or want to discuss? You will be most likely to find other CCCEM users <a href=\"%1\" target=\"_blank\">in the official cookie clicker discord server</a>. Channels are #cookie-clicker or #dashnet-modding.": "Questions, concerns, or want to discuss? You will be most likely to find other CCCEM users <a href=\"%1\" target=\"_blank\">in the official cookie clicker discord server</a>. Channels are #cookie-clicker or #dashnet-modding.",
+    "Quit": "Quit",
 
     //cccemCore.js
     "Failed to save CCCEM settings": "Failed to save CCCEM settings",

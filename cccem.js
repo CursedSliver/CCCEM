@@ -10,11 +10,14 @@ const __CCCEM_INIT_FUNCTION__ = function() {
     Game.LoadMod(cccemDir+"locPatches/TEMP.js");
     const interval = setInterval(() => { 
         if (Game.ready && this.langLoaded) { 
-            //Game.LoadMod(App?(ccemDir+'steamWrapper.js'):(cccemDir+'cccemCore.js'));
             if (App) {
                 this.prepSteam();
             }
-            eval('Game.UpdateMenu='+Game.UpdateMenu.toString().replace('if (App && App.writeModUI)', 'str += Game.mods[\'CCCEMLoader\'].getMenuStr(); if (App && App.writeModUI)'));
+            eval('Game.UpdateMenu='+Game.UpdateMenu.toString()
+                .replace('if (App && App.writeModUI)', 'str += Game.mods[\'CCCEMLoader\'].getMenuStr(); if (App && App.writeModUI)')
+                .replace('Game.toSave=true;Game.toQuit=true;', 'Game.toSave=true;Game.toQuit=true;if (window.PRACTICE_MODE) { Game.toSave=false; }')
+                .replace('Save & Quit', 'window.PRACTICE_MODE?\'Quit\':\'Save & Quit\'')
+            );
             if (!App) { this.initialize(); }
             clearInterval(interval);
         }
@@ -25,7 +28,7 @@ const __CCCEM_INIT_FUNCTION__ = function() {
     };
     const timeout = setTimeout(() => { 
         if (this.langLoaded) { return; }
-        alert(cccemTimeoutErrors[curLang]);
+        alert(cccemTimeoutErrors[curLang] ?? cccemTimeoutErrors['EN']);
         clearInterval(interval);
     }, 8000);
 };
@@ -84,7 +87,7 @@ const __CCCEM_INIT_FUNCTION__ = function() {
                 , [
                     [loc('I know what I\'m doing!'), 'Game.mods[\'CCCEMLoader\'].triggerInit(); Game.ClosePrompt();'],
                     [App?loc('Open mod menu'):loc('Reload game'), 'if (App) { App.modsPopup(); } else { location.reload(); }'],
-                    [loc('Export save'), 'Game.ExportSave(); Game.ClosePrompt();'],
+                    [loc('Export save'), 'Game.ExportSave();'],
                     [loc('Cancel'), 'Game.ClosePrompt();']
                 ]);
                 //I could focus the cancel button here but... hmmmm
@@ -99,8 +102,8 @@ const __CCCEM_INIT_FUNCTION__ = function() {
 
                     str += '<div class="listing" style="color:rgba(255,255,255,0.5); font-size:12px;">' + (window.PRACTICE_MODE ? loc('You are currently in practice mode.') : loc('You are currently NOT in practice mode.')) + '</div>';
 
-                    str += '<a class="smallFancyButton" style="' + (window.PRACTICE_MODE ? '' : 'opacity: 0.5; border: 1px solid gray;') + '" onclick="if (window.PRACTICE_MODE) { location.reload(); }">' + loc('Exit practice mode') + '</a>';
-                    str += '<a class="smallFancyButton" style="' + (window.PRACTICE_MODE ? '' : 'opacity: 0.5; border: 1px solid gray;') + '" onclick="if (window.PRACTICE_MODE) { customSave(); location.reload(); }">' + loc('Save settings & exit practice mode') + '</a>';
+                    str += '<a class="smallFancyButton" style="' + (window.PRACTICE_MODE ? '' : 'opacity: 0.5; border: 1px solid gray;') + '" onclick="if (window.PRACTICE_MODE) { Game.toReload = true; }">' + loc('Exit practice mode') + '</a>';
+                    str += '<a class="smallFancyButton" style="' + (window.PRACTICE_MODE ? '' : 'opacity: 0.5; border: 1px solid gray;') + '" onclick="if (window.PRACTICE_MODE) { customSave(); Game.toReload = true; }">' + loc('Save settings & exit practice mode') + '</a>';
                 } else {
                     str += '<div class="listing" style="color:rgba(255,255,255,0.5); font-size:12px;">' + loc('To exit practice mode, simply unload the mod by reloading the game or removing it from your mod manager.') + '</div>';
                 }

@@ -163,6 +163,8 @@ function addLoc(str, value) {
   locContainer[str] = value ?? str;
 }
 
+Game.WriteSave = function() { Game.toSave = false; Game.lastDate = parseInt(Game.time); };
+
 //literally just orteils code, idk man couldnt be bothered to dynamically copy the part of the code over, its not like anyone is using cccem with other mods anywyays
 function retrieveSave(data, ignoreVersionIssues) {
     if (typeof data!=='undefined') str=unescape(data);
@@ -205,6 +207,7 @@ var currentSave = retrieveSave();
 //literally also just orteils code but in part
 function customSave() {
     Game.toSave = false;
+    if (!currentSave) { return; }
     let str = currentSave.replace('!END!', '');
     str = str.replace(/\|\|(.*)/, str.match(/\|\|.*?\|\|/));
     str+=Game.saveModData();

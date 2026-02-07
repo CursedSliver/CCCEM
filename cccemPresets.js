@@ -238,7 +238,19 @@ new CCCEMPreset('initialization', initSettings, //used for loading the mod for t
   CCCEMButtons['loadPForPause'].hidden = true;
   CCCEMButtons['loadCastFinder'].hidden = true;
   CCCEMButtons['createPreset'].hidden = true;
+
+  Game.bgType = 0;
 }, [], 'Initializing', [0, 0]);
+window.freePreset = function() {
+  CCCEMButtons['editPreset'].hidden = false;
+
+  CCCEMCategories['interfaceBegin'].hidden = false;
+  CCCEMCategories['savingControls'].hidden = false;
+
+  CCCEMButtons['loadPForPause'].hidden = false;
+  CCCEMButtons['loadCastFinder'].hidden = false;
+  CCCEMButtons['createPreset'].hidden = false;
+}
 
 
 presetButtonsToRegister.push(new CCCEMButton('blockClosingDiv', 'N', new HTML(), new buttonInfo('', 'hidden button', [0, 0]), null, { preNewLine: '</div>' }));
