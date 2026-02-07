@@ -93,6 +93,82 @@ if (typeof CCCEMUILoaded === 'undefined') {
   eval("Game.updateBuffs="+Game.updateBuffs.toString().replace("if (buff.onDie) buff.onDie();","if (buff.onDie) buff.onDie(); FindMaxComboPow();"))
   };
 
+l('promptAnchor').dataset.layers = 1;
+if (l('prompt')) { l('prompt').dataset.layer = 0; }
+function transientPromptInPrompt(promptStr, options, classes) {
+  //"overwrites" the current prompt with a new one, 
+  //allows the old one to be restored by a "go back" button, 
+  //if old one is restored the new prompt is discarded hence transient
+  //can be chained together for multiple layers, but if fronttracking is needed 
+  //youd need to implement that yourself
+
+  const anchorDiv = l('promptAnchor');
+  const contentDiv = l('promptContent');
+  const optionsDiv = contentDiv.querySelector('.optionBox');
+  l('prompt').dataset.layer = 0; //just in case
+  if (!l('promptAnchor').dataset.layers) { l('promptAnchor').dataset.layers = 1; }
+  options = promptParseOptions([[loc('Go back'), 'restorePromptLayer();']].concat(options));
+
+  const newLayerDiv = document.createElement('div');
+  const curLayer = parseInt(anchorDiv.dataset.layers);
+  newLayerDiv.id = 'prompt' + anchorDiv.dataset.layers;
+  newLayerDiv.className = 'framed promptBox' + (classes ? (' ' + classes) : '');
+  newLayerDiv.dataset.layer = anchorDiv.dataset.layers;
+  anchorDiv.dataset.layers = parseInt(anchorDiv.dataset.layers) + 1;
+  newLayerDiv.innerHTML = '<div id="promptContent'+curLayer+'" class="promptContentBox">' + 
+    promptParseString(promptStr) + 
+    '<div class="optionBox">' + options + '</div></div>' + 
+    '<div id="promptClose" class="close" style="display: block;" onclick="PlaySound(\'snd/tickOff.mp3\');Game.ClosePrompt();">x</div>';
+  anchorDiv.querySelectorAll('[data-layer="'+(anchorDiv.dataset.layers - 2)+'"]')[0].style.display = 'none';
+  anchorDiv.appendChild(newLayerDiv);
+}
+function restorePromptLayer() {
+  const contentDiv = l('promptContent');
+  const anchorDiv = l('promptAnchor');
+  const layer = anchorDiv.dataset.layers - 2;
+  anchorDiv.querySelector('[data-layer="'+(layer + 1)+'"]').remove();
+  anchorDiv.dataset.layers = layer + 1;
+  anchorDiv.querySelector('[data-layer="'+(layer)+'"]').style.display = '';
+}
+eval('Game.ClosePrompt='+Game.ClosePrompt.toString().replace('Game.promptNoClose=false;', 'Game.promptNoClose=false; l(\'prompt\').style.display = \'\'; l(\'prompt\'+(l(\'promptAnchor\').dataset.layers-1)).remove(); l(\'promptAnchor\').dataset.layers = 1;'));
+function promptParseString(content) {
+  //taken from main.js
+  var str='';
+			str+=content;
+			if (str.indexOf('<id ')==0)
+			{
+				var id=str.substring(4,str.indexOf('>'));
+				str=str.substring(str.indexOf('>')+1);
+				str='<div id="promptContent'+id+'">'+str+'</div>';
+			}
+			if (str.indexOf('<noClose>')!=-1)
+			{
+				str=str.replace('<noClose>','');
+				Game.promptNoClose=true;
+			}
+  return str;
+}
+function promptParseOptions(options) {
+  //taken from main.js
+  var opts='';
+			Game.promptOptionsN=0;
+			for (var i=0;i<options.length;i++)
+			{
+				if (options[i]=='br')//just a linebreak
+				{opts+='<br>';}
+				else
+				{
+					if (typeof options[i]=='string') options[i]=[options[i],'PlaySound(\'snd/tickOff.mp3\');Game.ClosePrompt();'];
+					else if (!options[i][1]) options[i]=[options[i][0],'PlaySound(\'snd/tickOff.mp3\');Game.ClosePrompt();',options[i][2]];
+					else options[i][1]='PlaySound(\'snd/tick.mp3\');'+options[i][1];
+					options[i][1]=options[i][1].replace(/'/g,'&#39;').replace(/"/g,'&#34;');
+					opts+='<a id="promptOption'+i+'" class="option" '+(options[i][2]?'style="'+options[i][2]+'" ':'')+''+Game.clickStr+'="'+options[i][1]+'">'+options[i][0]+'</a>';
+					Game.promptOptionsN++;
+				}
+			}
+  return opts;
+}
+
 function FortuneTicker(manual) {
   if (!seedTicker) {return (Math.random()<forceFortune)}
   Math.seedrandom(Game.seed+'/'+tickerCount);
@@ -2749,6 +2825,76 @@ customStyles.push(`
     font-weight: 700;
     margin-top: 6px;
   }
+
+  .promptBox
+  {
+	position:relative;
+	overflow:hidden;
+	width:250px;
+	padding:16px;
+	margin-left:-18px;
+	left:-125px;
+	text-align:center;
+	/*animation:pucker 0.2s;*/
+  }
+  .promptBox h3,.prompt h3,h4,.fancyText
+{
+	text-align:center;
+	font-weight:bold;
+	font-size:14px;
+	position:relative;
+	font-variant:small-caps;
+	display:inline-block;
+}
+.promptBox h3,.prompt h3,.fancyText
+{
+	color:#ece2b6;
+	text-shadow:0px 1px 0px #733726,0px 2px 0px #875626,0px 2px 1px #000,0px 2px 3px #000;
+	font-family:Georgia,serif;
+	font-size:15px;
+}
+.large .fancyText{font-size:20px;}
+.promptBox h3:before,.promptBox h3:after,.prompt h3:before,.prompt h3:after,.winged:before,.winged:after
+{
+	content:'';
+	display:block;
+	width:39px;
+	height:23px;
+	position:absolute;
+	top:-4px;
+}
+.promptBox h3:before,.prompt h3:before,.winged:before
+{
+	background:url(img/featherLeft.png) no-repeat;
+	left:-39px;
+}
+.promptBox h3:after,.prompt h3:after,.winged:after
+{
+	background:url(img/featherRight.png) no-repeat;
+	right:-39px;
+}
+.promptBox textarea,.promptBox input
+{
+	width:100%;
+	margin:0px;
+	position:relative;
+	left:-3px;
+}
+
+.promptBox.widePrompt
+{
+	width:500px;
+	left:-250px;
+}
+
+.promptBox.legacyPrompt
+{
+	width:400px;
+	left:-200px;
+}
+
+.promptContentBox{margin-top:-8px;}
+.promptContentBox h3{margin-bottom:6px;}
   `)
 customStyles.push(`
   .neatocyan, a.option.neatocyan {
