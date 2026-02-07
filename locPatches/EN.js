@@ -202,6 +202,8 @@ Game.mods['CCCEMLoader'].registerLang('EN', 'english', {
     "unused": "unused",
     "bought": "bought",
     "available": "available",
+    "Include": "Include",
+    "Exclude": "Exclude",
 
     //cccemInterface.js enumerable
     "Try again": "Try again",

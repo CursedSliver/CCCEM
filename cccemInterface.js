@@ -1949,10 +1949,6 @@ new buttonCategory('interfaceBegin', 0, [
 ]);
 
 new buttonCategory('categoryTogglePanel', 1, [
-  new CCCEMButton('optionsBatch1', 'Save/Load %1',
-    new categoryToggleButton('savingSettings'),
-    new buttonInfo('Options group: Save/Load settings', 'Options related to saving and loading. ', [27, 29])
-  ),
   new CCCEMButton('optionsBatch2', 'Presets %1',
     new categoryToggleButton('presetSettings'),
     new buttonInfo('Options group: Presets', 'Options related to wide-spread setting changes. ', [27, 29]),
@@ -2001,42 +1997,12 @@ new buttonCategory('categoryTogglePanel', 1, [
 ]);
 CCCEMButtons['optionsBatchPForPause'].hidden = true;
 CCCEMButtons['optionsBatchCastFinder'].hidden = true;
-new buttonCategory('savingSettings', 2, [
-  new CCCEMButton('importSave', 'Import save',
-    new stringInputButton(null, ()=> {return ""}),
-    new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents.', [24, 7]),
-    function(s) {s = StripCCCEMData(s);
-      this.state = s
-      iniLoadSave = s
-      CCCEMButtons['clearImportedSave'].hidden = false;
-      if (!s) { 
-        CCCEMButtons['clearImportedSave'].hidden = true;
-        CCCEMButtons['clearImportedSave'].changeState(null);
-        return;
-      }
-      const settingsOverriden = ['cookies', 'cookiesBTA', 'prestige', 'buildingCountAnchor'];
-      for (let i in settingsOverriden) {
-        CCCEMButtons[settingsOverriden[i]].hidden = true;
-      }
-    }, { advanced: false }
-  ),
-  new CCCEMButton('clearImportedSave', 'Clear imported save',
-    new triggerButton(),
-    new buttonInfo('Clear import', 'Remove the currently imported save, if any.', [24, 7]),
-    function(s) {
-      CCCEMButtons['importSave'].state = '';
-      iniLoadSave = '';
-      const settingsOverriden = ['cookies', 'cookiesBTA', 'prestige', 'buildingCountAnchor'];
-      for (let i in settingsOverriden) {
-        CCCEMButtons[settingsOverriden[i]].hidden = false;
-      }
-      this.hidden = true;
-    }, { advanced: false }
-  ),
+
+new buttonCategory('presetSettings', 3, [
   new CCCEMButton('importSettings', 'Import settings',
     new stringInputButton(null, ()=> {return ""}),
     new buttonInfo('Import settings', 'Imports a setting.', [2, 32]),
-    s => setSettings(s), { newLine: true, advanced: false }
+    s => { setSettings(s); freePreset(); }, { advanced: false }
   ),
   new CCCEMButton('exportSettings', 'Export settings',
     new readonlyDisplayButton(() => {
@@ -2046,17 +2012,10 @@ new buttonCategory('savingSettings', 2, [
      { advanced: false }
   ),
   new CCCEMButton('saveSave','%1 save',
-    new boolButton('Include', 'Exclude'),
+    new boolButton(loc('Include'), loc('Exclude')),
     new buttonInfo('Export save', 'Whether the save currently used will be exported together with settings', [16, 5]),
-    s => CCCEMButtons['importSave'].type.willSave = s, { advanced: false, ignorePreset: true }
-  )
-], 'optionsBatch1');
-CCCEMCategories.savingSettings.complexityHideImmune = false;
-CCCEMButtons['exportSettings'].type.willSave = false;
-CCCEMButtons['importSettings'].type.willSave = false;
-CCCEMButtons['clearImportedSave'].hidden = true;
-
-new buttonCategory('presetSettings', 3, [
+    s => CCCEMButtons['importSave'].type.willSave = s, { advanced: false, ignorePreset: true, newLine: true }
+  ),
   new CCCEMButton('revertPreset', 'Undo preset', 
     new triggerButton(),
     new buttonInfo('Undo preset', 'Revert your settings to what it was before.<br>Only records the settings before the most recent preset trigger.', [8, 15]),
@@ -2092,8 +2051,41 @@ new buttonCategory('presetSettings', 3, [
     null, { newLine: '<div class="block">' }
   ),
 ], 'optionsBatch2'),
+CCCEMButtons['exportSettings'].type.willSave = false;
+CCCEMButtons['importSettings'].type.willSave = false;
 
 new buttonCategory('gameSettings', 4, [
+  new CCCEMButton('importSave', 'Import save',
+    new stringInputButton(null, ()=> {return ""}),
+    new buttonInfo('Import Save', 'Import a save of your own. Some settings will be overridden by the save\'s contents.', [24, 7]),
+    function(s) {s = StripCCCEMData(s);
+      this.state = s
+      iniLoadSave = s
+      CCCEMButtons['clearImportedSave'].hidden = false;
+      if (!s) { 
+        CCCEMButtons['clearImportedSave'].hidden = true;
+        CCCEMButtons['clearImportedSave'].changeState(null);
+        return;
+      }
+      const settingsOverriden = ['cookies', 'cookiesBTA', 'prestige', 'buildingCountAnchor'];
+      for (let i in settingsOverriden) {
+        CCCEMButtons[settingsOverriden[i]].hidden = true;
+      }
+    }, { advanced: false, hidden: true }
+  ),
+  new CCCEMButton('clearImportedSave', 'Clear imported save',
+    new triggerButton(),
+    new buttonInfo('Clear import', 'Remove the currently imported save, if any.', [24, 7]),
+    function(s) {
+      CCCEMButtons['importSave'].state = '';
+      iniLoadSave = '';
+      const settingsOverriden = ['cookies', 'cookiesBTA', 'prestige', 'buildingCountAnchor'];
+      for (let i in settingsOverriden) {
+        CCCEMButtons[settingsOverriden[i]].hidden = false;
+      }
+      this.hidden = true;
+    }, { advanced: false }
+  ),
   new CCCEMButton('iniSeed', 'Initial seed %1',
     new stringInputButton(),
     new buttonInfo('Initial seed', 'Seed to determine RNG outcomes, or leave as \'R\' for random. <br>Also requires either toggling on Force cast count or change FtHoF to \'random\'.', [25, 25]),

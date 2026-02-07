@@ -39,15 +39,7 @@ class CCCEMPreset {
     invalidateScore = 1;
 
     activePreset = this;
-    CCCEMButtons['revertPreset'].hidden = false;
-    CCCEMButtons['editPreset'].hidden = false;
-    CCCEMButtons['advancedMode'].hidden = true;
-
-    CCCEMCategories['interfaceBegin'].hidden = false;
-    CCCEMCategories['savingControls'].hidden = false;
-    CCCEMButtons['loadPForPause'].hidden = false;
-    CCCEMButtons['loadCastFinder'].hidden = false;
-    CCCEMButtons['createPreset'].hidden = false;
+    freePreset();
 
     ResetAll();
     this.onTriggerFunc();
@@ -239,6 +231,9 @@ new CCCEMPreset('initialization', initSettings, //used for loading the mod for t
   CCCEMButtons['loadCastFinder'].hidden = true;
   CCCEMButtons['createPreset'].hidden = true;
 
+  CCCEMButtons['exportSettings'].hidden = true;
+  CCCEMButtons['saveSave'].hidden = true;
+
   Game.bgType = 0;
 }, [], 'Initializing', [0, 0]);
 window.freePreset = function() {
@@ -250,6 +245,9 @@ window.freePreset = function() {
   CCCEMButtons['loadPForPause'].hidden = false;
   CCCEMButtons['loadCastFinder'].hidden = false;
   CCCEMButtons['createPreset'].hidden = false;
+
+  CCCEMButtons['exportSettings'].hidden = false;
+  CCCEMButtons['saveSave'].hidden = false;
 }
 
 
