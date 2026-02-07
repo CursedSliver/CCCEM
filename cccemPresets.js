@@ -521,7 +521,7 @@ let presetCreationStages = {
       presetCreationBufferObj.settings = escape(utf8_to_b64(getSettingsCode()));
       CCCEMButtons['saveSave'].changeState(saveSaveStatus);
       CCCEMButtons['revertPresetContainer'].type.willSave = true;
-      const str = JSON.stringify(presetCreationBufferObj);
+      let str = JSON.stringify(presetCreationBufferObj);
       str = str.replaceAll('\\n', '$$BR$$');
       presetCreationBufferObj = {};
 
