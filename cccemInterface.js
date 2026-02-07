@@ -527,7 +527,7 @@ class stat {
       + '</div>'
       + '<div style="flex:1;text-align:left;">'
         + '<div class="title stat">'
-          + loc(this.constructor.name())
+          + loc(this.constructor.name)
           + '<span class="statDescription" title="' + loc(this.constructor.description || '') + '">?</span>'
         + '</div>'
         + '<div class="statDetails">'
@@ -648,7 +648,7 @@ class cpsStat extends stat {
       1: [20, 0],
       0: [24, 18]
     };
-    const mapM = Object.keys(map).reverse();
+    const mapM = [0, 1, 10, 100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15].reverse();
     for (let i of mapM) {
       if (Number(i) <= years) {
         return map[i];
@@ -687,8 +687,9 @@ class clicksStat extends stat {
       30: [0, 1],
       0: [0, 0]
     }
-    for (let i in map) {
-      if (parseInt(i) <= this.detail) {
+    const mMap = Object.keys(map).reverse();
+    for (let i of mMap) {
+      if (Number(i) <= this.detail) {
         return map[i];
       }
     }
@@ -718,8 +719,9 @@ class devastatednessStat extends stat {
       1000: [11, 0],
       0: [11, 15]
     }
-    for (let i in map) {
-      if (parseInt(i) <= this.detail) {
+    const mMap = Object.keys(map).reverse();
+    for (let i of mMap) {
+      if (Number(i) <= this.detail) {
         return map[i];
       }
     }
@@ -825,8 +827,9 @@ class scorePerClickStat extends stat {
       10000: [11, 6],
       0: [10, 0]
     }
-    for (let i in map) {
-      if (parseInt(i) <= this.detail) {
+    const mMap = Object.keys(map).reverse();
+    for (let i of mMap) {
+      if (Number(i) <= this.detail) {
         return map[i];
       }
     }
@@ -2052,12 +2055,12 @@ new buttonCategory('gameSettings', 4, [
     s => iniBC = s, { advanced: false }
   ),
   new CCCEMButton('useEB', '%1',
-    new boolButton('Use EB', 'No EB'),
+    new boolButton(loc('Use Elder Battalion'), loc('No Elder Battalion')),
     new buttonInfo('Elder Battalion strategy', 'Changes the building distribution to better fit an Elder Battalion strategy.', [1, 25]),
     s => useEB = s, { advanced: false }
   ),
   new CCCEMButton('useRebuy', '%1',
-    new boolButton('Rebuy', 'No Rebuy'),
+    new boolButton(loc('Rebuy'), loc('No Rebuy')),
     new buttonInfo('Elder Battalion rebuy', 'Changes the building distribution to better fit a strategy rebuying after godzamok.', [1, 27]),
     s => useRebuy = s, { newLine: true, advanced: false }
   ),
@@ -2075,7 +2078,7 @@ new buttonCategory('gameSettings', 4, [
     s => { manualBuildings[get('buildingSelect')] = s; }, { advanced: false }
   ),
   new CCCEMButton('muteBuilding', '%1',
-    new boolButton('Muted', 'Unmuted'),
+    new boolButton(loc('Muted'), loc('Unmuted')),
     new buttonInfo('Mute', 'Whether a building should start muted. Minigames will always unmute unless that option is disabled.', [28, 6]),
     s => { muteBuildings[get('buildingSelect')] = s?1:0; }
   ),
@@ -2100,7 +2103,7 @@ new buttonCategory('gameSettings', 4, [
     s => { buyOption1 = s; }, { advanced: false }
   ),
   new CCCEMButton('buyOption2', '%1',
-    new cycleButton(2, 5, e => (e > 4 ? 'All' : String(Math.pow(10, e - 2)))),
+    new cycleButton(2, 5, e => (e > 4 ? loc('All') : String(Math.pow(10, e - 2)))),
     new buttonInfo('Sell/Buy amount', 'Selects the bulk-buying amount you are selecting at the start of each attempt.', [1, 6]),
     s => { buyOption2 = s; }, { advanced: false }
   ),
@@ -2135,7 +2138,7 @@ new buttonCategory('gameSettings', 4, [
     s => { forceFortune = s / 100; }
   ),
   new CCCEMButton('fortuneClaim', 'Fortune %1 claimed',
-    new boolButton('already', 'not yet'),
+    new boolButton(loc('already'), loc('not yet')),
     new buttonInfo('Fortune claim', 'Whether or not the GC fortune (Today is your lucky day!) has already been claimed (and thus won\'t appear again).', [10, 32]),
     s => { fortuneG = s; }
   ),
@@ -2248,7 +2251,7 @@ new buttonCategory('minigameSettings', 5, [
     s => { gardenP1[1] = s; }, true
   ),
   new CCCEMButton('gTulips', '%1 Ghost Tulips',
-    new boolButton('Add', 'No'),
+    new boolButton(loc('Add'), loc('No')),
     new buttonInfo('Ghost Tulips', 'Adds ghost tulips in addition to other specified plants. Useful for starting an attempt in the middle of a combo, after you would already have replanted.', [26, 20])
   ),
   new CCCEMButton('plant2', 'Plant 2 %1',
@@ -2391,22 +2394,22 @@ CCCEMButtons['buffs'].type.subHeading=loc('Buffs that will be active when you re
 
 new buttonCategory('gcSettings', 7, [
   new CCCEMButton('seedNats', 'Seeding GC %1',
-    new boolButton('On', 'Off'),
+    new boolButton(),
     new buttonInfo('Seeded natural Golden cookies toggle', 'Whether naturally spawned Golden cookies will have their effects be determined by the current game seed.', [22, 6]),
     s => { seedNats = s; }
   ),
   new CCCEMButton('seedTicker', 'Seeding News %1',
-    new boolButton('On', 'Off'),
+    new boolButton(),
     new buttonInfo('Seeded News ticker messages toggle', 'Whether Fortune appearances in the News ticker are seeded by the current game seed.', [29, 8]),
     s => { seedTicker = s; }
   ),
   new CCCEMButton('gSwitch', 'Golden Switch %1',
-    new boolButton('On', 'Off'),
+    new boolButton(),
     new buttonInfo('Golden switch state', 'Whether golden switch will start on or off', [20, 10]),
     null, true
   ),
   new CCCEMButton('iniSpawn', 'Natural GC %1',
-    new boolButton('On', 'Off'),
+    new boolButton(),
     new buttonInfo('Initial natural Golden cookie spawn toggle', 'Whether a Golden Cookie will spawn at the start of each attempt.', [23, 6]),
     function (s) {
       iniSpawn = s;
@@ -2419,12 +2422,12 @@ new buttonCategory('gcSettings', 7, [
     s => { iniTimer = s; }, { advanced: false }
   ),
   new CCCEMButton('iniDO', 'Dragon Orbs %1',
-    new boolButton('On', 'Off'),
+    new boolButton(),
     new buttonInfo('Initial Dragon Orbs spawn toggle', 'Whether a Golden cookie from Dragon Orbs usage will spawn at the start of each attempt.', [33, 25]),
     s => { iniDO = s; }
   ),
   new CCCEMButton('iniDEoRL', 'DEoRL %1',
-    new boolButton('On', 'Off'),
+    new boolButton(),
     new buttonInfo('Initial Distilled Essence of Redoubled Luck spawn toggle', 'Whether an invoke of DEoRL at the start of each attempt will be successful.', [27, 12]),
     s => { iniDEoRL = s; }
   ),
@@ -2447,12 +2450,12 @@ new buttonCategory('gcSettings', 7, [
       CCCEMButtons['iniGC3'].state=s}
   ),
   new CCCEMButton('boughtSF', 'Sugar frenzy %1',
-    new boolButton('used', 'unused'),
+    new boolButton(loc('used'), loc('unused')),
     new buttonInfo('Sugar frenzy state', 'Whether sugar frenzy has been used before, determining whether it is available to use.', [22, 17]),
     s => { boughtSF = s; }
   ),
   new CCCEMButton('boughtCE', 'Chocolate egg %1',
-    new boolButton('bought', 'available'),
+    new boolButton(loc('bought'), loc('available')),
     new buttonInfo('Chocolate egg purchasability', 'Whether chocolate egg has been purchased already, thus determining whether it can be purchased again.', [18, 12]),
     s => { boughtCE = s; }
   ),
