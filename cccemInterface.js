@@ -2071,7 +2071,7 @@ new buttonCategory('gameSettings', 4, [
       for (let i in settingsOverriden) {
         CCCEMButtons[settingsOverriden[i]].hidden = true;
       }
-    }, { advanced: false, hidden: true }
+    }, { advanced: false }
   ),
   new CCCEMButton('clearImportedSave', 'Clear imported save',
     new triggerButton(),
