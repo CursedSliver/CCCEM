@@ -1557,8 +1557,11 @@ class cycleButton extends buttonType {
   next(from) {
     return from + 1;
   }
-  onInputConfirmation(value) {
-    this.parent.state = value;
+  onInputConfirmation(content) {
+    if (!isNaN(content)) { 
+      content = Number(content);
+    }
+    this.parent.state = content;
     this.triggerVarFunc();
     RedrawCCCEM();
   }
