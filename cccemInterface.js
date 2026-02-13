@@ -160,6 +160,7 @@ function resetPromptNesting() {
   Game.promptWrapL = l('prompt');
 }
 function getLatestPrompt() {
+  return Game.promptWrapL;
   return l('promptAnchor').querySelector('[data-layer="'+(l('promptAnchor').dataset.layers - 1)+'"]');
 }
 function promptParseString(content) {
