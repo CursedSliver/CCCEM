@@ -141,6 +141,11 @@ function transientPromptInPrompt(promptStr, options, classes) {
     '<div id="promptClose" class="close" style="display: block;" onclick="PlaySound(\'snd/tickOff.mp3\');Game.ClosePrompt();">x</div>';
   anchorDiv.querySelectorAll('[data-layer="'+(anchorDiv.dataset.layers - 2)+'"]')[0].style.display = 'none';
   anchorDiv.appendChild(newLayerDiv);
+
+  /*AddEvent(l('cccemSearch'), 'input', e => {
+    l('cccemSearchResults').innerHTML = this.getEntries(e.target.value);
+  });
+  l('cccemSearch').focus();*/
 }
 function restorePromptLayer() {
   const contentDiv = l('promptContent');
@@ -2023,12 +2028,26 @@ class inputButton extends buttonType {
   static heading = loc('Input variable')
   static subHeading = loc('Please input what you want the variable to be set to.')
   static readonly = false
+  getPromptStr() {
+    let str = '<id NumImport><h3>'
+      + loc(this.constructor.heading)
+      + '</h3><div class="block">'
+      + loc(this.constructor.subHeading)
+      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;"'
+      + (this.constructor.readonly?'readonly':'')
+      + '>'
+      + this.parent.state
+      + '</textarea></div>'
+    return str
+  }
   getOptions() {
-    return [[loc("Load"),`Game.ClosePrompt(); \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value.trim());\nRedrawCCCEM();`],[loc("Nevermind")]]
-  }
-  getStyles() {
-    return 'width:100%;height:128px;';
-  }
+    return [
+      [loc("Load"),
+        `Game.ClosePrompt();
+        \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value.trim());
+        \nRedrawCCCEM();`],
+      [loc("Nevermind")]
+  ]}
   getTip() {
     return loc('Click to input value.');
   }
@@ -2055,16 +2074,7 @@ class inputButton extends buttonType {
   }
   onClick() {
     invalidateScoreS();
-    Game.Prompt('<id NumImport><h3>'
-      + loc(this.constructor.heading)
-      + '</h3><div class="block">'
-      + loc(this.constructor.subHeading)
-      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="'+this.getStyles()+'"'
-      + (this.constructor.readonly?'readonly':'')
-      + '>'
-      + this.parent.state
-      + '</textarea></div>',
-      this.getOptions());
+    Game.Prompt(this.getPromptStr(), this.getOptions());
     this.afterCall();
   }
   load(str) {
@@ -2194,21 +2204,30 @@ class cycleButton extends buttonType {
   }
   onClick() {
     invalidateScoreS();
-    Game.Prompt(`
-      <id chooseOption><h3>${loc('Select value')}</h3><div class="line"></div>
-      <div class="block">
-      <div style="display:flex;gap:3px;align-items:center;">
-        <input id="cccemSearch" type="search" placeholder="Type to search for the value..." class="framed" style="flex:1;box-sizing:border-box;padding:6px;margin-left: 5px;" />
-        <button id="cccemClear" class="framed" style="padding:4px 8px;height:34px;cursor:pointer;" onclick="l('cccemSearch').value='';l('cccemSearch').dispatchEvent(new Event('input'));l('cccemSearch').focus();">X</button>
-      </div>
-      <div id="cccemSearchResults" style="margin-top:6px;height:200px;overflow:auto;">${this.getEntries()}</div>
-      </div>
-    `, [[loc('Confirm'), 'CCCEMButtons[\''+this.parent.key+'\'].type.onInputConfirmation(l(\'cccemSearchResults\').childNodes[0].dataset.selectId);Game.ClosePrompt();'], [loc('Nevermind')]], 0, 'widePrompt');
+    Game.Prompt(this.getPromptStr(), this.getOptions(), 0, 'widePrompt');
     AddEvent(l('cccemSearch'), 'input', e => {
       l('cccemSearchResults').innerHTML = this.getEntries(e.target.value);
     });
     l('cccemSearch').focus();
   }
+  getPromptStr() {
+    return `<id chooseOption><h3>
+    ${loc('Select value')}</h3><div class="line"></div>
+    <div class="block">
+    <div style="display:flex;gap:3px;align-items:center;">
+      <input id="cccemSearch" type="search" placeholder="Type to search for the value..." class="framed" style="flex:1;box-sizing:border-box;padding:6px;margin-left: 5px;" />
+      <button id="cccemClear" class="framed" style="padding:4px 8px;height:34px;cursor:pointer;" onclick="l('cccemSearch').value='';l('cccemSearch').dispatchEvent(new Event('input'));l('cccemSearch').focus();">X</button>
+    </div>
+    <div id="cccemSearchResults" style="margin-top:6px;height:200px;overflow:auto;">${this.getEntries()}</div>
+    </div>`
+  }
+  getOptions() {
+    return [
+      [loc('Confirm'), 
+        'CCCEMButtons[\''+this.parent.key+'\'].type.onInputConfirmation(l(\'cccemSearchResults\').childNodes[0].dataset.selectId);'
+        +'Game.ClosePrompt();'], 
+      [loc('Nevermind')]
+  ]}
   getEntries(searchString) {
     let str = '';
     if (!searchString) {
@@ -2260,8 +2279,11 @@ class cycleButton extends buttonType {
   next(from) {
     return from + 1;
   }
-  onInputConfirmation(value) {
-    this.parent.state = value;
+  onInputConfirmation(content) {
+    if (!isNaN(content)) { 
+      content = Number(content);
+    }
+    this.parent.state = content;
     this.triggerVarFunc();
     RedrawCCCEM();
   }
