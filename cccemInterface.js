@@ -91,7 +91,7 @@ if (typeof CCCEMUILoaded === 'undefined') {
   eval("Game.updateBuffs="+Game.updateBuffs.toString().replace("if (buff.onDie) buff.onDie();","if (buff.onDie) buff.onDie(); FindMaxComboPow();"))
 
   //promptinprompt support
-  eval('Game.ClosePrompt='+Game.ClosePrompt.toString().replace('Game.promptNoClose=false;', 'Game.promptNoClose=false; l(\'prompt\').style.display = \'\'; if (l(\'prompt\'+(l(\'promptAnchor\').dataset.layers-1))) { l(\'prompt\'+(l(\'promptAnchor\').dataset.layers-1)).remove(); } l(\'promptAnchor\').dataset.layers = 1;'))
+  eval('Game.ClosePrompt='+Game.ClosePrompt.toString().replace('Game.promptNoClose=false;', 'Game.promptNoClose=false; resetPromptNesting();'))
   };
 
 l('promptAnchor').dataset.layers = 1;
@@ -142,10 +142,7 @@ function transientPromptInPrompt(promptStr, options, classes) {
   anchorDiv.querySelectorAll('[data-layer="'+(anchorDiv.dataset.layers - 2)+'"]')[0].style.display = 'none';
   anchorDiv.appendChild(newLayerDiv);
 
-  /*AddEvent(l('cccemSearch'), 'input', e => {
-    l('cccemSearchResults').innerHTML = this.getEntries(e.target.value);
-  });
-  l('cccemSearch').focus();*/
+  Game.promptWrapL = newLayerDiv;
 }
 function restorePromptLayer() {
   const contentDiv = l('promptContent');
@@ -154,6 +151,16 @@ function restorePromptLayer() {
   anchorDiv.querySelector('[data-layer="'+(layer + 1)+'"]').remove();
   anchorDiv.dataset.layers = layer + 1;
   anchorDiv.querySelector('[data-layer="'+(layer)+'"]').style.display = '';
+  Game.promptWrapL = anchorDiv.querySelector('[data-layer="'+(layer)+'"]');
+}
+function resetPromptNesting() {
+  l('prompt').style.display = ''; 
+  if (l('prompt'+(l('promptAnchor').dataset.layers-1))) { l('prompt'+(l('promptAnchor').dataset.layers-1)).remove(); } 
+  l('promptAnchor').dataset.layers = 1;
+  Game.promptWrapL = l('prompt');
+}
+function getLatestPrompt() {
+  return l('promptAnchor').querySelector('[data-layer="'+(l('promptAnchor').dataset.layers - 1)+'"]');
 }
 function promptParseString(content) {
   //taken from main.js
@@ -2208,10 +2215,7 @@ class cycleButton extends buttonType {
   onClick() {
     invalidateScoreS();
     Game.Prompt(this.getPromptStr(), this.getOptions(), 0, 'widePrompt');
-    AddEvent(l('cccemSearch'), 'input', e => {
-      l('cccemSearchResults').innerHTML = this.getEntries(e.target.value);
-    });
-    l('cccemSearch').focus();
+    this.addEvents(l('prompt'));
   }
   getPromptStr() {
     return `<id chooseOption><h3>
@@ -2231,6 +2235,12 @@ class cycleButton extends buttonType {
         +'Game.ClosePrompt();'], 
       [loc('Nevermind')]
   ]}
+  addEvents(baseNode) {
+    AddEvent(baseNode.querySelector('#cccemSearch'), 'input', e => {
+      baseNode.querySelector('#cccemSearchResults').innerHTML = this.getEntries(e.target.value);
+    });
+    baseNode.querySelector('#cccemSearch').focus();
+  }
   getEntries(searchString) {
     let str = '';
     if (!searchString) {
@@ -2253,7 +2263,7 @@ class cycleButton extends buttonType {
       }
       return str;
     }
-    //backup method, real searching service is supplied by Fuse.js
+    //below is backup method, real searching service is supplied by Fuse.js
     const maxEntriesToDisplay = 5;
     const list = new Array(maxEntriesToDisplay);
     list.fill(null);
@@ -2294,6 +2304,7 @@ class cycleButton extends buttonType {
     return '<div id="cccemSearchEntry'+value+'" data-select-id="'+value+'" class="block cccemSearchDisplay" '+Game.clickStr+'="CCCEMButtons[\''+this.parent.key+'\'].type.onInputConfirmation(this.dataset.selectId);Game.ClosePrompt();">'+this.parseConvert(value)+'</div>';
   }
   levenshtein(matcher, matchee) {
+    //BACKUP METHOD
     matcher = matcher.toLowerCase();
     matchee = matchee.toLowerCase();
     const m = matcher.length, n = matchee.length;
