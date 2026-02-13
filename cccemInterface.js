@@ -2033,7 +2033,7 @@ class inputButton extends buttonType {
       + loc(this.constructor.heading)
       + '</h3><div class="block">'
       + loc(this.constructor.subHeading)
-      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;"'
+      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="'+this.getStyles()+'"'
       + (this.constructor.readonly?'readonly':'')
       + '>'
       + this.parent.state
@@ -2048,6 +2048,9 @@ class inputButton extends buttonType {
         \nRedrawCCCEM();`],
       [loc("Nevermind")]
   ]}
+  getStyles() {
+    return 'width:100%;height:128px;';
+  }
   getTip() {
     return loc('Click to input value.');
   }
