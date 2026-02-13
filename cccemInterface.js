@@ -2560,7 +2560,7 @@ class buttonInfo {
     let str = '<div style="position:absolute;left:1px;top:1px;right:1px;bottom:1px;background:linear-gradient(125deg,'+'rgba(50,40,40,1) 0%,rgba(50,40,40,0)'+' 20%);mix-blend-mode:screen;z-index:1;"></div><div style="z-index:10;padding:8px 4px;min-width:350px;position:relative;" id="tooltipCrate">'+
 			'<div class="icon" style="float:left;margin-left:-8px;margin-top:-8px;'+writeIcon(this.icon)+'"></div>'+
 			'<div class="name">'+this.header+'</div>'+
-      '<div class="description">'+loc('ID: %1', parentButton.key)+'</div>'+
+      '<div class="description" style="font-size: 10px;">'+loc('ID: %1', parentButton.key)+'</div>'+
 			'<div class="line"></div><div class="description">'+this.content+'</div></div>'+
 			(tip!=''?('<div class="line"></div><div style="font-size:10px;font-weight:bold;color:#999;text-align:center;padding-bottom:4px;line-height:100%;" class="crateTip">'+tip+'</div>'):'');
     return Game.getTooltip(str, 'cccemMenu', true);
