@@ -649,6 +649,7 @@ function ResetAll(manual) {
     maxUndevastated=0
     incorrectEBwarn=useEB?1:0
   }
+  resetAllTrackers();
   l('logButton').classList.remove('hasUpdate');
   let tempseed = Game.makeSeed();
   if (iniSeed=='R') {Game.seed=tempseed; } else {Game.seed=iniSeed;}; console.log(Game.seed);
@@ -657,6 +658,7 @@ function ResetAll(manual) {
   if (iniSeed=='R') {Game.seed=tempseed}
   Game.CalculateGains();
   if (manual) {autoScoreCor=AutoScoreCorrect()};
+  iniRaw=Game.cookiesPsRaw;
   ResetGame();
   ResetMinigames();
   if (iniSeed=='R') {Game.seed=tempseed}
@@ -1177,6 +1179,9 @@ function loadAllPrerequisites() {
   const list = [{
     check: () => Game.ready && CheckMinigamesLoaded()
   }, {
+    url: 'https://cdn.jsdelivr.net/npm/fuse.js@7.1.0',
+    optional: true
+  }, {
     url: cccemDir+"cccemInterface.js",
     check: () => (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded)
   }, {
@@ -1195,8 +1200,13 @@ function loadAllPrerequisites() {
 
       let item = list[idx];
 
+      if (item.optional) {
+        try { Game.LoadMod(item.url); } catch (err) { }
+        processItem(idx + 1); return;
+      }
+
       if (!item.check) {
-        item.exec?.();
+        item.exec?.(); 
         processItem(idx + 1); return;
       }
 

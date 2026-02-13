@@ -214,6 +214,7 @@ function FindAuraP(a1, a2) { //finds the strength of the a1 aura in the case tha
   };
 
 function FindBuildingDiff() {
+  //for rebuying specifically, gets cps from new building count / cps from old building count
   Game.CalculateGains();
   var cur = Game.computedMouseCps 
   var curList = []
@@ -313,6 +314,7 @@ function FindMaxComboPow() {
     mComboPow/=FindAuraP(corAura);
     };
   if (maxComboPow<mComboPow) {maxComboPow=mComboPow; relComboPow=rComboPow; maxBSCount=bsCount; maxGodz=godzPow}; 
+  return {maxComboPow: mComboPow, relComboPow: rComboPow, bsCount: bsCount, godzPow: godzPow};
   };
 
 //Returns true if buffName can be gotten consistently, otherwise return false
@@ -354,6 +356,661 @@ function AllConsistentBuffsPow() {
   return cBuffsPow
   };
 
+let trackers = {};
+let logicTrackers = [];
+class tracker {
+  constructor(key, update, triggerCondition, defaultV, immediate) {
+    this.key = key;
+    trackers[key] = this;
+    this.updateFormula = update;
+    /**
+     * possible triggerConditions:
+     * string - hooks onto that particular hook, if available. If not, a backup selection of hooks are available
+     * function - custom function that returns true/false to trigger update
+     * true - uses the logic hook
+     * false - does not auto-update, must be updated manually
+     */
+    this.triggerCondition = triggerCondition;
+    if (typeof triggerCondition === 'string') {
+      if (Game.modHooks[triggerCondition]) {
+        Game.registerHook(triggerCondition, (val) => { this.update(val); return val; });
+      } else {
+        //backup hooks
+        /*const backupHooks = {
+          'click': 'click',
+          'goldenCookiePop': 'shimmerPop',
+          'buffDie': 'updateBuffs',
+          'logic': 'logic'
+        };
+        if (backupHooks[triggerCondition] && Game.hooks[backupHooks[triggerCondition]]) {
+          Game.registerHook(backupHooks[triggerCondition], () => { this.update(); });
+        } else {
+          throw new Error(`tracker: triggerCondition string "${triggerCondition}" does not correspond to a valid hook.`);
+        }*/
+      }
+    } else if (triggerCondition === true || typeof triggerCondition === 'function') {
+      logicTrackers.push(this);
+    }
+    if (immediate) { immediate.call(this); }
+    this.defaultV = defaultV ?? (() => 0);
+    this.reset();
+  }
+  state;
+
+  reset() {
+    //console.log(this.key + ': ' + this.state);
+    this.state = this.defaultV();
+  }
+  update() {
+    const val = evaluateExpression(this.updateFormula, this.state);
+    if (val !== undefined) {
+      this.state = val;
+    }
+  }
+  getVal() {
+    return this.state;
+  }
+}
+let watchers = {};
+class watcher {
+  constructor(key, func, description, argumentsRequiredCount) {
+    this.key = key;
+    this.func = func;
+    this.description = description ?? loc('No description available.');
+    this.argumentsRequired = argumentsRequiredCount ?? 0;
+    
+    watchers[key] = this;
+  }
+
+  getValue() {
+    return this.func(...arguments);
+  }
+}
+function watchKey(key, ...args) {
+  return (watchers[key] && watchers[key].getValue(...args)) || 0;
+}
+function getKeyArgumentsCount(key) {
+  return (watchers[key] && watchers[key].argumentsRequired) || 0;
+}
+new watcher('cookies this ascend', () => Game.cookiesEarned);
+new watcher('cookies all time', () => Game.cookiesEarned + Game.cookiesReset);
+new watcher('cookies in bank', () => Game.cookies);
+new watcher('handmade cookies', () => Game.handmadeCookies);
+new watcher('gc onscreen count', () => Game.shimmerTypes.golden.n);
+new watcher('reindeers onscreen count', () => Game.shimmerTypes.reindeer.n);
+new watcher('cps', () => Game.cookiesPs);
+new watcher('cpc', () => Game.computedMouseCps);
+new watcher('initial raw cps', () => iniRaw);
+new watcher('total buff power', () => { 
+  let mComboPow = 1;
+  for (let i in Game.buffs) {
+    let buff = Game.buffs[i];
+    if (buff.multCpS) {
+      mComboPow *= buff.multCpS;
+    };
+    if (buff.multClick) {
+      mComboPow *= buff.multClick;
+    };
+  };
+  return mComboPow;
+});
+new watcher('cps mult from buffs', () => { 
+  let mComboPow = 1;
+  for (let i in Game.buffs) {
+    let buff = Game.buffs[i];
+    if (buff.multCpS) {
+      mComboPow *= buff.multCpS;
+    };
+  };
+  return mComboPow;
+});
+new watcher('click mult from buffs', () => { 
+  let mComboPow = 1;
+  for (let i in Game.buffs) {
+    let buff = Game.buffs[i];
+    if (buff.multClick) {
+      mComboPow *= buff.multClick;
+    };
+  };
+  return mComboPow;
+});
+new watcher('consistent buffs pow', () => AllConsistentBuffsPow());
+new watcher('consistent exec pow', () => {
+  let pow = 1;
+  let bsCount = 0;
+  for (let i in Game.buffs) {
+    if (Game.buffs[i].type.name == 'building buff') { 
+      bsCount++;
+    }
+    let buff = Game.buffs[i];
+    if (ConsistentBuffs(buff.type.name, bsCount)) {
+      if (buff.multCpS) {
+        pow *= buff.multCpS;
+      };
+      if (buff.multClick) {
+        pow *= buff.multClick;
+      };
+    }
+  }
+  return pow;
+});
+const allGCAndBuffsMap = {
+  'Elder frenzy': ['ef', 'blood frenzy'],
+  'Click frenzy': 'cf',
+  'Building special': ['bs', 'building buff'].concat(Object.keys(Game.goldenCookieBuildingBuffs).map(e => loc(e))).concat(Object.values(Game.goldenCookieBuildingBuffs).map(e => loc(e[0]))),
+  'Frenzy': 'f',
+  'Cursed finger': 'cuf',
+  'Cookie storm': ['storm', 'cs'],
+  'Dragon Harvest': ['dh', 'reaper of fields', 'rof'],
+  'Dragonflight': ['df'],
+  'Building rust': ['br', 'building debuff'].concat(Object.keys(Game.goldenCookieBuildingBuffs).map(e => loc(e))).concat(Object.values(Game.goldenCookieBuildingBuffs).map(e => loc(e[1]))),
+  'Devastation': 'godzamok',
+  'Sweet': ['free sugar lump', 'lump', 'wweet!'],
+  'Cookie storm drop': ['drop', 'csd'],
+  'Lucky': 'l'
+};
+const allGCAndBuffsMapReversed = (obj => Object.fromEntries(Object.entries(obj).flatMap(([k, v]) => ([].concat(v)).map(val => [val, k]))))(allGCAndBuffsMap); //lazy so I just grabbed it from ai
+const goldenCookieChoicesLowercase = Game.goldenCookieChoices.map(e => e.toLowerCase());
+function getBuffAccessName(e) {
+  const buffName = (allGCAndBuffsMapReversed[e.toLowerCase()] ?? e).toLowerCase();
+  let buff = null;
+  if (goldenCookieChoicesLowercase.includes(buffName)) {
+    if (goldenCookieChoicesLowercase.indexOf(buffName) % 2 == 0) { 
+      //is the "proper name"
+      buff = Game.goldenCookieChoices[goldenCookieChoicesLowercase.indexOf(buffName)];
+    } else {
+      //is the "key"
+      buff = Game.goldenCookieChoices[goldenCookieChoicesLowercase.indexOf(buffName) - 1];
+    }
+  } else { 
+    throw new Error('Buff type not found! ("' + e + '")');
+  }
+  return buff;
+}
+function buildingSpecialsCount(debuff) {
+  let n = 0;
+  for (let i in Game.buffs) {
+    if (Game.buffs[i].type.name == debuff?'building debuff':'building buff') { 
+      n++;
+    }
+  }
+  return n;
+}
+new watcher('check buff', e => { 
+  const name = getBuffAccessName(e);
+  return !!(Game.buffs[e] || Game.buffs[name] || (name == 'Building special' && buildingSpecialsCount()) || (name == 'Building rust' && buildingSpecialsCount(true))); 
+}, 'Checks if a given buff exists. Argument 1: buff name in English (accepts common abbreviations, case-insensitive except for building specials)', 1);
+new watcher('bs count', e => buildingSpecialsCount());
+new watcher('buff power', e => {
+  const name = getBuffAccessName(e);
+  if (!Game.buffs[name]) { return 0; }
+  return (Game.buffs[name].multCpS ?? 1) * (Game.buffs[name].multClick ?? 1);
+}, 'Gets the multCpS or multClick of the non-BS buff specified if it currently exists. If not, returns 0. Argument 1: buff name in English (accepts common abbreviations, case-insensitive except for building specials)', 1);
+new watcher('bs power', e => { 
+  let mComboPow = 1;
+  for (let i in Game.buffs) {
+    for (let i in Game.buffs) {
+      if (Game.buffs[i].type.name == 'building buff') { 
+        mComboPow *= Game.buffs[i].multCpS;
+      }
+    }
+  }
+  return mComboPow;
+});
+new watcher('rust power', e => { 
+  let mComboPow = 1;
+  for (let i in Game.buffs) {
+    for (let i in Game.buffs) {
+      if (Game.buffs[i].type.name == 'building debuff') { 
+        mComboPow *= Game.buffs[i].multCpS;
+      }
+    }
+  }
+  return mComboPow;
+});
+new watcher('aurap', e => FindAuraP(e), 'It\'s not super clear what this does', 1);
+Game.registerHook('logic', function() {
+  if (!window.CCCEMInterfaceReady) { return; }
+  for (let i in logicTrackers) {
+    if (typeof logicTrackers[i].triggerCondition === 'function') {
+      if (logicTrackers[i].triggerCondition.call(logicTrackers[i])) {
+        logicTrackers[i].update();
+      }
+    } else {
+      logicTrackers[i].update();
+    }
+  }
+});
+function resetAllTrackers() {
+  for (let key in trackers) {
+    trackers[key].reset();
+  }
+}
+class logicTracker extends tracker {
+  constructor(key, update, defaultV, immediate) {
+    super(key, update, true, defaultV, immediate);
+  }
+}
+class hookTracker extends tracker {
+  constructor(key, update, hookName, defaultV, immediate) {
+    if (typeof hookName !== 'string') {
+      throw new Error('hookTracker requires a string as hookName');
+    }
+    super(key, update, hookName, defaultV, immediate);
+  }
+}
+class manualTracker extends tracker {
+  constructor(key, update, defaultV, immediate) {
+    super(key, update, false, defaultV, immediate);
+  }
+}
+class dynamicTracker extends tracker {
+  constructor(key, update, func, defaultV, immediate) {
+    super(key, update, func, defaultV, immediate);
+  }
+}
+class fakeTracker extends tracker {
+  constructor(key, update) {
+    super(key, update, false);
+  }
+  getVal() {
+    return evaluateExpression(this.updateFormula);
+  }
+}
+
+function trackGet(key) {
+  if (trackers[key]) {
+    return trackers[key].getVal();
+  }
+}
+new hookTracker('clickCount', 'value + 1', 'click');
+new logicTracker('maxCps', 'value max [cps]', () => 1);
+new logicTracker('maxCpc', 'value max [cpc]', () => 1);
+new fakeTracker('cookiesGained', '[cookies this ascend] - {cookiesBTA}');
+new fakeTracker('handmadeGains', '[handmade cookies] - {cookiesBTA}');
+new fakeTracker('initialRaw', '[initial raw]');
+new logicTracker('clickCoefficient', '[cpc] / [cps] / [click mult from buffs]');
+new fakeTracker('effectiveClicks', '("handmadeGains" / "maxCpc") min "clickCount"');
+new fakeTracker('consistentBuffsPow', '[consistent buffs pow]');
+new logicTracker('consistentExecPow', '[consistent exec pow] max value');
+new logicTracker('maxBuffPow', '[total buff power] max value', () => 1);
+new logicTracker('maxGCOnscreens', '[gc onscreen count] max value');
+new logicTracker('maxComboPow', '([total buff power] * (2.23 ^ [gc onscreen count]) / [auraP;$({useEB}?15:1)]) max value');
+new logicTracker('maxUndevastation', '([total buff power] * (2.23 ^ [gc onscreen count]) / ([check buff:Devastation]?[buff power:Devastation]:1) / [auraP;$({useEB}?15:1)]) max value', () => 1);
+new fakeTracker('devastatedness', '"effectiveClicks" * "godzPower"');
+new fakeTracker('godzPower', '"maxComboPow" / "maxUndevastation"');
+new logicTracker('bsCount', '[bs count] max value');
+//custom language
+let scoringFormula = `
+  "cookiesGained" / ("maxComboPow" * "initialRaw" * "consistentBuffsPow" / "consistentExecPow")
+`;
+function evaluateScore() {
+  try {
+    return evaluateExpression(scoringFormula);
+  } catch (e) {
+
+  }
+}
+//yes, the entire thing below is ai generated
+/**
+ * Evaluates a mathematical and boolean expression string with support for variables.
+ *
+ * @param {string} expression - The expression to evaluate.
+ * @param {Object} variables - Key-value pairs of variable names and their numeric values.
+ * @returns {number} - The result of the evaluation.
+ */
+function evaluateExpression(expression, special) {
+    // --- 1. CONFIGURATION ---
+    // Single char operators
+    const CHAR_OPS = new Set(['+', '-', '*', '/', '^', '(', ')', '>', '<', '=', '|', '&', '!', '?', ':']);
+    // Word-based operators
+    const WORD_OPS = new Set(['min', 'max']);
+
+    // --- 2. LEXER (TOKENIZER) ---
+    function tokenize(input) {
+        const tokens = [];
+        let i = 0;
+
+        while (i < input.length) {
+            const char = input[i];
+
+            // A. Skip standard whitespace
+            if (/\s/.test(char)) {
+                i++;
+                continue;
+            }
+
+            // B. Single Character Operators
+            if (CHAR_OPS.has(char)) {
+                tokens.push({ type: 'OP', value: char });
+                i++;
+                continue;
+            }
+
+            // C. Numbers
+            if (/[0-9.]/.test(char)) {
+                let numStr = '';
+                let dotCount = 0;
+                while (i < input.length && /[0-9.]/.test(input[i])) {
+                    if (input[i] === '.') dotCount++;
+                    numStr += input[i];
+                    i++;
+                }
+                if (dotCount > 1) throw new Error(`Invalid number format: "${numStr}"`);
+                tokens.push({ type: 'NUM', value: parseFloat(numStr) });
+                continue;
+            }
+
+            // D. Variables (Quoted Strings)
+            if (char === '"' || char === "'") {
+                const quoteType = char;
+                i++; // skip opening quote
+                let varName = '';
+                let foundClose = false;
+
+                while (i < input.length) {
+                    if (input[i] === quoteType) {
+                        foundClose = true;
+                        i++; // skip closing quote
+                        break;
+                    }
+                    // Constraint: Check for forbidden chars (basic ops)
+                    if (CHAR_OPS.has(input[i])) {
+                        throw new Error(`Variable name "${varName}${input[i]}..." contains forbidden character '${input[i]}'`);
+                    }
+                    varName += input[i];
+                    i++;
+                }
+
+                if (!foundClose) throw new Error(`Unclosed quote for variable starting at index ${i}`);
+                tokens.push({ type: 'VAR', value: trackGet(varName) });
+                continue;
+            }
+
+            // E. WATCH TOKENS [ ... ]
+            if (char === '[') {
+                i++; // skip '['
+                let content = '';
+                let foundClose = false;
+
+                while (i < input.length) {
+                    if (input[i] === ']') {
+                        foundClose = true;
+                        i++; // skip ']'
+                        break;
+                    }
+                    content += input[i];
+                    i++;
+                }
+
+                if (!foundClose) throw new Error("Unclosed WATCH token '['");
+
+                // Process contents: Split by ':'
+                const parts = content.split(';');
+                const key = parts[0]; 
+                const args = parts.slice(1).map(arg => {
+                    const num = parseFloat(arg.trim()[0] == '$'?evaluateExpression(arg.trim().slice(1), special):arg.trim());
+                    return isNaN(num) ? arg : num;
+                });
+
+                if (window.getKeyArgumentsCount(key) > args.length) throw new Error("Not enough arguments for a watcher: " + key + "; you had " + args.length + ", but needed " + window.getKeyArgumentsCount(key)); 
+                const result = window.watchKey(key, ...args);
+                
+                // We treat the result as a primitive value (Number/Boolean)
+                // Convert boolean return to 1/0 for consistency
+                let numericResult = result;
+                if (typeof result === 'boolean') numericResult = result ? 1 : 0;
+                
+                tokens.push({ type: 'NUM', value: Number(numericResult) });
+                continue;
+            }
+
+            // F. BUTTON TOKENS { ... }
+            if (char === '{') {
+                i++; // skip '{'
+                let content = '';
+                let foundClose = false;
+
+                while (i < input.length) {
+                    if (input[i] === '}') {
+                        foundClose = true;
+                        i++; // skip '}'
+                        break;
+                    }
+                    content += input[i];
+                    i++;
+                }
+
+                if (!foundClose) throw new Error("Unclosed BUTTON token '{'");
+ 
+                if (!CCCEMButtons[content]) throw new Error("Button " + content + " not found");
+                const result = get(content);
+                if (isNaN(Number(result))) throw new Error("Button " + content + " does not contain a number or bool");
+                
+                // We treat the result as a primitive value (Number/Boolean)
+                // Convert boolean return to 1/0 for consistency
+                let numericResult = result;
+                if (typeof result === 'boolean') numericResult = result ? 1 : 0;
+                
+                tokens.push({ type: 'NUM', value: Number(numericResult) });
+                continue;
+            }
+
+            // G. Keywords (true, false, value, min, max)
+            if (/[a-zA-Z]/.test(char)) {
+                let word = '';
+                while (i < input.length && /[a-zA-Z]/.test(input[i])) {
+                    word += input[i];
+                    i++;
+                }
+
+                if (word === 'true') {
+                    tokens.push({ type: 'NUM', value: 1 });
+                } else if (word === 'false') {
+                    tokens.push({ type: 'NUM', value: 0 });
+                } else if (WORD_OPS.has(word)) {
+                    tokens.push({ type: 'OP', value: word });
+                } else if (word === 'value') {
+                    tokens.push({ type: 'NUM', value: special })
+                } else {
+                    throw new Error(`Unknown keyword "${word}".`);
+                }
+                continue;
+            }
+
+            throw new Error(`Unexpected character '${char}' at index ${i}`);
+        }
+        return tokens;
+    }
+
+    // --- 3. PARSER & INTERPRETER ---
+    const tokens = tokenize(expression);
+    let cursor = 0;
+
+    function peek() {
+        return tokens[cursor];
+    }
+
+    function consume(expectedOp) {
+        const token = tokens[cursor];
+        if (!token) throw new Error("Unexpected end of expression");
+        if (expectedOp && token.value !== expectedOp) {
+            throw new Error(`Expected '${expectedOp}' but found '${token.value}'`);
+        }
+        cursor++;
+        return token;
+    }
+
+    // --- PRECEDENCE LEVELS ---
+
+    // Level 1: Ternary (? :)
+    function parseExpression() {
+        let left = parseLogicalOr();
+        if (peek() && peek().value === '?') {
+            consume('?');
+            const trueBranch = parseExpression();
+            consume(':');
+            const falseBranch = parseExpression();
+            return left !== 0 ? trueBranch : falseBranch;
+        }
+        return left;
+    }
+
+    // Level 2: Logical OR (|)
+    function parseLogicalOr() {
+        let left = parseLogicalAnd();
+        while (peek() && peek().value === '|') {
+            consume('|');
+            const right = parseLogicalAnd();
+            left = (left !== 0 || right !== 0) ? 1 : 0;
+        }
+        return left;
+    }
+
+    // Level 3: Logical AND (&)
+    function parseLogicalAnd() {
+        let left = parseEquality();
+        while (peek() && peek().value === '&') {
+            consume('&');
+            const right = parseEquality();
+            left = (left !== 0 && right !== 0) ? 1 : 0;
+        }
+        return left;
+    }
+
+    // Level 4: Equality (=)
+    function parseEquality() {
+        let left = parseRelational();
+        while (peek() && peek().value === '=') {
+            consume('=');
+            const right = parseRelational();
+            left = (left === right) ? 1 : 0;
+        }
+        return left;
+    }
+
+    // Level 5: Relational (>, <)
+    function parseRelational() {
+        let left = parseMinMax(); 
+        while (peek() && (peek().value === '>' || peek().value === '<')) {
+            const op = consume().value;
+            const right = parseMinMax();
+            if (op === '>') left = (left > right) ? 1 : 0;
+            if (op === '<') left = (left < right) ? 1 : 0;
+        }
+        return left;
+    }
+
+    // Level 6: Min / Max (keywords)
+    // Precedence: We want "10 + 5 min 2" to parse as "10 + (5 min 2)"? 
+    // Or "(10 + 5) min 2"?
+    // Standard programming (like C/JS) doesn't have infix min/max.
+    // However, usually Additive (+) binds looser than Multiplicative (*).
+    // If we treat min/max as functional logic, they usually bind tighter than Comparison
+    // but looser than Arithmetic.
+    // Implementation here: MinMax calls Additive.
+    // This means Additive binds TIGHTER. 
+    // "10 + 5 min 2" -> "15 min 2" -> 2.
+    function parseMinMax() {
+        let left = parseAdditive();
+        while (peek() && (peek().value === 'min' || peek().value === 'max')) {
+            const op = consume().value;
+            const right = parseAdditive();
+            if (op === 'min') left = Math.min(left, right);
+            if (op === 'max') left = Math.max(left, right);
+        }
+        return left;
+    }
+
+    // Level 7: Additive (+, -)
+    function parseAdditive() {
+        let left = parseMultiplicative();
+        while (peek() && (peek().value === '+' || peek().value === '-')) {
+            const op = consume().value;
+            const right = parseMultiplicative();
+            if (op === '+') left += right;
+            if (op === '-') left -= right;
+        }
+        return left;
+    }
+
+    // Level 8: Multiplicative (*, /)
+    function parseMultiplicative() {
+        let left = parsePower();
+        while (peek() && (peek().value === '*' || peek().value === '/')) {
+            const op = consume().value;
+            const right = parsePower();
+            if (op === '*') left *= right;
+            if (op === '/') {
+                if (right === 0) left = 0;
+                else left /= right;
+            }
+        }
+        return left;
+    }
+
+    // Level 9: Power (^)
+    function parsePower() {
+        let left = parseUnary();
+        while (peek() && peek().value === '^') {
+            consume('^');
+            const right = parseUnary();
+            left = Math.pow(left, right);
+        }
+        return left;
+    }
+
+    // Level 10: Unary (!, -)
+    function parseUnary() {
+        const token = peek();
+        if (token && token.value === '!') {
+            consume('!');
+            const val = parseUnary();
+            return (val === 0) ? 1 : 0;
+        }
+        if (token && token.value === '-') {
+             consume('-');
+             return -parseUnary();
+        }
+        return parsePrimary();
+    }
+
+    // Level 11: Primary
+    function parsePrimary() {
+        const token = peek();
+        
+        if (!token) throw new Error("Unexpected end of input");
+
+        if (token.type === 'NUM') {
+            consume();
+            return token.value;
+        }
+
+        if (token.type === 'VAR') {
+            consume();
+            return token.value;
+        }
+
+        if (token.value === '(') {
+            consume('(');
+            const value = parseExpression();
+            consume(')');
+            return value;
+        }
+
+        throw new Error(`Unexpected token: '${token.value}'`);
+    }
+
+    // --- 4. EXECUTION ---
+    const result = parseExpression();
+
+    if (cursor < tokens.length) {
+        throw new Error(`Unexpected token at the end of expression: '${tokens[cursor].value}'`);
+    }
+
+    return result;
+}
+
 function PrintScore() {
   if (!produceGrades) { return; }
   if (invalidateScore) {
@@ -373,6 +1030,8 @@ function PrintScore() {
   rebuyedness = NormalizeDevastatedness(rebuyedness)/devastatedness;
   var clicks = Math.trunc(0.000000001+(devastatedness/maxGodz));
 
+  //console.log(maxUndevastated);
+
   // Build history stats and push a new historyEntry
   const scoreStatO = new scoreStat(originalScore, score * 100);
   const stats = [
@@ -384,11 +1043,23 @@ function PrintScore() {
     new rebuyStat(rebuyedness),
     new comboStat(maxComboPow),
     new relComboStat(relComboPow),
-    new consistentPowStat(consistentPow),
     new bsCountStat(maxBSCount),
     new cookieGainStat(cookieGain),
     new handmadeGainStat(clickGain),
     new iniRawStat(iniRaw)
+  ];
+  const statsAlt = [
+    new scoreStat(evaluateScore(), 0),
+    new cpsStat(cookieGain / iniRaw),
+    new godzStat(trackGet('godzPower')),
+    new clicksStat(trackGet('effectiveClicks')),
+    new devastatednessStat(trackGet('devastatedness')),
+    new comboStat(trackGet('maxComboPow')),
+    new relComboStat(trackGet('consistentExecPow')),
+    new bsCountStat(trackGet('bsCount')),
+    new cookieGainStat(trackGet('cookiesGained')),
+    new handmadeGainStat(trackGet('handmadeGains')),
+    new iniRawStat(trackGet('initialRaw'))
   ];
 
   // compute click-based derived stats if possible (mirror later calculations)
@@ -408,6 +1079,11 @@ function PrintScore() {
   }
 
   if (originalScore > historySettings.scoreRegisterThreshold) { new historyEntry(stats, {
+    startTimestamp: currentStartTimestamp,
+    timestamp: Date.now(),
+    presetUsed: activePreset
+  }); }
+  if (originalScore > historySettings.scoreRegisterThreshold && false) { new historyEntry(statsAlt, {
     startTimestamp: currentStartTimestamp,
     timestamp: Date.now(),
     presetUsed: activePreset
@@ -769,7 +1445,7 @@ class godzStat extends stat {
 stat.prototype.register(godzStat);
 class clicksStat extends stat {
   static key = 'clicks';
-  static name = 'Clicks';
+  static name = 'Effective clicks';
   static description = 'Estimated number of clicks useful in the attempt.';
   getIcon() {
     const map = {
@@ -850,8 +1526,8 @@ class comboStat extends stat {
 stat.prototype.register(comboStat);
 class relComboStat extends stat {
   static key = 'relComboStrength';
-  static name = 'Strength of non-constant buffs';
-  static description = 'Cumulative strength of buffs that are not generally considered guaranteed.';
+  static name = 'Strength of constant buffs';
+  static description = 'Cumulative strength of buffs that are generally considered guaranteed.';
   getIcon() { return [0, 14]; }
   getDetailDisplay() {
     return Beautify(this.detail);
@@ -1350,6 +2026,9 @@ class inputButton extends buttonType {
   getOptions() {
     return [[loc("Load"),`Game.ClosePrompt(); \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value.trim());\nRedrawCCCEM();`],[loc("Nevermind")]]
   }
+  getStyles() {
+    return 'width:100%;height:128px;';
+  }
   getTip() {
     return loc('Click to input value.');
   }
@@ -1380,7 +2059,7 @@ class inputButton extends buttonType {
       + loc(this.constructor.heading)
       + '</h3><div class="block">'
       + loc(this.constructor.subHeading)
-      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="width:100%;height:128px;"'
+      + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="'+this.getStyles()+'"'
       + (this.constructor.readonly?'readonly':'')
       + '>'
       + this.parent.state
@@ -1408,6 +2087,9 @@ class numberInputButton extends inputButton {
   static subHeading = loc('Please input a number the variable should be equal to.')
   parse(names, state) {
     return loc(names[0], Beautify(state, this.precision));
+  }
+  getStyles() {
+    return 'width:100%;height:32px;font-size:24px;text-align:center;';
   }
   onInputConfirmation(content) {
     if (isNaN(Number(content))) { 
@@ -1460,6 +2142,9 @@ class gardenPlantAgeSetButton extends inputButton {
   getTip() {
     return loc('Click to input plant age.');
   }
+  getStyles() {
+    return 'width:100%;height:32px;font-size:24px;text-align:center;';
+  }
   onInputConfirmation(content) {
     content = content.toLowerCase();
     const map = {
@@ -1488,13 +2173,16 @@ class gardenPlantAgeSetButton extends inputButton {
 }
 class cycleButton extends buttonType {
   //blue button
-  constructor(min, max, parseConvert) {
+  constructor(min, max, parseConvert, aliases) {
     super();
     this.min = min;
     this.max = max;
     if (parseConvert) { this.parseConvert = parseConvert; }
+    if (aliases) { this.aliases = aliases; }
   }
   parseConvert = e => e;
+  fuseWrapper = null;
+  aliases = {};
   getTip() {
     return loc('Click to select a value.');
   }
@@ -1529,6 +2217,21 @@ class cycleButton extends buttonType {
       }
       return str;
     }
+    if (typeof Fuse !== 'undefined' && Fuse) {
+      if (!this.fuseWrapper) { 
+        let list = [];
+        for (let i = this.min; i <= this.max; i = this.next(i)) {
+          list.push({ name: this.parseConvert(i), alias: (typeof this.aliases === 'function')?(this.aliases(i)):(this.aliases[i]?([].concat(this.aliases[i])):[]), id: i });
+        }
+        this.fuseWrapper = new Fuse(list, { ignoreLocation: true, threshold: 0.4, keys: ['name', 'alias'] }); 
+      }
+      const results = this.fuseWrapper.search(searchString, { limit: 7 });
+      for (let i in results) {
+        str += this.getSearchButton(results[i].item.id);
+      }
+      return str;
+    }
+    //backup method, real searching service is supplied by Fuse.js
     const maxEntriesToDisplay = 5;
     const list = new Array(maxEntriesToDisplay);
     list.fill(null);
@@ -1605,7 +2308,7 @@ class cycleButton extends buttonType {
   }
 }
 class twoStepCycle extends cycleButton {
-  constructor(min, max, parseConvert) { super(min, max, parseConvert); }
+  constructor(min, max, parseConvert, aliases) { super(min, max, parseConvert, aliases); }
   next(from) { 
     return from + 2;
   }
@@ -1820,6 +2523,7 @@ class buttonInfo {
     let str = '<div style="position:absolute;left:1px;top:1px;right:1px;bottom:1px;background:linear-gradient(125deg,'+'rgba(50,40,40,1) 0%,rgba(50,40,40,0)'+' 20%);mix-blend-mode:screen;z-index:1;"></div><div style="z-index:10;padding:8px 4px;min-width:350px;position:relative;" id="tooltipCrate">'+
 			'<div class="icon" style="float:left;margin-left:-8px;margin-top:-8px;'+writeIcon(this.icon)+'"></div>'+
 			'<div class="name">'+this.header+'</div>'+
+      '<div class="description">'+loc('ID: %1', parentButton.key)+'</div>'+
 			'<div class="line"></div><div class="description">'+this.content+'</div></div>'+
 			(tip!=''?('<div class="line"></div><div style="font-size:10px;font-weight:bold;color:#999;text-align:center;padding-bottom:4px;line-height:100%;" class="crateTip">'+tip+'</div>'):'');
     return Game.getTooltip(str, 'cccemMenu', true);
@@ -2210,12 +2914,40 @@ new buttonCategory('gameSettings', 4, [
     s => { if (get('heraldsOverride') || !Game.realExternalDataLoaded) { Game.heralds = s; l('heraldsAmount').textContent = s; Game.recalculateGains = 1; } }, { hidden: true }
   ),
   new CCCEMButton('leftAura', 'Left Aura %1',
-    new cycleButton(0, 21, e => Game.dragonAuras[e].name),
+    new cycleButton(0, 21, e => Game.dragonAuras[e].name, {
+      1: 'bom',
+      3: 'eb',
+      4: ['dh', 'dragon harvest', 'rof', 'x15', 'x17'],
+      9: 'aa',
+      10: ['df', 'x1111', 'x1223'],
+      13: 'em',
+      14: 'mom',
+      15: ['ra', 'x2 cps'],
+      16: ['fortune', '123'],
+      18: 'rb',
+      19: ['do', 'orbs'],
+      20: 'si',
+      21: ['dg', 'guts']
+    }),
     new buttonInfo('Left Aura', 'The Dragon Aura you start with for the slot on the left.', [2, 25]),
     s => { d2Aura = s; }
   ),
   new CCCEMButton('rightAura', 'Right Aura %1',
-    new cycleButton(0, 21, e => Game.dragonAuras[e].name),
+    new cycleButton(0, 21, e => Game.dragonAuras[e].name, {
+      1: 'bom',
+      3: 'eb',
+      4: ['dh', 'dragon harvest', 'rof', 'x15', 'x17'],
+      9: 'aa',
+      10: ['df', 'x1111', 'x1223'],
+      13: 'em',
+      14: 'mom',
+      15: ['ra', 'x2 cps'],
+      16: ['fortune', '123'],
+      18: 'rb',
+      19: ['do', 'orbs'],
+      20: 'si',
+      21: ['dg', 'guts']
+    }),
     new buttonInfo('Right Aura', 'The Dragon Aura you start with for the slot on the right.', [8, 25]),
     s => { d1Aura = s; }
   ),
@@ -2281,9 +3013,48 @@ if (Game.UpdateHeralds) { eval('Game.UpdateHeralds='+Game.UpdateHeralds.toString
 Game.externalDataLoaded = true;
 if (Game.UpdateHeralds) { Game.UpdateHeralds(); }
 
+const plantAliases = {
+  1: 'bw', 
+  2: 'tc',
+  3: 'cr', 
+  4: 'gm',
+  5: 'cl',
+  6: ['gc', 'gclover', 'clover'],
+  7: 'sl',
+  8: 'ew',
+  9: 'bb',
+  10: 'ch',
+  11: ['wch', 'wc'],
+  12: 'wm',
+  13: 'bm',
+  14: 'mw',
+  15: 'wb',
+  16: 'ci',
+  17: ['nt', 'tulip', 'ntulip'],
+  18: ['df', 'fern'],
+  19: 'wl',
+  20: ['km', 'moss'],
+  21: 'qb',
+  22: 'jqb', 
+  23: ['duke', 'tater', 'dt'],
+  24: 'gl',
+  25: 'cc',
+  26: ['fb', 'bolete'],
+  27: 'wg',
+  28: 'gr',
+  29: 'sb',
+  30: ['tg', 'grass'], 
+  31: 'ed', 
+  32: 'ic'
+};
+let offsetPlantAlises = {};
+for (let i in plantAliases) {
+  offsetPlantAlises[parseInt(i) - 1] = plantAliases[i];
+}
+
 new buttonCategory('minigameSettings', 5, [
   new CCCEMButton('forceFtHoF', 'Force the Hand of Fate outcome: %1',
-    new cycleButton(0, FtHoFOutcomes.length - 1, e => loc(FtHoFOutcomesMap[FtHoFOutcomes[e]])),
+    new cycleButton(0, FtHoFOutcomes.length - 1, e => loc(FtHoFOutcomesMap[FtHoFOutcomes[e]]), e => allGCAndBuffsMap[FtHoFOutcomesMap[FtHoFOutcomes[e]]]),
     new buttonInfo('FtHoF outcome', 'The outcome of the first Force the Hand of Fate cast upon starting an attempt.', [27, 11]),
     s => { forceFtHoF = FtHoFOutcomes[s]; }, { advanced: false, newLine: true }
   ),
@@ -2308,7 +3079,7 @@ new buttonCategory('minigameSettings', 5, [
       const mg = Game.Objects['Farm'].minigame;
       if (!mg) { return ''; }
       return mg.plantsById[e].name;
-    }),
+    }, offsetPlantAlises),
     new buttonInfo('Holding seed', 'The seed you are holding.', [0, 0]),
     s => { gardenSeed = s; }
   ),
@@ -2328,7 +3099,7 @@ new buttonCategory('minigameSettings', 5, [
     s => { toNextTick = s; }
   ),
   new CCCEMButton('plant1', 'Plant 1 %1',
-    new cycleButton(0, 34, e => loc(e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing')),
+    new cycleButton(0, 34, e => loc(e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing'), plantAliases),
     new buttonInfo('Plant 1', 'One of the plants in the garden at the start of each attempt.', [26, 20]),
     s => { gardenP1[0] = s; }
   ),
@@ -2342,7 +3113,7 @@ new buttonCategory('minigameSettings', 5, [
     new buttonInfo('Ghost Tulips', 'Adds ghost tulips in addition to other specified plants. Useful for starting an attempt in the middle of a combo, after you would already have replanted.', [26, 20])
   ),
   new CCCEMButton('plant2', 'Plant 2 %1',
-    new cycleButton(0, 34, e => loc(e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing')),
+    new cycleButton(0, 34, e => loc(e?Game.Objects['Farm'].minigame.plantsById[e - 1].name:'Nothing'), plantAliases),
     new buttonInfo('Plant 2', 'The other plant in the garden at the start of each attempt.', [26, 20]),
     s => { gardenP2[0] = s; }
   ),
@@ -2357,17 +3128,17 @@ new buttonCategory('minigameSettings', 5, [
     s => { officeL = s; }
   ),
   new CCCEMButton('diamondGod', 'Diamond %1',
-    new cycleButton(0, 10, e => loc(['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e])),
+    new cycleButton(0, 10, e => loc(['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]), { 5: 'js' }),
     new buttonInfo('Pantheon Diamond slot', 'The god slotted within the Diamond slot of the Pantheon at the start of each attempt.', [23, 15]),
     s => { spirit1 = s; }, { advanced: false }
   ),
   new CCCEMButton('rubyGod', 'Ruby %1',
-    new cycleButton(0, 10, e => loc(['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e])),
+    new cycleButton(0, 10, e => loc(['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]), { 5: 'js' }),
     new buttonInfo('Pantheon Ruby slot', 'The god slotted within the Ruby slot of the Pantheon at the start of each attempt.', [25, 18]),
     s => { spirit2 = s; }, { advanced: false }
   ),
   new CCCEMButton('jadeGod', 'Jade %1',
-    new cycleButton(0, 10, e => loc(['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e])),
+    new cycleButton(0, 10, e => loc(['Holobore', 'Vomitrax', 'Godzamok', 'Cyclius', 'Selebrak', 'Dotjeiess', 'Muridal', 'Jeremy', 'Mokalsium', 'Skruuia', 'Rigidel'][e]), { 5: 'js' }),
     new buttonInfo('Pantheon Jade slot', 'The god slotted within the Jade slot of the Pantheon at the start of each attempt.', [27, 18]),
     s => { spirit3 = s; }, { advanced: false }
   )
@@ -2381,7 +3152,7 @@ function getProperBuffName(buff) {
   };
   if (buffDisambiguator[buff.name]) { return loc(buffDisambiguator[buff.name]); }
   try { return loc(buff.func(1, 1)?.name); }
-  catch { return buff.name; }
+  catch { return loc(buff.name); }
 }
 new buttonCategory('buffSettings', 6, [
   new CCCEMButton('buffs', 'Buffs',
@@ -2411,7 +3182,7 @@ new buttonCategory('buffSettings', 6, [
   new CCCEMButton('buffType', 'Add buff',
     new cycleButton(0, Game.buffTypes.length-1, e => {
       return getProperBuffName(Game.buffTypes[e]);
-    }),
+    }, e => allGCAndBuffsMap[getProperBuffName(Game.buffTypes[e])]),
     new buttonInfo('Add buff', 'Which type of buff to add. BS type is selectable after cycling to building buff or building debuff.', [0, 14]),
     s => {
       let name=""
@@ -2455,7 +3226,7 @@ new buttonCategory('buffSettings', 6, [
       const buff = Game.buffTypesByName[Game.buffTypes[get('buffs').split(';')[e].split(',')[0]].name];
 
       return getProperBuffName(buff);
-    }),
+    }, e => allGCAndBuffsMap[getProperBuffName(Game.buffTypesByName[Game.buffTypes[get('buffs').split(';')[e].split(',')[0]].name])]),
     new buttonInfo('Cycle current buffs', 'Will cycle through all the buffs you are starting with, so that one can be removed with the remove buff button.', [0, 15]),
     s => {if (s) CCCEMButtons['removeBuff'].state=getProperBuffName[Game.buffTypesByName[Game.buffTypes[get('buffs').split(';')[s].split(',')[0]].name]]; CCCEMButtons['removeBuff'].hidden = false; },
     { hidden: true }
@@ -2519,19 +3290,19 @@ new buttonCategory('gcSettings', 7, [
     s => { iniDEoRL = s; }
   ),
   new CCCEMButton('iniGC', 'GC1 %1',
-    new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
+    new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1]), e => allGCAndBuffsMap[Game.goldenCookieChoices[e-1]]),
     new buttonInfo('First Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial natural Golden cookie spawn.', [0, 10]),
     s => { s=(s%2 === 0)?s-1:s;
       CCCEMButtons['iniGC'].state=s}, { advanced: false }
   ),
   new CCCEMButton('iniGC2', 'GC2 %1',
-    new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
+    new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1]), e => allGCAndBuffsMap[Game.goldenCookieChoices[e-1]]),
     new buttonInfo('Second Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial Dragon Orbs Golden cookie spawn.', [1, 10]),
     s => { s=(s%2 === 0)?s-1:s;
       CCCEMButtons['iniGC2'].state=s}
   ),
   new CCCEMButton('iniGC3', 'GC3 %1',
-    new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1])),
+    new twoStepCycle(-1, 27, e => (e === -1 ? 'R' : Game.goldenCookieChoices[e-1]), e => allGCAndBuffsMap[Game.goldenCookieChoices[e-1]]),
     new buttonInfo('Third Golden cookie effect', 'The (guaranteed) effect of the Golden cookie from the initial, successful invoke of DEoRL.', [2, 10]),
     s => { s=(s%2 === 0)?s-1:s;
       CCCEMButtons['iniGC3'].state=s}
@@ -3054,3 +3825,5 @@ let stylesStr = '';
 for (let i of customStyles) { stylesStr += i + '\n'; }
 styleObj.textContent = stylesStr;
 l('game').appendChild(styleObj);
+
+window.CCCEMInterfaceReady = true;
