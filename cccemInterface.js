@@ -209,6 +209,7 @@ function FortuneTicker(manual) {
   };
 
 function FindAuraP(a1, a2) { //finds the strength of the a1 aura in the case that a2 is also slotted
+  //return 2;
   if (a1 == 15 && a2 != 18) {return 2}
   if (!a2) {a2=0};
   var auraSlot1=Game.dragonAura
@@ -222,7 +223,7 @@ function FindAuraP(a1, a2) { //finds the strength of the a1 aura in the case tha
   var yesA1=Game.cookiesPs
   Game.dragonAura=auraSlot1
   Game.dragonAura2=auraSlot2
-  Game.recalculateGains=1
+  Game.CalculateGains();
   return yesA1/noA1
   };
 
@@ -245,12 +246,12 @@ function FindBuildingDiff() {
     }
   Game.ObjectsById[7].amount=wizCount
   Game.CalculateGains();
-  var def = Game.computedMouseCps 
+  var def = Game.computedMouseCps;
   for (var i = 0; i < Object.keys(Game.Objects).length; i++) 
     {
       Game.ObjectsById[i].amount=curList[i]
     };
-  Game.recalculateGains=1
+  Game.CalculateGains();
   return cur/def
   };
 
@@ -372,10 +373,11 @@ function AllConsistentBuffsPow() {
 let trackers = {};
 let logicTrackers = [];
 class tracker {
-  constructor(key, update, triggerCondition, defaultV, immediate) {
+  constructor(key, update, triggerCondition, defaultV) {
     this.key = key;
     trackers[key] = this;
-    this.updateFormula = update;
+    console.log(this);
+    this.updateFormula = Scorecode.tokenize(update);
     /**
      * possible triggerConditions:
      * string - hooks onto that particular hook, if available. If not, a backup selection of hooks are available
@@ -404,7 +406,6 @@ class tracker {
     } else if (triggerCondition === true || typeof triggerCondition === 'function') {
       logicTrackers.push(this);
     }
-    if (immediate) { immediate.call(this); }
     this.defaultV = defaultV ?? (() => 0);
     this.reset();
   }
@@ -415,7 +416,8 @@ class tracker {
     this.state = this.defaultV();
   }
   update() {
-    const val = evaluateExpression(this.updateFormula, this.state);
+    //console.log(this.key);
+    const val = Scorecode(this.updateFormula, { value: this.state });
     if (val !== undefined) {
       this.state = val;
     }
@@ -456,8 +458,15 @@ new watcher('cpc', () => Game.computedMouseCps);
 new watcher('initial raw cps', () => iniRaw);
 new watcher('total buff power', () => { 
   let mComboPow = 1;
+  let bsCount = 0;
   for (let i in Game.buffs) {
     let buff = Game.buffs[i];
+    if (buff.type.name == 'building buff') {
+      if (ConsistentBuffs(buff.type.name, bsCount)) { 
+        mComboPow *= (1 + (0.1 * get('buildingCountAnchor'))) / buff.multCpS;
+      }
+      bsCount++;
+    }
     if (buff.multCpS) {
       mComboPow *= buff.multCpS;
     };
@@ -467,26 +476,16 @@ new watcher('total buff power', () => {
   };
   return mComboPow;
 });
-new watcher('cps mult from buffs', () => { 
-  let mComboPow = 1;
+new watcher('is consistent buff', e => {
+  let bsCount = 0;
   for (let i in Game.buffs) {
-    let buff = Game.buffs[i];
-    if (buff.multCpS) {
-      mComboPow *= buff.multCpS;
-    };
-  };
-  return mComboPow;
-});
-new watcher('click mult from buffs', () => { 
-  let mComboPow = 1;
-  for (let i in Game.buffs) {
-    let buff = Game.buffs[i];
-    if (buff.multClick) {
-      mComboPow *= buff.multClick;
-    };
-  };
-  return mComboPow;
-});
+    if (parseInt(i) >= e) {
+      break;
+    }
+    if (Game.buffs[i].type.name == 'building buff') { bsCount++; }
+  }
+  return ConsistentBuffs(Object.values(Game.Objects)[e], bsCount);
+}, 'whether or not the buff can be considered consistent. Argument 1: buff index');
 new watcher('consistent buffs pow', () => AllConsistentBuffsPow());
 new watcher('consistent exec pow', () => {
   let pow = 1;
@@ -498,7 +497,11 @@ new watcher('consistent exec pow', () => {
     let buff = Game.buffs[i];
     if (ConsistentBuffs(buff.type.name, bsCount)) {
       if (buff.multCpS) {
-        pow *= buff.multCpS;
+        if (buff.type.name == 'building buff') {
+          pow *= (1 + (0.1 * get('buildingCountAnchor')));
+        } else {
+          pow *= buff.multCpS;
+        }
       };
       if (buff.multClick) {
         pow *= buff.multClick;
@@ -520,10 +523,18 @@ const allGCAndBuffsMap = {
   'Devastation': 'godzamok',
   'Sweet': ['free sugar lump', 'lump', 'wweet!'],
   'Cookie storm drop': ['drop', 'csd'],
-  'Lucky': 'l'
+  'Lucky': 'l',
+  'Clot': [],
+  'Ruin': [],
+  'Blab': [],
 };
 const allGCAndBuffsMapReversed = (obj => Object.fromEntries(Object.entries(obj).flatMap(([k, v]) => ([].concat(v)).map(val => [val, k]))))(allGCAndBuffsMap); //lazy so I just grabbed it from ai
 const goldenCookieChoicesLowercase = Game.goldenCookieChoices.map(e => e.toLowerCase());
+const otherBuffs = [
+  'devastation', 'everything must go', 'sugar blessing', 'haggler\'s luck', 'haggler\'s misery',
+  'crafty pixies', 'nasty goblins', 'magic adept', 'magic inept', 'sugar frenzy', 'loan 1', 'loan 1 (interest)',
+  'loan 2', 'loan 2 (interest)', 'loan 3', 'loan 3 (interest)', 'gifted out'
+];
 function getBuffAccessName(e) {
   const buffName = (allGCAndBuffsMapReversed[e.toLowerCase()] ?? e).toLowerCase();
   let buff = null;
@@ -535,15 +546,17 @@ function getBuffAccessName(e) {
       //is the "key"
       buff = Game.goldenCookieChoices[goldenCookieChoicesLowercase.indexOf(buffName) - 1];
     }
-  } else { 
+  } else if (!otherBuffs.includes(buffName)) { 
     throw new Error('Buff type not found! ("' + e + '")');
+  } else { 
+    buff = cap(buffName);
   }
   return buff;
 }
 function buildingSpecialsCount(debuff) {
   let n = 0;
   for (let i in Game.buffs) {
-    if (Game.buffs[i].type.name == debuff?'building debuff':'building buff') { 
+    if (Game.buffs[i].type.name == (debuff?'building debuff':'building buff')) { 
       n++;
     }
   }
@@ -553,12 +566,30 @@ new watcher('check buff', e => {
   const name = getBuffAccessName(e);
   return !!(Game.buffs[e] || Game.buffs[name] || (name == 'Building special' && buildingSpecialsCount()) || (name == 'Building rust' && buildingSpecialsCount(true))); 
 }, 'Checks if a given buff exists. Argument 1: buff name in English (accepts common abbreviations, case-insensitive except for building specials)', 1);
+new watcher('buff count', () => Object.keys(Game.buffs).length);
 new watcher('bs count', e => buildingSpecialsCount());
-new watcher('buff power', e => {
+new watcher('buff CpS mult', e => {
+  let buff = null;
+  if (typeof e === 'number') {
+    buff = Object.values(Game.buffs)[e];
+  } else {
+    const name = getBuffAccessName(e);
+    if (!Game.buffs[name]) { return 0; }
+    buff = Game.buffs[name];
+  }
+  return buff.multCpS ?? 1;
+}, 'Gets the multCpS of the non-BS buff specified if it currently exists. If not, returns 0. Argument 1: buff index, or buff name in English (accepts common abbreviations, case-insensitive except for building specials)', 1);
+new watcher('buff click mult', e => {
+  if (typeof e === 'number') {
+    return Object.values(Game.buffs)[e].multClick ?? 1;
+  }
   const name = getBuffAccessName(e);
   if (!Game.buffs[name]) { return 0; }
-  return (Game.buffs[name].multCpS ?? 1) * (Game.buffs[name].multClick ?? 1);
-}, 'Gets the multCpS or multClick of the non-BS buff specified if it currently exists. If not, returns 0. Argument 1: buff name in English (accepts common abbreviations, case-insensitive except for building specials)', 1);
+  return (Game.buffs[name].multClick ?? 1);
+}, 'Gets the multCpS of the non-BS buff specified if it currently exists. If not, returns 0. Argument 1: buff index, or buff name in English (accepts common abbreviations, case-insensitive except for building specials)', 1);
+new watcher('buff is', (index, name) => (Object.keys(Game.buffs)[index] === getBuffAccessName(name)), 
+'Compares an existing buff index to a buff name, returns true if the index and the name matches', 2);
+new watcher('buff index', e => Object.keys(Game.buffs).indexOf(getBuffAccessName(e)), 'Gets the index of a buff name.', 1);
 new watcher('bs power', e => { 
   let mComboPow = 1;
   for (let i in Game.buffs) {
@@ -581,7 +612,9 @@ new watcher('rust power', e => {
   }
   return mComboPow;
 });
-new watcher('aurap', e => FindAuraP(e), 'It\'s not super clear what this does', 1);
+new watcher('auraP', e => FindAuraP(e), 'It\'s not super clear what this does', 1);
+new watcher('building count', e => { if (typeof e === 'number') { return Game.ObjectsById[e].amount; } return Game.Objects[cap(e.toLowerCase())].amount; },
+'Returns the amount of a certain building. Argument 1: building name or building id (0-indexed)');
 Game.registerHook('logic', function() {
   if (!window.CCCEMInterfaceReady) { return; }
   for (let i in logicTrackers) {
@@ -600,26 +633,35 @@ function resetAllTrackers() {
   }
 }
 class logicTracker extends tracker {
-  constructor(key, update, defaultV, immediate) {
-    super(key, update, true, defaultV, immediate);
+  constructor(key, update, defaultV) {
+    super(key, update, true, defaultV);
   }
 }
 class hookTracker extends tracker {
-  constructor(key, update, hookName, defaultV, immediate) {
+  constructor(key, update, hookName, defaultV) {
     if (typeof hookName !== 'string') {
       throw new Error('hookTracker requires a string as hookName');
     }
-    super(key, update, hookName, defaultV, immediate);
+    super(key, update, hookName, defaultV);
   }
 }
 class manualTracker extends tracker {
-  constructor(key, update, defaultV, immediate) {
-    super(key, update, false, defaultV, immediate);
+  constructor(key, update, defaultV) {
+    super(key, update, false, defaultV);
   }
 }
 class dynamicTracker extends tracker {
-  constructor(key, update, func, defaultV, immediate) {
-    super(key, update, func, defaultV, immediate);
+  constructor(key, update, func, defaultV) {
+    super(key, update, func, defaultV);
+  }
+}
+class helperTracker extends tracker {
+  constructor(key, update, defaultV) {
+    super(key, update, false, defaultV);
+    this.update();
+  }
+  getVal() {
+    return Scorecode.parse(this.updateFormula);
   }
 }
 class fakeTracker extends tracker {
@@ -627,7 +669,7 @@ class fakeTracker extends tracker {
     super(key, update, false);
   }
   getVal() {
-    return evaluateExpression(this.updateFormula);
+    return Scorecode(this.updateFormula);
   }
 }
 
@@ -636,392 +678,38 @@ function trackGet(key) {
     return trackers[key].getVal();
   }
 }
-new hookTracker('clickCount', 'value + 1', 'click');
-new logicTracker('maxCps', 'value max [cps]', () => 1);
-new logicTracker('maxCpc', 'value max [cpc]', () => 1);
-new fakeTracker('cookiesGained', '[cookies this ascend] - {cookiesBTA}');
-new fakeTracker('handmadeGains', '[handmade cookies] - {cookiesBTA}');
-new fakeTracker('initialRaw', '[initial raw]');
-new logicTracker('clickCoefficient', '[cpc] / [cps] / [click mult from buffs]');
+new helperTracker('multiply', `(('a', 'b')#('a' * 'b'))`);
+new helperTracker('add', `(('a', 'b')#('a' + 'b'))`);
+new helperTracker('buffCpSPower', `('i')#([buff is;$'i';bs]?(1 + 0.1 * [[buildingCountAnchor]]):[buff CpS mult;$'i'])`)
+new helperTracker('buffPower', `('i')#([buff click mult;$'i']*"buffCpSPower"@('i'))`);
+new hookTracker('clickCount', '\'value\' + 1', 'click');
+new logicTracker('maxCps', '\'value\' max [cps]', () => 1);
+new logicTracker('maxCpc', '\'value\' max [cpc]', () => 1);
+new fakeTracker('cookiesGained', '[cookies this ascend] - [[cookiesBTA]]');
+new fakeTracker('handmadeGains', '[handmade cookies] - [[cookiesBTA]]');
+new fakeTracker('initialRaw', '[initial raw cps]');
+new logicTracker('clickCoefficient', `[cpc] / [cps] / (([buff count]){('i')#([buff click mult;$'i'])}("multiply"))`);
 new fakeTracker('effectiveClicks', '("handmadeGains" / "maxCpc") min "clickCount"');
 new fakeTracker('consistentBuffsPow', '[consistent buffs pow]');
-new logicTracker('consistentExecPow', '[consistent exec pow] max value');
-new logicTracker('maxBuffPow', '[total buff power] max value', () => 1);
-new logicTracker('maxGCOnscreens', '[gc onscreen count] max value');
-new logicTracker('maxComboPow', '([total buff power] * (2.23 ^ [gc onscreen count]) / [auraP;$({useEB}?15:1)]) max value');
-new logicTracker('maxUndevastation', '([total buff power] * (2.23 ^ [gc onscreen count]) / ([check buff:Devastation]?[buff power:Devastation]:1) / [auraP;$({useEB}?15:1)]) max value', () => 1);
-new fakeTracker('devastatedness', '"effectiveClicks" * "godzPower"');
+new logicTracker('consistentExecPow', '[consistent exec pow] max \'value\'');
+new fakeTracker('totalBuffPower', `(([buff count]){('i')#("buffPower"@('i'))}("multiply"))`);
+new logicTracker('maxBuffPow', '"totalBuffPower" max \'value\'', () => 1);
+new logicTracker('maxGCOnscreens', '[gc onscreen count] max \'value\'');
+new logicTracker('maxComboPow', '("totalBuffPower" * (2.23 ^ [gc onscreen count]) / [auraP;$([[useEB]]?15:1)]) max \'value\'');
+new logicTracker('maxUndevastation', '("totalBuffPower" * (2.23 ^ [gc onscreen count]) / ([check buff;Devastation]?("buffPower"@([buff index;Devastation])):1) / [auraP;$([[useEB]]?15:1)]) max \'value\'', () => 1);
+new fakeTracker('devastatedness', '"effectiveClicks" * "godzPower"'); 
 new fakeTracker('godzPower', '"maxComboPow" / "maxUndevastation"');
-new logicTracker('bsCount', '[bs count] max value');
+new logicTracker('bsCount', '[bs count] max \'value\'');
 //custom language
 let scoringFormula = `
   "cookiesGained" / ("maxComboPow" * "initialRaw" * "consistentBuffsPow" / "consistentExecPow")
 `;
 function evaluateScore() {
   try {
-    return evaluateExpression(scoringFormula);
+    return Scorecode(scoringFormula.trim());
   } catch (e) {
 
   }
-}
-//yes, the entire thing below is ai generated
-/**
- * Evaluates a mathematical and boolean expression string with support for variables.
- *
- * @param {string} expression - The expression to evaluate.
- * @param {Object} variables - Key-value pairs of variable names and their numeric values.
- * @returns {number} - The result of the evaluation.
- */
-function evaluateExpression(expression, special) {
-    // --- 1. CONFIGURATION ---
-    // Single char operators
-    const CHAR_OPS = new Set(['+', '-', '*', '/', '^', '(', ')', '>', '<', '=', '|', '&', '!', '?', ':']);
-    // Word-based operators
-    const WORD_OPS = new Set(['min', 'max']);
-
-    // --- 2. LEXER (TOKENIZER) ---
-    function tokenize(input) {
-        const tokens = [];
-        let i = 0;
-
-        while (i < input.length) {
-            const char = input[i];
-
-            // A. Skip standard whitespace
-            if (/\s/.test(char)) {
-                i++;
-                continue;
-            }
-
-            // B. Single Character Operators
-            if (CHAR_OPS.has(char)) {
-                tokens.push({ type: 'OP', value: char });
-                i++;
-                continue;
-            }
-
-            // C. Numbers
-            if (/[0-9.]/.test(char)) {
-                let numStr = '';
-                let dotCount = 0;
-                while (i < input.length && /[0-9.]/.test(input[i])) {
-                    if (input[i] === '.') dotCount++;
-                    numStr += input[i];
-                    i++;
-                }
-                if (dotCount > 1) throw new Error(`Invalid number format: "${numStr}"`);
-                tokens.push({ type: 'NUM', value: parseFloat(numStr) });
-                continue;
-            }
-
-            // D. Variables (Quoted Strings)
-            if (char === '"' || char === "'") {
-                const quoteType = char;
-                i++; // skip opening quote
-                let varName = '';
-                let foundClose = false;
-
-                while (i < input.length) {
-                    if (input[i] === quoteType) {
-                        foundClose = true;
-                        i++; // skip closing quote
-                        break;
-                    }
-                    // Constraint: Check for forbidden chars (basic ops)
-                    if (CHAR_OPS.has(input[i])) {
-                        throw new Error(`Variable name "${varName}${input[i]}..." contains forbidden character '${input[i]}'`);
-                    }
-                    varName += input[i];
-                    i++;
-                }
-
-                if (!foundClose) throw new Error(`Unclosed quote for variable starting at index ${i}`);
-                tokens.push({ type: 'VAR', value: trackGet(varName) });
-                continue;
-            }
-
-            // E. WATCH TOKENS [ ... ]
-            if (char === '[') {
-                i++; // skip '['
-                let content = '';
-                let foundClose = false;
-
-                while (i < input.length) {
-                    if (input[i] === ']') {
-                        foundClose = true;
-                        i++; // skip ']'
-                        break;
-                    }
-                    content += input[i];
-                    i++;
-                }
-
-                if (!foundClose) throw new Error("Unclosed WATCH token '['");
-
-                // Process contents: Split by ':'
-                const parts = content.split(';');
-                const key = parts[0]; 
-                const args = parts.slice(1).map(arg => {
-                    const num = parseFloat(arg.trim()[0] == '$'?evaluateExpression(arg.trim().slice(1), special):arg.trim());
-                    return isNaN(num) ? arg : num;
-                });
-
-                if (window.getKeyArgumentsCount(key) > args.length) throw new Error("Not enough arguments for a watcher: " + key + "; you had " + args.length + ", but needed " + window.getKeyArgumentsCount(key)); 
-                const result = window.watchKey(key, ...args);
-                
-                // We treat the result as a primitive value (Number/Boolean)
-                // Convert boolean return to 1/0 for consistency
-                let numericResult = result;
-                if (typeof result === 'boolean') numericResult = result ? 1 : 0;
-                
-                tokens.push({ type: 'NUM', value: Number(numericResult) });
-                continue;
-            }
-
-            // F. BUTTON TOKENS { ... }
-            if (char === '{') {
-                i++; // skip '{'
-                let content = '';
-                let foundClose = false;
-
-                while (i < input.length) {
-                    if (input[i] === '}') {
-                        foundClose = true;
-                        i++; // skip '}'
-                        break;
-                    }
-                    content += input[i];
-                    i++;
-                }
-
-                if (!foundClose) throw new Error("Unclosed BUTTON token '{'");
- 
-                if (!CCCEMButtons[content]) throw new Error("Button " + content + " not found");
-                const result = get(content);
-                if (isNaN(Number(result))) throw new Error("Button " + content + " does not contain a number or bool");
-                
-                // We treat the result as a primitive value (Number/Boolean)
-                // Convert boolean return to 1/0 for consistency
-                let numericResult = result;
-                if (typeof result === 'boolean') numericResult = result ? 1 : 0;
-                
-                tokens.push({ type: 'NUM', value: Number(numericResult) });
-                continue;
-            }
-
-            // G. Keywords (true, false, value, min, max)
-            if (/[a-zA-Z]/.test(char)) {
-                let word = '';
-                while (i < input.length && /[a-zA-Z]/.test(input[i])) {
-                    word += input[i];
-                    i++;
-                }
-
-                if (word === 'true') {
-                    tokens.push({ type: 'NUM', value: 1 });
-                } else if (word === 'false') {
-                    tokens.push({ type: 'NUM', value: 0 });
-                } else if (WORD_OPS.has(word)) {
-                    tokens.push({ type: 'OP', value: word });
-                } else if (word === 'value') {
-                    tokens.push({ type: 'NUM', value: special })
-                } else {
-                    throw new Error(`Unknown keyword "${word}".`);
-                }
-                continue;
-            }
-
-            throw new Error(`Unexpected character '${char}' at index ${i}`);
-        }
-        return tokens;
-    }
-
-    // --- 3. PARSER & INTERPRETER ---
-    const tokens = tokenize(expression);
-    let cursor = 0;
-
-    function peek() {
-        return tokens[cursor];
-    }
-
-    function consume(expectedOp) {
-        const token = tokens[cursor];
-        if (!token) throw new Error("Unexpected end of expression");
-        if (expectedOp && token.value !== expectedOp) {
-            throw new Error(`Expected '${expectedOp}' but found '${token.value}'`);
-        }
-        cursor++;
-        return token;
-    }
-
-    // --- PRECEDENCE LEVELS ---
-
-    // Level 1: Ternary (? :)
-    function parseExpression() {
-        let left = parseLogicalOr();
-        if (peek() && peek().value === '?') {
-            consume('?');
-            const trueBranch = parseExpression();
-            consume(':');
-            const falseBranch = parseExpression();
-            return left !== 0 ? trueBranch : falseBranch;
-        }
-        return left;
-    }
-
-    // Level 2: Logical OR (|)
-    function parseLogicalOr() {
-        let left = parseLogicalAnd();
-        while (peek() && peek().value === '|') {
-            consume('|');
-            const right = parseLogicalAnd();
-            left = (left !== 0 || right !== 0) ? 1 : 0;
-        }
-        return left;
-    }
-
-    // Level 3: Logical AND (&)
-    function parseLogicalAnd() {
-        let left = parseEquality();
-        while (peek() && peek().value === '&') {
-            consume('&');
-            const right = parseEquality();
-            left = (left !== 0 && right !== 0) ? 1 : 0;
-        }
-        return left;
-    }
-
-    // Level 4: Equality (=)
-    function parseEquality() {
-        let left = parseRelational();
-        while (peek() && peek().value === '=') {
-            consume('=');
-            const right = parseRelational();
-            left = (left === right) ? 1 : 0;
-        }
-        return left;
-    }
-
-    // Level 5: Relational (>, <)
-    function parseRelational() {
-        let left = parseMinMax(); 
-        while (peek() && (peek().value === '>' || peek().value === '<')) {
-            const op = consume().value;
-            const right = parseMinMax();
-            if (op === '>') left = (left > right) ? 1 : 0;
-            if (op === '<') left = (left < right) ? 1 : 0;
-        }
-        return left;
-    }
-
-    // Level 6: Min / Max (keywords)
-    // Precedence: We want "10 + 5 min 2" to parse as "10 + (5 min 2)"? 
-    // Or "(10 + 5) min 2"?
-    // Standard programming (like C/JS) doesn't have infix min/max.
-    // However, usually Additive (+) binds looser than Multiplicative (*).
-    // If we treat min/max as functional logic, they usually bind tighter than Comparison
-    // but looser than Arithmetic.
-    // Implementation here: MinMax calls Additive.
-    // This means Additive binds TIGHTER. 
-    // "10 + 5 min 2" -> "15 min 2" -> 2.
-    function parseMinMax() {
-        let left = parseAdditive();
-        while (peek() && (peek().value === 'min' || peek().value === 'max')) {
-            const op = consume().value;
-            const right = parseAdditive();
-            if (op === 'min') left = Math.min(left, right);
-            if (op === 'max') left = Math.max(left, right);
-        }
-        return left;
-    }
-
-    // Level 7: Additive (+, -)
-    function parseAdditive() {
-        let left = parseMultiplicative();
-        while (peek() && (peek().value === '+' || peek().value === '-')) {
-            const op = consume().value;
-            const right = parseMultiplicative();
-            if (op === '+') left += right;
-            if (op === '-') left -= right;
-        }
-        return left;
-    }
-
-    // Level 8: Multiplicative (*, /)
-    function parseMultiplicative() {
-        let left = parsePower();
-        while (peek() && (peek().value === '*' || peek().value === '/')) {
-            const op = consume().value;
-            const right = parsePower();
-            if (op === '*') left *= right;
-            if (op === '/') {
-                if (right === 0) left = 0;
-                else left /= right;
-            }
-        }
-        return left;
-    }
-
-    // Level 9: Power (^)
-    function parsePower() {
-        let left = parseUnary();
-        while (peek() && peek().value === '^') {
-            consume('^');
-            const right = parseUnary();
-            left = Math.pow(left, right);
-        }
-        return left;
-    }
-
-    // Level 10: Unary (!, -)
-    function parseUnary() {
-        const token = peek();
-        if (token && token.value === '!') {
-            consume('!');
-            const val = parseUnary();
-            return (val === 0) ? 1 : 0;
-        }
-        if (token && token.value === '-') {
-             consume('-');
-             return -parseUnary();
-        }
-        return parsePrimary();
-    }
-
-    // Level 11: Primary
-    function parsePrimary() {
-        const token = peek();
-        
-        if (!token) throw new Error("Unexpected end of input");
-
-        if (token.type === 'NUM') {
-            consume();
-            return token.value;
-        }
-
-        if (token.type === 'VAR') {
-            consume();
-            return token.value;
-        }
-
-        if (token.value === '(') {
-            consume('(');
-            const value = parseExpression();
-            consume(')');
-            return value;
-        }
-
-        throw new Error(`Unexpected token: '${token.value}'`);
-    }
-
-    // --- 4. EXECUTION ---
-    const result = parseExpression();
-
-    if (cursor < tokens.length) {
-        throw new Error(`Unexpected token at the end of expression: '${tokens[cursor].value}'`);
-    }
-
-    return result;
 }
 
 function PrintScore() {
@@ -1046,23 +734,10 @@ function PrintScore() {
   //console.log(maxUndevastated);
 
   // Build history stats and push a new historyEntry
-  const scoreStatO = new scoreStat(originalScore, score * 100);
+  const scoreI = evaluateScore();
+  const scoreStatO = new scoreStat(scoreI, scoreI / 1.333e6 * 100);
   const stats = [
     scoreStatO,
-    new cpsStat(cookieGain / iniRaw),
-    new godzStat(maxGodz),
-    new clicksStat(clicks),
-    new devastatednessStat(devastatedness),
-    new rebuyStat(rebuyedness),
-    new comboStat(maxComboPow),
-    new relComboStat(relComboPow),
-    new bsCountStat(maxBSCount),
-    new cookieGainStat(cookieGain),
-    new handmadeGainStat(clickGain),
-    new iniRawStat(iniRaw)
-  ];
-  const statsAlt = [
-    new scoreStat(evaluateScore(), 0),
     new cpsStat(cookieGain / iniRaw),
     new godzStat(trackGet('godzPower')),
     new clicksStat(trackGet('effectiveClicks')),
@@ -1073,6 +748,23 @@ function PrintScore() {
     new cookieGainStat(trackGet('cookiesGained')),
     new handmadeGainStat(trackGet('handmadeGains')),
     new iniRawStat(trackGet('initialRaw'))
+  ];
+
+  const scoreStatO2 = new scoreStat(originalScore, score * 100);
+  const statsA = [
+    scoreStatO2,
+    new cpsStat(cookieGain / iniRaw),
+    new godzStat(maxGodz),
+    new clicksStat(clicks),
+    new devastatednessStat(devastatedness),
+    new rebuyStat(rebuyedness),
+    new comboStat(maxComboPow),
+    new relComboStat(relComboPow),
+    new consistentPowStat(consistentPow),
+    new bsCountStat(maxBSCount),
+    new cookieGainStat(cookieGain),
+    new handmadeGainStat(clickGain),
+    new iniRawStat(iniRaw)
   ];
 
   // compute click-based derived stats if possible (mirror later calculations)
@@ -1091,17 +783,18 @@ function PrintScore() {
     stats.push(new scoreCorrectionStat(0));
   }
 
+  if (originalScore > historySettings.scoreRegisterThreshold) { new historyEntry(statsA, {
+    startTimestamp: currentStartTimestamp,
+    timestamp: Date.now(),
+    presetUsed: activePreset,
+    notes: 'ORIGINAL SCORING'
+  }); }
   if (originalScore > historySettings.scoreRegisterThreshold) { new historyEntry(stats, {
     startTimestamp: currentStartTimestamp,
     timestamp: Date.now(),
-    presetUsed: activePreset
+    presetUsed: activePreset,
+    notes: 'EXPERIMENTAL SCORING'
   }); }
-  if (originalScore > historySettings.scoreRegisterThreshold && false) { new historyEntry(statsAlt, {
-    startTimestamp: currentStartTimestamp,
-    timestamp: Date.now(),
-    presetUsed: activePreset
-  }); }
-
   attemptsDone++;
   currentStartTimestamp = Date.now();
 
@@ -1144,6 +837,7 @@ class historyEntry {
     this.startTimestamp = configs.startTimestamp ?? (0); //finish later
     this.timestamp = configs.timestamp ?? Date.now();
     this.presetUsed = configs.presetUsed ?? activePreset;
+    this.notes = configs.notes ?? '';
 
     this.index = historyEntries.length;
     historyEntries.push(this);
@@ -1175,7 +869,7 @@ class historyEntry {
 
     let str = '<div class="block historyEntry" '+Game.clickStr+'="openSpecificAttempt('+this.index+');">';
     str += '<div id="topSection" style="width: 100%; height: 24px; text-align: left;">';
-    str += '<div class="title" style="font-size: 20px; display: inline-block;">' + this.name + '<div class="listing" style="display: inline-block;">' + (this.presetUsed ? 'Preset: ' + this.presetUsed.name : 'No preset') + '</div></div>' +
+    str += '<div class="title" style="font-size: 20px; display: inline-block;">' + this.name + '<div class="listing" style="display: inline-block;">' + (this.presetUsed ? 'Preset: ' + this.presetUsed.name : 'No preset') + (this.notes?(' - ' + this.notes):'') + '</div></div>' +
       '<span style="float: right;">'+loc('Duration: %1', Game.sayTime((this.timestamp - this.startTimestamp) / 1000 * Game.fps, -1)) + '</span>';
     str += '</div><div class="line"></div>';
 

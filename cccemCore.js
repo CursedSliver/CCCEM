@@ -1182,6 +1182,9 @@ function loadAllPrerequisites() {
     url: 'https://cdn.jsdelivr.net/npm/fuse.js@7.1.0',
     optional: true
   }, {
+    url: cccemDir+"Scorecode.js",
+    check: () => typeof Scorecode !== 'undefined'
+  }, {
     url: cccemDir+"cccemInterface.js",
     check: () => (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded)
   }, {
