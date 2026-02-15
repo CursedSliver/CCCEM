@@ -658,7 +658,9 @@ function ResetAll(manual) {
   if (iniSeed=='R') {Game.seed=tempseed}
   Game.CalculateGains();
   if (manual) {autoScoreCor=AutoScoreCorrect()};
-  iniRaw=Game.cookiesPsRaw;
+  for (let i in initTrackers) {
+    initTrackers[i].update();
+  }
   ResetGame();
   ResetMinigames();
   if (iniSeed=='R') {Game.seed=tempseed}

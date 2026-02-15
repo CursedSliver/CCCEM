@@ -455,27 +455,7 @@ new watcher('gc onscreen count', () => Game.shimmerTypes.golden.n);
 new watcher('reindeers onscreen count', () => Game.shimmerTypes.reindeer.n);
 new watcher('cps', () => Game.cookiesPs);
 new watcher('cpc', () => Game.computedMouseCps);
-new watcher('initial raw cps', () => iniRaw);
-new watcher('total buff power', () => { 
-  let mComboPow = 1;
-  let bsCount = 0;
-  for (let i in Game.buffs) {
-    let buff = Game.buffs[i];
-    if (buff.type.name == 'building buff') {
-      if (ConsistentBuffs(buff.type.name, bsCount)) { 
-        mComboPow *= (1 + (0.1 * get('buildingCountAnchor'))) / buff.multCpS;
-      }
-      bsCount++;
-    }
-    if (buff.multCpS) {
-      mComboPow *= buff.multCpS;
-    };
-    if (buff.multClick) {
-      mComboPow *= buff.multClick;
-    };
-  };
-  return mComboPow;
-});
+new watcher('raw cps', () => Game.cookiesPsRaw);
 new watcher('is consistent buff', e => {
   let bsCount = 0;
   for (let i in Game.buffs) {
@@ -645,6 +625,13 @@ class hookTracker extends tracker {
     super(key, update, hookName, defaultV);
   }
 }
+let initTrackers = [];
+class initTracker extends tracker {
+  constructor(key, update, defaultV) {
+    super(key, update, false, defaultV);
+    initTrackers.push(this);
+  }
+}
 class manualTracker extends tracker {
   constructor(key, update, defaultV) {
     super(key, update, false, defaultV);
@@ -682,12 +669,15 @@ new helperTracker('multiply', `(('a', 'b')#('a' * 'b'))`);
 new helperTracker('add', `(('a', 'b')#('a' + 'b'))`);
 new helperTracker('buffCpSPower', `('i')#([buff is;$'i';bs]?(1 + 0.1 * [[buildingCountAnchor]]):[buff CpS mult;$'i'])`)
 new helperTracker('buffPower', `('i')#([buff click mult;$'i']*"buffCpSPower"@('i'))`);
+new initTracker('initialRawCps', `[raw cps]`);
+new initTracker('initialCbta', `[cookies this ascend]`);
+new initTracker('initialHandmade', `[handmade cookies]`)
 new hookTracker('clickCount', '\'value\' + 1', 'click');
 new logicTracker('maxCps', '\'value\' max [cps]', () => 1);
 new logicTracker('maxCpc', '\'value\' max [cpc]', () => 1);
-new fakeTracker('cookiesGained', '[cookies this ascend] - [[cookiesBTA]]');
-new fakeTracker('handmadeGains', '[handmade cookies] - [[cookiesBTA]]');
-new fakeTracker('initialRaw', '[initial raw cps]');
+new fakeTracker('cookiesGained', '[cookies this ascend] - "initialCbta"');
+new fakeTracker('handmadeGains', '[handmade cookies] - "initialHandmade"');
+new fakeTracker('initialRaw', '"initialRawCps"');
 new logicTracker('clickCoefficient', `[cpc] / [cps] / (([buff count]){('i')#([buff click mult;$'i'])}("multiply"))`);
 new fakeTracker('effectiveClicks', '("handmadeGains" / "maxCpc") min "clickCount"');
 new fakeTracker('consistentBuffsPow', '[consistent buffs pow]');
