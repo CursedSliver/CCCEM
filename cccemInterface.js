@@ -668,7 +668,7 @@ function trackGet(key) {
 new helperTracker('multiply', `(('a', 'b')#('a' * 'b'))`);
 new helperTracker('add', `(('a', 'b')#('a' + 'b'))`);
 new helperTracker('consistentBuffCpSPower', `('i')#([buff is;$'i';bs]?(1 + 0.1 * [[buildingCountAnchor]]):[buff CpS mult;$'i'])`)
-new helperTracker('buffPower', `('i')#([buff click mult;$'i']*[buff cps mult;$'i'])`);
+new helperTracker('buffPower', `('i')#([buff click mult;$'i']*[buff CpS mult;$'i'])`);
 new initTracker('initialRawCps', `[raw cps]`);
 new initTracker('initialCbta', `[cookies this ascend]`);
 new initTracker('initialHandmade', `[handmade cookies]`)
