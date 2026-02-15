@@ -724,7 +724,7 @@ function PrintScore() {
   //console.log(maxUndevastated);
 
   // Build history stats and push a new historyEntry
-  const scoreI = evaluateScore();
+  const scoreI = evaluateScore()*scoreCorVal*autoScoreCor;
   const scoreStatO = new scoreStat(scoreI, scoreI / 1.333e6 * 100);
   const stats = [
     scoreStatO,
