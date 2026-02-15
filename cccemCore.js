@@ -661,6 +661,7 @@ function ResetAll(manual) {
   for (let i in initTrackers) {
     initTrackers[i].update();
   }
+  iniRaw = Game.cookiesPsRaw;
   ResetGame();
   ResetMinigames();
   if (iniSeed=='R') {Game.seed=tempseed}
