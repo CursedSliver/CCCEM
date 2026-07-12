@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scorecode Documentation</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <header class="top-bar">
+        <h1 class="site-title">Scorecode Documentation</h1>
+    </header>
+
+    <div class="layout">
+        <aside class="sidebar" id="sidebar">
+            <div class="search-container" id="search-container">
+                <input
+                    type="search"
+                    id="sidebar-search"
+                    class="sidebar-search-input"
+                    placeholder="Search tabs..."
+                    aria-label="Search tabs"
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+            </div>
+            <div class="search-results" id="search-results">
+                <!-- Sidebar sections/tabs are generated at runtime by src/main.js -->
+            </div>
+        </aside>
+
+        <main class="main-section" id="main-section">
+            <div class="loading-placeholder" id="loading-placeholder">
+                Select a tab from the sidebar to begin.
+            </div>
+        </main>
+    </div>
+
+    <script src="components/catalog.js"></script>
+    <script src="../Scorecode.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.1.0"></script>
+    <script src="src/main.js"></script>
+</body>
+</html>

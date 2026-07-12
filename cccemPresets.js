@@ -21,20 +21,22 @@ class CCCEMPreset {
 
   invoke(noStoreToUndo) {
     console.log(this.key + ' invoked!');
+    if (typeof this.settings == 'object') { 
+      for (let i in this.settings) {
+        if (CCCEMButtons[i]) { CCCEMButtons[i].changeState(this.settings[i]); }
+      }
+    }
+    if (typeof this.settings == 'string' && CCCEMContainerModObj.toTriggerPresetOverride) {
+      CCCEMContainerModObj.toTriggerPresetOverride = false;
+      CCCEMContainerModObj.load(this.settings, true);
+      CCCEMContainerModObj.toTriggerPresetOverride = true;
+    }
     if (!noStoreToUndo) { CCCEMButtons['revertPresetContainer'].type.willSave = false;
     const saveSaveStatus = CCCEMButtons['saveSave'].state;
     CCCEMButtons['saveSave'].changeState(true);
     CCCEMButtons['revertPresetContainer'].changeState(escape(utf8_to_b64(getSettingsCode())));
     CCCEMButtons['saveSave'].changeState(saveSaveStatus);
     CCCEMButtons['revertPresetContainer'].type.willSave = true; }
-    if (typeof this.settings == 'object') { 
-      for (let i in this.settings) {
-        if (CCCEMButtons[i]) { CCCEMButtons[i].changeState(this.settings[i]); }
-      }
-    }
-    if (typeof this.settings == 'string') {
-      CCCEMContainerModObj.load(this.settings, true);
-    }
 
     invalidateScore = 1;
 
@@ -258,23 +260,6 @@ CCCEMCategories.presetSettings.register(...presetButtonsToRegister);
 window.presetsGenerated = true;
 }
 
-function injectCSS(str) {
-  let h = document.createElement('style');
-  h.textContent = str;
-  l('game').appendChild(h);
-}
-injectCSS(`
-  .cccem-preset-split label { font-variant: small-caps; font-family: 'Merriweather', Georgia,serif; font-weight: bold; }
-  .cccem-preset-split { display: flex; gap: 12px; align-items: flex-start; }
-  .cccem-preset-split .left { flex: 0 0 30%; }
-  .cccem-preset-split .right { flex: 0 0 70%; }
-  .cccem-preset-label { display: block; margin-bottom: 6px; }
-  .cccem-name-input { width: 100%; height: 32px; font-size: 14px; padding: 6px; box-sizing: border-box; text-align: center; }
-  .cccem-desc-textarea { font-size: 12px; padding: 4px; width: 100%; height: 220px; box-sizing: border-box; }
-  .cccem-icon-input { width: 64px !important; margin-right: 4%; box-sizing: border-box; }
-
-  .framed.widePrompt.ultraWide { width: min(80vw, 800px) !important; left: max(-40vw, -400px) !important; }
-`);
 function switchVisibleSettingButtonLocation(node) {
   const hidden = l('buttonsHidden');
   const visible = l('buttonsVisible');
@@ -519,6 +504,7 @@ let presetCreationStages = {
       const saveSaveStatus = CCCEMButtons['saveSave'].state;
       CCCEMButtons['saveSave'].changeState(true);
       presetCreationBufferObj.settings = escape(utf8_to_b64(getSettingsCode()));
+      presetCreationBufferObj.version = CCCEMVerReal;
       CCCEMButtons['saveSave'].changeState(saveSaveStatus);
       CCCEMButtons['revertPresetContainer'].type.willSave = true;
       let str = JSON.stringify(presetCreationBufferObj);
@@ -557,18 +543,6 @@ function createPreset(stage) {
   }
 }
 
-injectCSS(`
-  .cccem-preset-expanded-display { cursor: normal !important;  }
-  .cccem-preset-expanded-display:hover { border: 0px !important; }
-  .cccem-preset-display { border-radius: 8px; padding: 10px; cursor: pointer; }
-  .cccem-preset-display:hover { border: 1px solid white; }
-  .cccem-preset-display .row2 { display:flex; gap:12px; align-items:flex-start; padding-bottom: 0px; }
-  .cccem-preset-display .cccem-preset-icon { width:48px; height:48px; background-image: url('img/icons.png'); background-repeat:no-repeat; border-radius:6px; flex:0 0 48px; box-shadow: 0 1px 0 rgba(0,0,0,0.2) inset; }
-  .cccem-preset-display .title { font-size: 14px; margin:0 0 4px 0; text-align: left; font-weight: bold; text-shadow:0px 1px 3px #d2faff82; }
-  .cccem-preset-display .creator { font-size: 12px; color: #ccc; margin-bottom: 2px; text-align: left; font-variant: small-caps; font-family: 'Merriweather', Georgia,serif; }
-  .cccem-preset-display .desc { font-size: 13px; white-space: pre-wrap; margin-top: 8px; color: #eee; text-align: left; }
-  .option .cccem-preset-load-button { font-size: 18px; padding: 8px; }
-`);
 var presetsIndex = null;
 var presetsData = null;
 function produceWaitingPrompt() {

@@ -17319,7 +17319,6 @@ window.onload=function()
 						//try {Game.Load(Game.Init);}
 						//catch(err) {console.log('ERROR : '+err.message);}
 					}
-					setTimeout(() => Game.LoadMod('testFile.js'), 500);
 				},
 			];
 			var doLaunchStep=function(step)

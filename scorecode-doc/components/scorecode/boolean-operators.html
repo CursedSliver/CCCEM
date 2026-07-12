@@ -1,0 +1,55 @@
+<h1>Boolean operators</h1>
+<p>
+    A boolean operator takes the values of the next expression (and sometimes previous expression) and 
+    returns a pesudo-boolean value (in other words, 0 for false, 1 for true).
+    <br>The output of the previous or next expression is interpreted as a pesudo-boolean value: 0 for false, any nonzero value for true.
+    <br>You can also specify "true" or "false" to substitute for 1 and 0.
+    <br>There are three types of boolean operators.
+</p>
+<table>
+    <tr class="header-row"> 
+        <th>Operator</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt;&amp;&lt;expr&gt;</code></th>
+        <th>Logical AND: Returns 1 if both expressions are nonzero.</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt;|&lt;expr&gt;</code></th>
+        <th>Logical OR: Returns 1 if either expression is nonzero.</th>
+    </tr>
+    <tr>
+        <th><code>!&lt;expr&gt;</code></th>
+        <th>Logical NOT: Returns 1 if the expression is zero, 0 if the expression is nonzero.</th>
+    </tr>
+</table>
+<h2>Precendence</h2>
+<p>
+    <code>!</code> &gt; <code>&amp;</code> &gt; <code>|</code>
+</p>
+<h2>Return value</h2>
+<p>All Boolean operators return numbers: 0 for false, 1 for true.</p>
+<h2>Examples</h2>
+<p><b>Logical AND (<code>&amp;</code>)</b> - returns 1 only when <i>both</i> sides are nonzero.</p>
+[[codebox:1 & 1         -> 1 
+1 & 0         -> 0 
+0 & 0         -> 0 
+5 & 1         -> 1     // any nonzero on both sides counts as true
+true & false  -> 0     // you can also use "true" or "false" to substitute for 1 and 0]]
+<p><b>Logical OR (<code>|</code>)</b> - returns 1 when <i>either</i> side is nonzero.</p>
+[[codebox:1 | 0         -> 1 
+0 | true         -> 1 
+false | false -> 0 
+7 | 0         -> 1     // any nonzero on either side counts as true
+(0) | (0)     -> 0     // nothing nonzero anywhere]]
+<p><b>Logical NOT (<code>!</code>)</b> - flips a pseudo-boolean.</p>
+[[codebox:!0            -> 1     // 0 is false, NOT false is true
+!1            -> 0     // nonzero is true, NOT true is false
+!5            -> 0     // any nonzero value is treated as true
+!(3 - 3)      -> 1     // 3 - 3 = 0, NOT 0 is true]]
+<p><b>Pseudo-boolean truthiness</b> - any nonzero number (including fractions and negatives) is considered true.</p>
+[[codebox:0.5 & 1       -> 1     // 0.5 is nonzero, so it is true
+-1 & 1        -> 1     // negative numbers are also nonzero
+!0.0001       -> 0     // 0.0001 is nonzero, NOT nonzero is 0
+0.0001 | 0    -> 1     // 0.0001 is nonzero, so the OR is true]]

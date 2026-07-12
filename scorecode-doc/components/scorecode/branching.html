@@ -1,0 +1,15 @@
+<h1>Branching</h1>
+<p>
+    Branching is done by the ternary operator:
+</p>
+<code>&lt;condition expr&gt; ? &lt;expr if true&gt; : &lt;expr if false&gt;</code>
+<p>
+    The condition expression is evaluated. If it is nonzero (true), the expression after the ? is evaluated and returned. 
+    If it is zero (false), the expression after the : is evaluated and returned.
+</p>
+<h2>Examples</h2>
+<p><b>Basic true/false selection</b> - only the chosen branch is evaluated. </p>
+[[codebox:1 ? 10 : 20        -> 10        // condition is true (1), picks the "if true" branch
+0 ? 10 : 20        -> 20        // condition is false (0), picks the "if false" branch
+(2 + 2 = 4) ? 1 : 0   -> 1     // 2+2=4 is 1, picks the "if true" branch
+(2 + 2 = 5) ? 1 : 0   -> 0     // 2+2=5 is 0, picks the "if false" branch]]

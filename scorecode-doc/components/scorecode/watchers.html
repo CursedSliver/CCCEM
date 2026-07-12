@@ -1,0 +1,68 @@
+<h1>Watchers</h1>
+<p>
+    A Watcher is a set of pieces of code that returns specific information about the state of the game at the time that it is called.
+    <br>Each Watcher returns a specific piece of information, such as cookie count, golden cookie count, CpS, etc. 
+    Watchers are fixed and cannot be modified; Watchers cannot be added or removed.
+</p>
+<p>
+    Watchers are called by the <code>[&lt;watcher name&gt;]</code> syntax.
+</p>
+<h2>Argument passing</h2>
+<p>
+    Notably, some watchers can accept arguments. 
+    For example, the "buff index" watcher can be called with the name of the buff to check for its index in the buff list, if it exists.
+    <br>The description for a watcher will usually mention arguments that can be passed to it.
+</p>
+<p>
+    To pass arguments to a watcher, put them inside the square brackets separated by semicolons with the first being the watcher name, like so:
+</p>
+<code>[&lt;watcher name&gt;;&lt;argument 1&gt;;&lt;argument 2&gt;]</code> (the amount of arguments are not limited to 2)
+<p>
+    Usually the argument is NOT interpreted as code; the argument is passed to the Watcher handler directly as string,
+    or a number if it can be parsed as a number. 
+    <br>To make the game interpret the argument as code and execute it to pass the output to the Watcher, 
+    you need to put a <code>$</code> before the argument, like so:
+</p>
+<code>[&lt;watcher name&gt;;$&lt;executed code&gt;]</code>
+<h2>Examples</h2>
+<p>The examples below use placeholder watcher names; substitute the actual watcher you want. The brackets and semicolons are part of Scorecode syntax.</p>
+<p><b>A watcher with no arguments</b> - just the name in square brackets. This is the most common form.</p>
+[[codebox:[bank]            // returns the player's current cookie bank balance
+[cookiesps]        // returns the player's cookies-per-second (CpS)
+[golden]           // returns the number of golden cookies on screen
+[wrinklers]        // returns the number of wrinklers spawned
+// All of the above return a number that can be used like any other
+// numeric expression.
+[banks] + [wrinklers]   // sum of the bank and the wrinkler count
+[banks] > 1000 ? 1 : 0  // 1 if the bank is over 1000, else 0]]
+<p><b>A watcher with a string argument</b> - arguments are separated by semicolons. Most arguments are passed as raw strings, not code.</p>
+[[codebox:[buff;building]                  // 'building' is passed as the string "building"
+[hasbuff;frenzied]                // 'frenzied' is passed as the string "frenzied"
+[buildingprice;cursor]            // 'cursor' is passed as the string "cursor"
+// You can compare a watcher result to a number the usual way:
+[hasbuff;frenzied] = 1   -> 1 if the Frenzy buff is active, else 0
+[buildingprice;cursor] - [buildingprice;grandma]  // difference in price
+// between the cursor and grandma buildings]]
+<p><b>Passing a number as an argument</b> - if an argument parses as a number, it is passed as a number (not as the string of the number).</p>
+[[codebox:[upgrade;7]            // the upgrade at index 7
+[building;0]            // the count of the building at index 0 (cursor)
+[building;1]            // the count of the building at index 1 (grandma)
+// Use a number argument to look up by index:
+([building;0]) > 100    // 1 if you own more than 100 cursors, else 0
+[building;0] + [building;1]   // total owned cursors + grandmas]]
+<p><b>Passing an executed Scorecode expression as an argument</b> - prefix the argument with <code>$</code> to make it run as Scorecode and pass the result.</p>
+[[codebox:[building;$0]                 // same as [building;0]: runs 0 -> 0, passes number 0
+[building;$1 + 2]              // runs 1 + 2 -> 3, passes number 3 to the watcher
+[building;$[building;0]]        // runs [building;0] to get the cursor count, passes that
+// Without the $, the inside of the brackets is just a string, so this
+// would NOT execute the inner [building;0]:
+[building;[building;0]]         // 'building' is the watcher, '[building;0]' is a string
+//                              // argument. This is almost certainly not what you want;
+//                              // use $[building;0] instead to execute the inner code.]]
+<p><b>Combining watchers with normal expressions</b> - watchers are just numbers, so they compose freely with everything else.</p>
+[[codebox:[cookiesps] * 60              // estimated cookies earned in 60 seconds
+[banks] / [cookiesps]         // seconds of CpS the bank can sustain
+[golden] + [wrinklers]        // total special cookies on the screen
+[golden] > 0 ? [cookiesps] : 0   // CpS only when a golden is on screen, else 0
+[banks] > 1000000 ? 1 : 0      // 1 once the bank passes 1 million, else 0
+[banks] min [target]           // the smaller of the current bank and a tracker named "target"]]

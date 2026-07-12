@@ -5,7 +5,7 @@
  */
 /**
  * Scorecode object && export
- * * @param {string} formula - The code to execute.
+ * * @param {string} formula - The code to execute. 
  * @param {Object} specials - Context object containing special variables (e.g., 'value').
  * @returns {number|function} - The result of the execution.
  */
@@ -19,7 +19,7 @@ const Scorecode = (function() {
         EQ: '=', NEQ: '!=', GT: '>', LT: '<',
         MAX: 'max', MIN: 'min',
         ADD: '+', SUB: '-',
-        MUL: '*', DIV: '/',
+        MUL: '*', DIV: '/', MOD: '%',
         POW: '^',
         NOT: '!',
         LPAREN: '(', RPAREN: ')',
@@ -30,14 +30,21 @@ const Scorecode = (function() {
     };
 
     const UNARY_OPS = ['sin', 'cos', 'tan', 'asin', 'acos', 'atan'];
-    
+
+    // Sentinel for rest-args (...) splatting. When a lambda declares '...' as
+    // its last argument, the binding scope receives an object tagged with this
+    // symbol. When such a value is later passed to another lambda call, the
+    // call site splats the carried values back into the argument list.
+    const REST_ARGS = Symbol('rest_args');
+    const isRestArgs = v => v && typeof v === 'object' && v[REST_ARGS] === true;
+
     // Precedence levels (Higher runs first)
     const PRECEDENCE = {
         [OPS.LAMBDA_CALL]: 11, // @
         'ITERATION': 11,       // {code}(sum)
         'UNARY': 10,           // !, -, trig
         [OPS.POW]: 9,
-        [OPS.MUL]: 8, [OPS.DIV]: 8,
+        [OPS.MUL]: 8, [OPS.DIV]: 8, [OPS.MOD]: 8,
         [OPS.ADD]: 7, [OPS.SUB]: 7,
         [OPS.MAX]: 6, [OPS.MIN]: 6,
         [OPS.LT]: 5, [OPS.GT]: 5, [OPS.EQ]: 5,
@@ -61,11 +68,13 @@ const Scorecode = (function() {
 
     class Node {
         evaluate(scope, specials) { throw new Error("Method not implemented"); }
+        static type = 'node';
     }
 
     class ConstantNode extends Node {
         constructor(value) { super(); this.value = value; }
         evaluate() { return this.value; }
+        static type = 'constant';
     }
 
     class SpecialVarNode extends Node {
@@ -78,11 +87,16 @@ const Scorecode = (function() {
             }
             throw new ScorecodeError(`Unknown special/argument: '${this.name}'`);
         }
+        static type = 'special';
     }
 
     class TrackerNode extends Node {
         constructor(name) { super(); this.name = name; }
-        evaluate(scope, specials) { const t = window.trackGet(this.name); if (t instanceof LambdaDefNode) { return t.evaluate(scope, specials) } else { return t; }}
+        evaluate(scope, specials) { 
+            const t = window.trackGet(this.name); 
+            if (t instanceof LambdaDefNode) { return t.evaluate(scope, specials) } else { return t; }
+        }
+        static type = 'tracker';
     }
 
     class EnvNode extends Node {
@@ -94,6 +108,7 @@ const Scorecode = (function() {
             }
             return Number(val);
         }
+        static type = 'env';
     }
 
     class DynamicNode extends Node {
@@ -108,23 +123,27 @@ const Scorecode = (function() {
                 return arg;
             });
             const result = window.watchKey(this.key, ...evaluatedArgs);
-            if (typeof result === 'string') {
+            /*if (typeof result === 'string') {
                 throw new ScorecodeError(`Dynamic variable [${this.key}] returned a string, which is forbidden.`);
-            }
+            }*/
             return result;
         }
+        static type = 'dynamic';
     }
 
     class UnaryNode extends Node {
         constructor(operator, expression) {
             super();
-            this.operator = operator;
+            this.op = operator;
             this.expression = expression;
         }
         evaluate(scope, specials) {
             const val = this.expression.evaluate(scope, specials);
+            if (typeof val === 'string') {
+                throw new ScorecodeError('Illegal string operation: cannot apply "' + this.op + '" to a string');
+            }
             // Handle Lambda passthrough if needed, but usually unary ops apply to numbers
-            switch (this.operator) {
+            switch (this.op) {
                 case '!': return val ? 0 : 1;
                 case '-': return -val;
                 case 'sin': return Math.sin(val);
@@ -136,6 +155,7 @@ const Scorecode = (function() {
                 default: throw new ScorecodeError(`Unknown unary operator ${this.operator}`);
             }
         }
+        static type = 'unary';
     }
 
     class BinaryNode extends Node {
@@ -148,12 +168,17 @@ const Scorecode = (function() {
         evaluate(scope, specials) {
             const l = this.left.evaluate(scope, specials);
             const r = this.right.evaluate(scope, specials);
+
+            if ((typeof l === 'string' || typeof r === 'string') && this.op !== '=') {
+                throw new ScorecodeError('Illegal string operation: cannot apply "' + this.op + '" to strings');
+            }
             
             switch (this.op) {
                 case '+': return l + r;
                 case '-': return l - r;
                 case '*': return l * r;
                 case '/': return r === 0 ? 0 : l / r;
+                case '%': return r === 0 ? 0 : l % r;
                 case '^': return Math.pow(l, r);
                 case 'max': return Math.max(l, r);
                 case 'min': return Math.min(l, r);
@@ -165,6 +190,7 @@ const Scorecode = (function() {
                 default: throw new ScorecodeError(`Unknown binary operator ${this.op}`);
             }
         }
+        static type = 'binary';
     }
 
     class TernaryNode extends Node {
@@ -176,9 +202,13 @@ const Scorecode = (function() {
         }
         evaluate(scope, specials) {
             const condition = this.cond.evaluate(scope, specials);
+            if (typeof condition === 'string') { 
+                throw new ScorecodeError('Illegal string operation: cannot evaluate truthy-ness of a string');
+            }
             if (condition) return this.trueExpr.evaluate(scope, specials);
             return this.falseExpr.evaluate(scope, specials);
         }
+        static type = 'ternary';
     }
 
     class LambdaDefNode extends Node {
@@ -196,6 +226,7 @@ const Scorecode = (function() {
                 parentScope: scope // Closures not explicitly requested but good practice
             };
         }
+        static type = 'lambda';
     }
 
     class LambdaCallNode extends Node {
@@ -207,14 +238,32 @@ const Scorecode = (function() {
         evaluate(scope, specials) {
             const lambda = this.funcNode.evaluate(scope, specials);
             if (!lambda || lambda.type !== 'lambda') {
-                throw new ScorecodeError("Attempted to call a non-lambda value");
+                throw new ScorecodeError("Attempted to call a non-lambda value: " + lambda);
             }
-            
-            const argValues = this.argNodes.map(n => n.evaluate(scope, specials));
-            
+
+            // Evaluate raw call args, then splat any rest-args placeholders so
+            // that '...' passed through another call expands to its carried values.
+            const rawArgValues = this.argNodes.map(n => n.evaluate(scope, specials));
+            const argValues = [];
+            for (const v of rawArgValues) {
+                if (isRestArgs(v)) {
+                    for (const inner of v.values) argValues.push(inner);
+                } else {
+                    argValues.push(v);
+                }
+            }
+
             // Create new scope for execution
             const newScope = new Map(lambda.parentScope); // Inherit (optional based on spec, but usually safe)
             lambda.args.forEach((argName, index) => {
+                if (argName === '...') {
+                    // Triple dot must be the last argument and captures the
+                    // remaining call-site values. Inner lambdas that declare
+                    // their own '...' naturally shadow the outer one, since
+                    // their scope is built fresh from the call args.
+                    newScope.set('...', { [REST_ARGS]: true, values: argValues.slice(index) });
+                    return;
+                }
                 if (index < argValues.length) {
                     newScope.set(argName, argValues[index]);
                 }
@@ -222,6 +271,7 @@ const Scorecode = (function() {
 
             return lambda.body.evaluate(newScope, specials);
         }
+        static type = 'lambda_call';
     }
 
     class IterationNode extends Node {
@@ -241,11 +291,14 @@ const Scorecode = (function() {
                 throw new ScorecodeError("Iteration requires lambda functions for code and summation");
             }
 
+            if (typeof max === 'string') {
+                throw new ScorecodeError("Iteration count must be a number");
+            }
             if (max < 1) { return 0; }
 
             let codeScopeT = new Map(scope);
             if (codeLambda.args[0]) codeScopeT.set(codeLambda.args[0], 0);
-            if (codeLambda.args[1]) codeScopeT.set(codeLambda.args[1], accumulator);
+            if (codeLambda.args[1]) codeScopeT.set(codeLambda.args[1], 0);
             if (codeLambda.args[2]) codeScopeT.set(codeLambda.args[2], max);
 
             let accumulator = codeLambda.body.evaluate(codeScopeT, specials);
@@ -269,14 +322,15 @@ const Scorecode = (function() {
 
             return accumulator;
         }
+        static type = 'iteration';
     }
 
     // --- Tokenizer ---
 
     class Tokenizer {
-        constructor(input) {
+        constructor(input, pos) {
             this.input = input;
-            this.pos = 0;
+            this.pos = pos ?? 0;
             this.length = input.length;
         }
 
@@ -284,7 +338,17 @@ const Scorecode = (function() {
         peek() { return this.input[this.pos]; }
 
         tokenize() {
+            // Entry point
+            const tokens = this.process();
+            if (this.hasMore()) {
+                throw new ScorecodeError('Uncaught closing bracket (\']\') or semicolon at index ' + this.pos);
+            }
+            return tokens;
+        }
+        process() {
             const tokens = [];
+            let inDynamic = false;
+            let pendingSemicolon = false;
             
             while (this.hasMore()) {
                 const char = this.input[this.pos];
@@ -295,21 +359,81 @@ const Scorecode = (function() {
                     continue;
                 }
 
+                // 1b. Single-line comments (// ... until newline, exclusive)
+                // A comment is defined as all characters following the '//' substring,
+                // including the substring itself, up to the next new line character.
+                if (char === '/' && this.input[this.pos + 1] === '/') {
+                    while (this.hasMore() && this.input[this.pos] !== '\n') {
+                        this.pos++;
+                    }
+                    continue;
+                }
+
                 // 2. Numbers
                 if (/[0-9]/.test(char) || (char === '.' && /[0-9]/.test(this.input[this.pos+1]))) {
                     let numStr = "";
                     while (this.hasMore() && (/[0-9.]/.test(this.input[this.pos]))) {
                         numStr += this.input[this.pos++];
                     }
-                    tokens.push({ type: 'NUMBER', value: parseFloat(numStr), index: this.pos });
+                    tokens.push({ type: 'NUMBER', value: parseFloat(numStr), index: this.pos - numStr.length });
+                    pendingSemicolon = false;
                     continue;
                 }
+
+                if (inDynamic) {
+                    if (/[a-zA-Z_-\s0-9]+/.test(char)) {
+                        // Numbers are already matched before
+                        const begins = this.pos;
+                        let content = this.readPureString();
+                        tokens.push({ type: 'STR', value: content, index: begins });
+                        pendingSemicolon = false;
+                        continue;
+                    }
+                    if (char === ';') {
+                        if (pendingSemicolon) {
+                            throw new ScorecodeError('Empty watcher argument at index ' + this.pos);
+                        }
+                        this.pos++;
+                        pendingSemicolon = true;
+                        continue;
+                    }
+                    if (char === ']') {
+                        if (pendingSemicolon) {
+                            throw new ScorecodeError('Empty watcher argument at index ' + this.pos);
+                        }
+                        const begins = this.pos;
+                        this.pos++;
+                        inDynamic = false;
+                        tokens.push({ type: 'DYNEND', index: begins });
+                        continue;
+                    }
+                    if (char === '$') {
+                        this.pos++;
+                        const begins = this.pos;
+                        let content = this.tokenizeSub(this.pos);
+                        this.pos = content[content.length - 1].index;
+                        content.pop();
+                        tokens.push({ type: 'ARG', value: content, index: begins });
+                        pendingSemicolon = false;
+                        continue;
+                    }
+                }
+
+                // Will catch something later on or it errors, so safe to set here
+                pendingSemicolon = false;
 
                 // 3. Operators (Multi-char first)
                 if (this.input.startsWith('max', this.pos)) { tokens.push({ type: 'OP', value: 'max', index: this.pos }); this.pos += 3; continue; }
                 if (this.input.startsWith('min', this.pos)) { tokens.push({ type: 'OP', value: 'min', index: this.pos }); this.pos += 3; continue; }
                 if (this.input.startsWith('true', this.pos)) { tokens.push({ type: 'NUMBER', value: 1, index: this.pos }); this.pos += 4; continue; }
                 if (this.input.startsWith('false', this.pos)) { tokens.push({ type: 'NUMBER', value: 0, index: this.pos }); this.pos += 5; continue; }
+                // Rest-args token '...': only meaningful in lambda-arg position,
+                // but emitted as a generic OP here so the parser can enforce rules.
+                if (this.input[this.pos] === '.' && this.input[this.pos + 1] === '.' && this.input[this.pos + 2] === '.') {
+                    tokens.push({ type: 'OP', value: '...', index: this.pos });
+                    this.pos += 3;
+                    continue;
+                }
                 
                 // Trig unary operators
                 let matchedTrig = false;
@@ -325,7 +449,7 @@ const Scorecode = (function() {
                 if (matchedTrig) continue;
 
                 // Single char operators
-                if ('+-*/^<>=&|!?:()#@{},'.includes(char)) {
+                if ('+-*/%^<>=&|!?:()#@{},'.includes(char)) {
                     tokens.push({ type: 'OP', value: char, index: this.pos });
                     this.pos++;
                     continue;
@@ -343,29 +467,47 @@ const Scorecode = (function() {
 
                 // Dynamic [...]
                 if (char === '[') {
+                    const begins = this.pos;
                     this.pos++;
-                    let content = this.readBracketUntil(']', '[');
-                    tokens.push({ type: 'DYN', value: content, index: this.pos });
+                    inDynamic = true;
+                    let content = this.readUntilDynamic();
+                    tokens.push({ type: 'DYN', value: content, index: begins });
                     continue;
+                }
+                if ((char === ']' || char === ';') && !inDynamic) {
+                    tokens.push({ type: 'TERM', index: this.pos });
+                    return tokens;
                 }
 
                 // Trackers "..."
                 if (char === '"') {
+                    const begins = this.pos;
                     this.pos++;
                     let content = this.readUntil('"');
-                    tokens.push({ type: 'TRACK', value: content, index: this.pos });
+                    tokens.push({ type: 'TRACK', value: content, index: begins });
                     continue;
                 }
 
                 // Specials '...'
                 if (char === "'") {
+                    const begins = this.pos;
                     this.pos++;
                     let content = this.readUntil("'");
-                    tokens.push({ type: 'SPEC', value: content, index: this.pos });
+                    tokens.push({ type: 'SPEC', value: content, index: begins });
                     continue;
                 }
 
                 throw new ScorecodeError(`Unexpected character: ${char}`, { index: this.pos });
+            }
+            if (inDynamic) {
+                throw new ScorecodeError(`Missing closing ']' at the end of formula (index ${this.pos})`);
+            }
+            return tokens;
+        }
+        tokenizeSub(pos) {
+            const tokens = (new Tokenizer(this.input, pos)).process();
+            if (!tokens.length) {
+                throw new ScorecodeError(`Empty argument specification`);
             }
             return tokens;
         }
@@ -381,32 +523,27 @@ const Scorecode = (function() {
             }
             throw new ScorecodeError(`Unclosed delimiter, expected '${endStr}'`);
         }
-        
-        readBracketUntil(endStr, skipStr) {
-            // Not failproof, careful when using.
-            // Human patched.
+
+        readUntilDynamic() {
             let result = "";
-            let layer = 1;
             while (this.hasMore()) {
-                if (this.input.startsWith(skipStr, this.pos)) {
-                    layer++;
-                    this.pos += skipStr.length;
-                    result += skipStr;
-                    continue;
-                }
-                if (this.input.startsWith(endStr, this.pos)) {
-                    this.pos += endStr.length;
-                    layer--;
-                    if (layer == 0) { 
-                        return result; 
-                    }
-                        
-                    result += endStr;
-                    continue;
+                if (this.input.startsWith(']', this.pos) || this.input.startsWith(';', this.pos)) {
+                    return result;
                 }
                 result += this.input[this.pos++];
             }
             throw new ScorecodeError(`Unclosed delimiter, expected '${endStr}'`);
+        }
+
+        readPureString() {
+            let result = "";
+            while (this.hasMore()) {
+                if (this.input.startsWith(']', this.pos) || this.input.startsWith(';', this.pos)) {
+                    return result;
+                }
+                result += this.input[this.pos++];
+            }
+            throw new ScorecodeError(`Unbounded watcher argument string specification`);
         }
     }
 
@@ -416,6 +553,12 @@ const Scorecode = (function() {
         constructor(tokens) {
             this.tokens = tokens;
             this.pos = 0;
+            this.posOffset = 0;
+        }
+
+        setPosOffset(pos) {
+            this.posOffset = pos;
+            return this;
         }
 
         peek() { return this.tokens[this.pos]; }
@@ -429,6 +572,9 @@ const Scorecode = (function() {
         }
 
         parse() {
+            if (this.tokens.length === 0) {
+                return new ConstantNode(0);
+            }
             const ast = this.parseExpression();
             if (this.pos < this.tokens.length) {
                 throw new ScorecodeError("Unexpected token remaining after parsing", this.peek());
@@ -517,7 +663,7 @@ const Scorecode = (function() {
             let lhs = this.parsePower();
             while (true) {
                 const token = this.peek();
-                if (token && ['*', '/'].includes(token.value)) {
+                if (token && ['*', '/', '%'].includes(token.value)) {
                     this.consume();
                     const rhs = this.parsePower();
                     lhs = new BinaryNode(token.value, lhs, rhs);
@@ -559,7 +705,16 @@ const Scorecode = (function() {
                     const args = [];
                     if (!this.match(')')) {
                         do {
-                            args.push(this.parseExpression());
+                            // '...' in arg position forwards the current scope's
+                            // rest-args marker. Resolved as a SpecialVarNode so the
+                            // call-site's LambdaCallNode.evaluate can splat it.
+                            const argTok = this.peek();
+                            if (argTok && argTok.type === 'OP' && argTok.value === '...') {
+                                this.consume();
+                                args.push(new SpecialVarNode('...'));
+                            } else {
+                                args.push(this.parseExpression());
+                            }
                         } while (this.match(','));
                         if (!this.match(')')) throw new ScorecodeError("Expected ')' after arguments", this.peek());
                     }
@@ -612,20 +767,25 @@ const Scorecode = (function() {
             if (token.type === 'DYN') {
                 this.consume();
                 // Parse args inside [key;arg1;$expr]
-                const parts = token.value.split(';');
-                const key = parts[0];
+                const key = token.value;
                 const args = [];
-                for (let i = 1; i < parts.length; i++) {
-                    const argStr = parts[i];
-                    if (argStr.startsWith('$')) {
-                        // It is a dynamic expression, parse it separately
-                        // Create a temporary parser for this substring
-                        const subTokenizer = new Tokenizer(argStr.substring(1));
-                        const subParser = new Parser(subTokenizer.tokenize());
-                        args.push(subParser.parse());
-                    } else {
-                        args.push(argStr);
+                while(true) {
+                    const curToken = this.peek();
+                    if (curToken.type === 'DYNEND') {
+                        this.consume();
+                        break;
                     }
+                    if (curToken.type === 'STR' || curToken.type === 'NUMBER') {
+                        args.push(curToken.value);
+                        this.consume();
+                        continue;
+                    }
+                    if (curToken.type === 'ARG') {
+                        args.push((new Parser(curToken.value)).parse());
+                        this.consume();
+                        continue;
+                    }
+                    throw new ScorecodeError("Unclosed watcher call (missing ']') at index " + this.pos);
                 }
                 return new DynamicNode(key, args);
             }
@@ -669,22 +829,25 @@ const Scorecode = (function() {
                     // Parse Lambda Def
                     const args = [];
                     if (this.peek().value !== ')') {
+                        let sawRest = false;
                         do {
-                            // The parser tokenized 'arg' as SPEC (if quoted) or... 
-                            // The prompt says "When using any argument the name should be wrapped in single quotes".
-                            // This likely applies to usage. For definition: "(arg1, arg2)". 
-                            // These tokens would likely be parsed as 'identifiers' but our tokenizer doesn't have identifiers, 
-                            // it has SPEC (quoted) or error. 
-                            // BUT: "Whitespace is ignored, except for names in variables."
-                            // If I write (a,b), 'a' is unknown char.
-                            // Interpretation: Args in definition must be valid tokens. 
-                            // If they are unquoted text, our tokenizer throws "Unexpected character".
-                            // Assumption: Arguments in definition MUST be single quoted: "('a', 'b')#( ... )"
-                            // OR: We update tokenizer to allow bare words, but treat them as errors unless in specific context?
-                            // Safest bet based on "primitive": Arguments must be defined as quoted strings too, or the tokenizer needs to support identifiers.
-                            // Let's support Quoted strings (SPEC) as arguments.
-                            
                             const argToken = this.peek();
+                            if (argToken.type === 'OP' && argToken.value === '...') {
+                                if (sawRest) {
+                                    throw new ScorecodeError("'...' may only appear once in a lambda argument list", argToken);
+                                }
+                                args.push('...');
+                                sawRest = true;
+                                this.consume();
+                                // '...' must be the final argument.
+                                if (this.peek().value !== ')') {
+                                    throw new ScorecodeError("'...' must be the last argument in a lambda definition", this.peek());
+                                }
+                                break;
+                            }
+                            if (sawRest) {
+                                throw new ScorecodeError("'...' must be the last argument in a lambda definition", argToken);
+                            }
                             if (argToken.type !== 'SPEC') throw new ScorecodeError("Lambda arguments must be enclosed in single quotes", argToken);
                             args.push(argToken.value);
                             this.consume();
@@ -693,11 +856,11 @@ const Scorecode = (function() {
                     if (!this.match(')')) throw new ScorecodeError("Expected ')' after lambda args");
                     if (!this.match('#')) throw new ScorecodeError("Expected '#' after lambda args");
                     if (!this.match('(')) throw new ScorecodeError("Expected '(' for lambda body");
-                    
+
                     const body = this.parseExpression();
-                    
+
                     if (!this.match(')')) throw new ScorecodeError("Expected ')' after lambda body");
-                    
+
                     return new LambdaDefNode(args, body);
                 } else {
                     // Standard grouping
@@ -711,6 +874,200 @@ const Scorecode = (function() {
         }
     }
 
+    /**
+    * Annotates Scorecode with HTML <span> tags for syntax highlighting.
+    * @param {string} code - The raw Scorecode string.
+    * @returns {string} - The HTML string with highlighted classes.
+    */
+    function highlightScorecode(code) {
+        let i = 0;
+        let out = "";
+
+        // Helper to safely append HTML
+        const push = (className, text) => {
+            if (!text) return;
+            const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            if (className) {
+                out += `<span class="an ${className}">${escaped}</span>`;
+            } else {
+                out += escaped; // Raw push for whitespace
+            }
+        };
+
+        // Helper to read contiguous valid variable characters
+        const readVarChars = () => {
+            let start = i;
+            while (i < code.length && /[a-zA-Z0-9_\s]/.test(code[i])) i++;
+            return code.substring(start, i);
+        };
+
+        while (i < code.length) {
+            let char = code[i];
+            let remaining = code.substring(i);
+
+            // 1. Whitespace
+            if (/\s/.test(char)) {
+                push(null, char);
+                i++;
+                continue;
+            }
+
+            // 1b. Single-line comments (// ... until newline, exclusive)
+            if (char === '/' && code[i + 1] === '/') {
+                const begins = i;
+                while (i < code.length && code[i] !== '\n') i++;
+                push('comment', code.substring(begins, i));
+                continue;
+            }
+
+            // 2. Environment Variables: [[var_name]]
+            if (remaining.startsWith('[[')) {
+                push('orange', '[[');
+                i += 2;
+                let inner = "";
+                while (i < code.length && !code.substring(i).startsWith(']]')) {
+                    inner += code[i++];
+                }
+                push(/^[a-zA-Z0-9_\s]+$/.test(inner) ? 'white' : 'warning', inner);
+
+                if (code.substring(i).startsWith(']]')) {
+                    push('orange', ']]');
+                    i += 2;
+                }
+                continue;
+            }
+
+            // 3. Dynamic Variables: [name;arg1;$code]
+            if (char === '[') {
+                push('orange', '[');
+                i++;
+
+                // Name
+                let varName = readVarChars();
+                if (varName) push('white', varName);
+
+                // Arguments
+                while (i < code.length && code[i] !== ']') {
+                    if (code[i] === ';') {
+                        push('yellow', ';');
+                        i++;
+
+                        if (code[i] === '$') {
+                            // Enter recursive code mode
+                            push('yellow', '$');
+                            i++;
+
+                            let depth = 0;
+                            let codeStr = "";
+                            while (i < code.length) {
+                                if (code[i] === '[') depth++;
+                                else if (code[i] === ']') {
+                                    if (depth === 0) break;
+                                    depth--;
+                                } else if (code[i] === ';' && depth === 0) {
+                                    break;
+                                }
+                                codeStr += code[i++];
+                            }
+                            out += highlightScorecode(codeStr); // Highlight nested code
+                        } else {
+                            // Plain string argument
+                            let argStr = "";
+                            while (i < code.length && code[i] !== ';' && code[i] !== ']') {
+                                argStr += code[i++];
+                            }
+
+                            // Only highlight valid characters in plain string args
+                            for (let c of argStr) {
+                                if (/[a-zA-Z0-9_\s]/.test(c)) push('white', c);
+                                else if (/\s/.test(c)) push(null, c);
+                                else push('warning', c);
+                            }
+                        }
+                    } else {
+                        push('warning', code[i]);
+                        i++;
+                    }
+                }
+
+                if (i < code.length && code[i] === ']') {
+                    push('orange', ']');
+                    i++;
+                }
+                continue;
+            }
+
+            // 4. Trackers: "name"
+            if (char === '"') {
+                push('orange', '"');
+                i++;
+                let inner = "";
+                while (i < code.length && code[i] !== '"') inner += code[i++];
+                push(/^[a-zA-Z0-9_\s]+$/.test(inner) ? 'white' : 'warning', inner);
+                if (i < code.length) { push('orange', '"'); i++; }
+                continue;
+            }
+
+            // 5. Specials & Lambda Args: 'name'
+            if (char === "'") {
+                push('orange', "'");
+                i++;
+                let inner = "";
+                while (i < code.length && code[i] !== "'") inner += code[i++];
+                push(/^[a-zA-Z0-9_\s]+$/.test(inner) ? 'white' : 'warning', inner);
+                if (i < code.length) { push('orange', "'"); i++; }
+                continue;
+            }
+
+            // 6. Keywords (Boolean, Min/Max, Trig)
+            const keywords = ['true', 'false', 'max', 'min', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan'];
+            let matchedKw = keywords.find(kw => remaining.startsWith(kw));
+            if (matchedKw) {
+                let color = (matchedKw === 'true' || matchedKw === 'false') ? 'white' : 'yellow';
+                push(color, matchedKw);
+                i += matchedKw.length;
+                continue;
+            }
+
+            // 7. Numbers
+            if (/[0-9]/.test(char) || (char === '.' && i + 1 < code.length && /[0-9]/.test(code[i + 1]))) {
+                let numStr = "";
+                while (i < code.length && /[0-9.]/.test(code[i])) numStr += code[i++];
+                push('white', numStr);
+                continue;
+            }
+
+            // 7b. Rest-args token '...'
+            if (char === '.' && code.substring(i, i + 3) === '...') {
+                push('cyan', '...');
+                i += 3;
+                continue;
+            }
+
+            // 8. Operators and Grouping
+            const opsMap = {
+                '?': 'yellow', ':': 'yellow',
+                '+': 'yellow', '-': 'yellow', '*': 'yellow', '/': 'yellow', '%': 'yellow', '^': 'yellow',
+                '<': 'yellow', '>': 'yellow', '=': 'yellow', '|': 'yellow', '&': 'yellow', '!': 'yellow',
+                '(': 'green', ')': 'green',
+                '{': 'magenta', '}': 'magenta',
+                '#': 'cyan', '@': 'cyan', ',': 'cyan'
+            };
+
+            if (opsMap[char]) {
+                push(opsMap[char], char);
+                i++;
+                continue;
+            }
+
+            // 9. Unknown / Unmapped Characters
+            push('warning', char);
+            i++;
+        }
+
+        return out;
+    }
+
     // --- Main Export Functions ---
 
     function tokenize(formula) {
@@ -722,7 +1079,14 @@ const Scorecode = (function() {
         return new Parser(tokens).parse();
     }
 
+    function annotate(formula) {
+        return highlightScorecode(formula);
+    }
+
     function execute(formula, specials) {
+        if (formula.evaluate) {
+            return formula.evaluate(null, specials);
+        }
         const ast = parse(formula);
         return ast.evaluate(null, specials);
     }
@@ -730,6 +1094,8 @@ const Scorecode = (function() {
     // Expose API
     execute.tokenize = tokenize;
     execute.parse = parse;
+    execute.annotate = annotate;
+    execute.error = ScorecodeError;
     
     return execute;
 

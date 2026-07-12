@@ -1,0 +1,55 @@
+<h1>Functions</h1>
+<p>
+    A function is a block of code that can be called with variable inputs, and can be passed around as a value.
+    <br>Functions can be called with the <code>(&lt;function&gt;)@(&lt;arguments separated by commas&gt;)</code> syntax.
+</p>
+<h2>Function declaration</h2>
+<p>
+    Functions are declared with the <code>(&lt;arguments separated by commas&gt;)#(&lt;function body&gt;)</code> syntax.
+    <br>Each argument name must be enclosed with single quotes (<code>'</code>), in both the argument declaration section AND in the function body. 
+    <br>The function body is another expression where all arguments, including any arguments in functions enclosing the current function, can be used, 
+    given that single quotes are used to enclose the names.
+    In other words, a function creates a scope in which the arguments are available, and scopes can be nested within other scopes to make more complex functions.
+    <br>This kind of argument encapsulation in nested functions is supported in functions exported from helper trackers, but the argument names need to match.
+    This behavior is not supported in functions that passed into other functions.
+</p>
+<h2>Calling a function</h2>
+<p>
+    Functions can be called with the <code>(&lt;function&gt;)@(&lt;arguments separated by commas&gt;)</code> syntax.
+    <br>The arguments are expressions, and will be evaluated before the function is called.
+    <br>The function will return whatever value is left when its inner expression finishes, and thus there is no need for a return statement.
+</p>
+<h2>Spread argument ("...")</h2>
+<p>
+    A function can have a spread argument (<code>...</code>), which represents all remaining arguments passed into the function.
+    It must be the last argument in the list. 
+    <br>When this argument is declared, the <code>...</code> keyword becomes available
+    in the function body, and can be passed into another function call to also pass its contained augments into the function.
+    <br>The spread argument will only access arguments from the innermost function that wraps the token.
+</p>
+<h2>Examples</h2>
+<p><b>Declaring and calling a function</b> - the body <code>'i'</code> simply returns the argument.</p>
+[[codebox:('i')#('i')                              // identity function: returns its argument
+(((('i')#('i')))@(5))    -> 5     // 5 is passed in, 5 is returned]]
+<p><b>Multi-argument functions</b> - arguments are separated by commas and must each be wrapped in single quotes.</p>
+[[codebox:('a','b')#('a' + 'b')                                  // function that sums its two arguments
+((('a','b')#('a' + 'b')))@(3, 4)     -> 7     // 3 + 4 = 7]]
+<p><b>Nested functions and closures</b> - inner functions can see the arguments of outer functions.</p>
+[[codebox:('i')#((('ii')#('i' + 'ii'))@(3))                                  // outer takes i, inner adds 3
+((('i')#((('ii')#('i' + 'ii'))@(3))))@(5)    -> 8     // 5 + 3 = 8
+
+('x')#(('y')#('x' + 'y'))                                  // curried addition: x + y
+((('x')#(('y')#('x' + 'y')))@(2))@(3)       -> 5     // 2 + 3 = 5]]
+<p><b>Functions are values</b> - a lambda can be stored in another lambda's body and called later.</p>
+[[codebox:('f','x')#(('f')@('x'))                                  // apply: call f with x
+((('f','x')#(('f')@('x')))@((('n')#('n' * 2)), 7))  -> 14  // double(7) = 14
+((('f','x')#(('f')@('x')))@((('n')#('n' + 1)), 9))  -> 10  // add1(9) = 10
+((('f','x')#(('f')@('x')))@((('n')#('n' - 1)), 5))  -> 4   // sub1(5) = 4]]
+<p><b>Spread argument</b> - the spread argument is a list of all remaining arguments.</p>
+[[codebox:('i', ...)#(('b', 'c')#('b' * 'c')@(...) + 'i') // multiply b by c, then add i
+((('i', ...)#(('b', 'c')#('b' * 'c')@(...) + 'i')))@(1, 2, 3, 4) -> 14 ]]
+<p><b>Eager evaluation of arguments</b> - arguments are evaluated <b>before</b> the function is called, so a function never receives unevaluated code.</p>
+[[codebox:('f')#((('x')#(('f')@(('x')@('x'))))@(('x')#(('f')@(('x')@('x'))))) // the famous Y combinator with the effect that Y(f) -> f(Y(f)), this does not work! 
+('f')#((('x')#(('f')@(('x')@('x'))))@(('x')#(('f')@(('x')@('x')))))@(('arg')#(1))        -> game freezes because of eager evaluation of arguments
+('f')#((('x')#(('f')@(('v')#(('x')@('x')@('v')))))@(('x')#(('f')@(('v')#(('x')@('x')@('v')))))) // you actually need the Z combinator which circumvents this issue
+// though there is an easier way to recurse by making a helper tracker with ('f', ...)#(('f')@('f', ...))]]

@@ -1,0 +1,50 @@
+<h1>Playground</h1>
+<p>
+    A limited testing environment for Scorecode. Type a formula, hit
+    <b>Evaluate</b>, and the result is shown below. The mock Watchers
+    panel on the right gives you a handful of stand-in Watchers with
+    varying arities you can call to confirm that argument passing
+    works the way you expect.
+</p>
+
+<div class="playground">
+    <div class="playground-main">
+        <label class="playground-label" for="pg-formula">Formula</label>
+        <textarea
+            id="pg-formula"
+            class="playground-textarea"
+            rows="4"
+            spellcheck="false"
+            placeholder="e.g.  1 + 2 * 3,  10 max 5,  [doubled;7],  [clamped;50;0;10]"
+        >1 + 2 * 3</textarea>
+
+        <div class="playground-actions">
+            <button type="button" class="playground-button" id="pg-evaluate">
+                Evaluate
+            </button>
+            <button type="button" class="playground-button secondary" id="pg-clear">
+                Clear
+            </button>
+            <span class="playground-hint">
+                <kbd>Ctrl</kbd>+<kbd>Enter</kbd> inside the formula box to evaluate.
+            </span>
+        </div>
+
+        <label class="playground-label" for="pg-result">Result</label>
+        <pre class="playground-result" id="pg-result">—</pre>
+    </div>
+
+    <aside class="playground-watchers">
+        <h2 class="playground-watchers-title">Mock Watchers</h2>
+        <p class="playground-watchers-help">
+            Each entry is a stand-in for a real CCCEM watcher. Click
+            <b>Insert</b> to paste its call (with default args) into
+            the formula box, then <b>Evaluate</b>.
+        </p>
+        <ul class="watcher-list" id="pg-watcher-list">
+            <!-- Filled in by playground.js -->
+        </ul>
+    </aside>
+</div>
+
+[[script: components/testing-ground/playground.js]]

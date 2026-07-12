@@ -1,0 +1,68 @@
+<h1>Math operators</h1>
+<p>
+    A Math operator takes in two expressions and returns a number.
+    <br>There are five types of math operators.
+</p>
+<table>
+    <tr class="header-row"> 
+        <th>Operator</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; + &lt;expr&gt;</code></th>
+        <th>Addition: adds the two expressions together.</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; - &lt;expr&gt;</code></th>
+        <th>Subtraction: subtracts the second expression from the first expression.</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; * &lt;expr&gt;</code></th>
+        <th>Multiplication: multiplies the two expressions together.</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; / &lt;expr&gt;</code></th>
+        <th>Division: divides the first expression by the second expression.</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; % &lt;expr&gt;</code></th>
+        <th>Modulo: returns the remainder of dividing the first expression by the second expression.</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; ^ &lt;expr&gt;</code></th>
+        <th>Power: raises the first expression to the power of the second expression.</th>
+    </tr>
+</table>
+<h2>Return value</h2>
+<p>All Math operators return numbers.</p>
+<h2>Examples</h2>
+<p>All examples below are evaluated as standalone expressions and shown with their result.</p>
+<p><b>Addition (<code>+</code>)</b> - adds two numbers.</p>
+[[codebox:1 + 2          -> 3
+10 + (-3)      -> 7]]
+<p><b>Subtraction (<code>-</code>)</b> - subtracts the right from the left.</p>
+[[codebox:5 - 3          -> 2
+3 - 5          -> -2]]
+<p><b>Multiplication (<code>*</code>)</b> - multiplies two numbers.</p>
+[[codebox:3 * 4          -> 12
+-2 * 5         -> -10]]
+<p><b>Division (<code>/</code>)</b> - divides the left by the right. Dividing by 0 returns 0 (it does not throw).</p>
+[[codebox:10 / 2         -> 5
+9 / 2          -> 4.5
+5 / 0          -> 0     // division by zero returns 0
+0 / 0          -> 0     // 0 / 0 also returns 0]]
+<p><b>Modulo (<code>%</code>)</b> - returns the remainder after dividing the left by the right. Modulo by 0 returns 0.</p>
+[[codebox:10 % 3         -> 1 
+9 % 9          -> 0     // a number mod itself is 0
+5 % 0          -> 0     // modulo by zero returns 0
+-7 % 3         -> -1    // JS-style sign of the dividend is preserved]]
+<p><b>Power (<code>^</code>)</b> - raises the left to the power of the right.</p>
+[[codebox:2 ^ 3          -> 8
+0 ^ 0          -> 1     // 0^0 is treated as 1
+10 ^ 1         -> 10    // any number to the 1 is itself
+9 ^ 0.5        -> 3     // square root: 9^0.5 = 3]]
+<p><b>Precedence and grouping</b> - the standard math precedence applies, with <code>^</code> highest, then <code>*/%</code>, then <code>+-</code>. Parentheses override precedence.</p>
+[[codebox:2 + 3 * 4          -> 14 
+(2 + 3) * 4        -> 20 
+2 ^ 3 ^ 2          -> 512   // right-associative: 2 ^ (3 ^ 2) = 2 ^ 9 = 512
+8 / 4 / 2          -> 1     // left-associative: (8/4)/2 = 1]]

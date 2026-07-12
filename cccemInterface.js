@@ -63,1376 +63,6 @@ var pForPausePath = cccemDir+'PForPause.js';
 var castFinderPath = cccemDir+'castFinder.js';
 var invalidateScore=0
 
-if (typeof CCCEMUILoaded === 'undefined') {
-  var CCCEMUILoaded=1
-  Game.registerHook('click', () => {Devastate();}); //calculates devastatedness when you click
-  Game.registerHook('logic', () => {if (Game.recalculateGains) Game.CalculateGains();}); //moves the recalculation check to later in the logic function
-
-  //prevents you from using OpenSesame as this mod removes the debugLog to make it look nice, which breaks the game if you run OpenSesame.
-  eval("Game.OpenSesame="+Game.OpenSesame.toString().replace("var str='';","return")) 
-  if (l('debugLog')) {l('debugLog').remove();};
-  
-  //diasbles the first CpS recalculation
-  eval("Game.Logic="+Game.Logic.toString().replace("if (Game.recalculateGains) Game.CalculateGains();",""))
-  
-  //disable saving
-  eval("Game.Logic="+Game.Logic.toString().replace("if (canSave) Game.WriteSave();","if (canSave) customSave();"))
-  eval("Game.Logic="+Game.Logic.toString().replace("if ((Game.toSave || (Game.T%(Game.fps*60)==0 && Game.T>Game.fps*10 && Game.prefs.autosave)) && !Game.OnAscend)","if ((Game.toSave || (Game.T%(Game.fps*60)==0 && Game.T>Game.fps*10 && autoSaveCCCEM)) && !Game.OnAscend)"))
-  eval("Game.Timeout="+Game.Timeout.toString().replace("Game.WriteSave();","")) 
-  eval("Game.Resume="+Game.Resume.toString().replace("Game.LoadSave();",""))
-  
-  //seed spawn fortunes, GC effects, GC timer, and DEoRL, plus find multipliers when a GC is clicked
-  eval("Game.getNewTicker="+Game.getNewTicker.toString().replace("!manual && Game.T>Game.fps*10 && Game.Has('Fortune cookies') && Math.random()<(Game.HasAchiev('O Fortuna')?0.04:0.02)","!manual && Game.T>Game.fps*10 && Game.Has('Fortune cookies') && FortuneTicker(manual)"))
-  eval("Game.shimmerTypes.golden.popFunc="+Game.shimmerTypes.golden.popFunc.toString().replace("var list=[];","var list=[]; isClickedGC=true; FindMaxComboPow(); if (seedNats) {Math.seedrandom(Game.seed+'/'+Game.goldenClicks);};"))
-  eval("Game.updateShimmers="+Game.updateShimmers.toString().replace("me.time++;","me.time++; if (seedNats) {Math.seedrandom(Game.seed+'/'+(i=='golden'?Game.goldenClicks:Game.reindeerClicked)+'/'+me.time);};")) 
-  
-  //find combo multipliers when a buff or golden cookie dies
-  eval("Game.shimmer.prototype.die="+Game.shimmer.prototype.die.toString().replace("Game.shimmersL.removeChild(this.l);","if (!isClickedGC) {FindMaxComboPow()}; isClickedGC=false; Game.shimmersL.removeChild(this.l);"))
-  eval("Game.updateBuffs="+Game.updateBuffs.toString().replace("if (buff.onDie) buff.onDie();","if (buff.onDie) buff.onDie(); FindMaxComboPow();"))
-
-  //promptinprompt support
-  eval('Game.ClosePrompt='+Game.ClosePrompt.toString().replace('Game.promptNoClose=false;', 'Game.promptNoClose=false; resetPromptNesting();'))
-  };
-
-l('promptAnchor').dataset.layers = 1;
-if (l('prompt')) { l('prompt').dataset.layer = 0; }
-{
-  let div = document.createElement('div');
-
-  div.id = 'practiceModeIndicator';
-  div.innerHTML = loc('PRACTICE MODE');
-  div.style.position = 'absolute';
-  div.style.top = App?'10px':'40px';
-  div.style.right = '30px';
-  div.style.textAlign = 'right';
-  div.style.fontSize = '30px';
-  div.style.fontFamily = "'Merriweather', Georgia,serif";
-  div.style.zIndex = 1000000;
-  div.style.textShadow = '0px -1px 6px #1ef7ffff, 0px 1px 6px #1e87ffff';
-  div.style.pointerEvents = 'none';
-
-  l('wrapper').appendChild(div); 
-  if (!App) { div.style.display = 'none'; }
-}
-function transientPromptInPrompt(promptStr, options, classes) {
-  //"overwrites" the current prompt with a new one, 
-  //allows the old one to be restored by a "go back" button, 
-  //if old one is restored the new prompt is discarded hence transient
-  //can be chained together for multiple layers, but if fronttracking is needed 
-  //youd need to implement that yourself
-
-  const anchorDiv = l('promptAnchor');
-  const contentDiv = l('promptContent');
-  const optionsDiv = contentDiv.querySelector('.optionBox');
-  l('prompt').dataset.layer = 0; //just in case
-  if (!l('promptAnchor').dataset.layers) { l('promptAnchor').dataset.layers = 1; }
-  if (l('prompt' + anchorDiv.dataset.layers)) { l('prompt' + anchorDiv.dataset.layers).remove(); }
-  options = promptParseOptions([[loc('Go back'), 'restorePromptLayer();']].concat(options));
-
-  const newLayerDiv = document.createElement('div');
-  const curLayer = parseInt(anchorDiv.dataset.layers);
-  newLayerDiv.id = 'prompt' + anchorDiv.dataset.layers;
-  newLayerDiv.className = 'framed promptBox' + (classes ? (' ' + classes) : '');
-  newLayerDiv.dataset.layer = anchorDiv.dataset.layers;
-  anchorDiv.dataset.layers = parseInt(anchorDiv.dataset.layers) + 1;
-  newLayerDiv.innerHTML = '<div id="promptContent'+curLayer+'" class="promptContentBox">' + 
-    promptParseString(promptStr) + 
-    '<div class="optionBox">' + options + '</div></div>' + 
-    '<div id="promptClose" class="close" style="display: block;" onclick="PlaySound(\'snd/tickOff.mp3\');Game.ClosePrompt();">x</div>';
-  anchorDiv.querySelectorAll('[data-layer="'+(anchorDiv.dataset.layers - 2)+'"]')[0].style.display = 'none';
-  anchorDiv.appendChild(newLayerDiv);
-
-  Game.promptWrapL = newLayerDiv;
-}
-function restorePromptLayer() {
-  const contentDiv = l('promptContent');
-  const anchorDiv = l('promptAnchor');
-  const layer = anchorDiv.dataset.layers - 2;
-  anchorDiv.querySelector('[data-layer="'+(layer + 1)+'"]').remove();
-  anchorDiv.dataset.layers = layer + 1;
-  anchorDiv.querySelector('[data-layer="'+(layer)+'"]').style.display = '';
-  Game.promptWrapL = anchorDiv.querySelector('[data-layer="'+(layer)+'"]');
-}
-function resetPromptNesting() {
-  l('prompt').style.display = ''; 
-  if (l('prompt'+(l('promptAnchor').dataset.layers-1))) { l('prompt'+(l('promptAnchor').dataset.layers-1)).remove(); } 
-  l('promptAnchor').dataset.layers = 1;
-  Game.promptWrapL = l('prompt');
-}
-function getLatestPrompt() {
-  return Game.promptWrapL;
-  return l('promptAnchor').querySelector('[data-layer="'+(l('promptAnchor').dataset.layers - 1)+'"]');
-}
-function promptParseString(content) {
-  //taken from main.js
-  var str='';
-			str+=content;
-			if (str.indexOf('<id ')==0)
-			{
-				var id=str.substring(4,str.indexOf('>'));
-				str=str.substring(str.indexOf('>')+1);
-				str='<div id="promptContent'+id+'">'+str+'</div>';
-			}
-			if (str.indexOf('<noClose>')!=-1)
-			{
-				str=str.replace('<noClose>','');
-				Game.promptNoClose=true;
-			}
-  return str;
-}
-function promptParseOptions(options) {
-  //taken from main.js
-  var opts='';
-			Game.promptOptionsN=0;
-			for (var i=0;i<options.length;i++)
-			{
-				if (options[i]=='br')//just a linebreak
-				{opts+='<br>';}
-				else
-				{
-					if (typeof options[i]=='string') options[i]=[options[i],'PlaySound(\'snd/tickOff.mp3\');Game.ClosePrompt();'];
-					else if (!options[i][1]) options[i]=[options[i][0],'PlaySound(\'snd/tickOff.mp3\');Game.ClosePrompt();',options[i][2]];
-					else options[i][1]='PlaySound(\'snd/tick.mp3\');'+options[i][1];
-					options[i][1]=options[i][1].replace(/'/g,'&#39;').replace(/"/g,'&#34;');
-					opts+='<a id="promptOption'+i+'" class="option" '+(options[i][2]?'style="'+options[i][2]+'" ':'')+''+Game.clickStr+'="'+options[i][1]+'">'+options[i][0]+'</a>';
-					Game.promptOptionsN++;
-				}
-			}
-  return opts;
-}
-
-function FortuneTicker(manual) {
-  if (!seedTicker) {return (Math.random()<forceFortune)}
-  Math.seedrandom(Game.seed+'/'+tickerCount);
-  if (!manual) tickerCount++;
-  return (Math.random()<forceFortune)
-  };
-
-function FindAuraP(a1, a2) { //finds the strength of the a1 aura in the case that a2 is also slotted
-  //return 2;
-  if (a1 == 15 && a2 != 18) {return 2}
-  if (!a2) {a2=0};
-  var auraSlot1=Game.dragonAura
-  var auraSlot2=Game.dragonAura2
-  Game.dragonAura=0
-  Game.dragonAura2=a2
-  Game.CalculateGains();
-  var noA1=Game.cookiesPs
-  Game.dragonAura=a1
-  Game.CalculateGains();
-  var yesA1=Game.cookiesPs
-  Game.dragonAura=auraSlot1
-  Game.dragonAura2=auraSlot2
-  Game.CalculateGains();
-  return yesA1/noA1
-  };
-
-function FindBuildingDiff() {
-  //for rebuying specifically, gets cps from new building count / cps from old building count
-  Game.CalculateGains();
-  var cur = Game.computedMouseCps 
-  var curList = []
-  for (var obj in Game.Objects) {
-    curList.push(Game.Objects[obj].amount)
-    };
-  var buildCount=iniBC;
-  var rebuy=0
-  buildCount+=buildingRelList[rebuy+1]
-  for (var i = 0; i < Object.keys(Game.Objects).length; i++)
-    {
-      if (buildCount<0) buildCount=0;
-      Game.ObjectsById[i].amount=buildCount; 
-      buildCount+=buildingRelList[rebuy][i]
-    }
-  Game.ObjectsById[7].amount=wizCount
-  Game.CalculateGains();
-  var def = Game.computedMouseCps;
-  for (var i = 0; i < Object.keys(Game.Objects).length; i++) 
-    {
-      Game.ObjectsById[i].amount=curList[i]
-    };
-  Game.CalculateGains();
-  return cur/def
-  };
-
-function Devastate() {
-  var devastation = Game.buffs.Devastation?Game.buffs.Devastation.multClick:1
-  //var cookiesFromClick = Game.computedMouseCps
-  var diff = FindBuildingDiff()
-  var undevastated = FindUndevastated()
-  Game.CalculateGains()
-  devastatedness+=undevastated*devastation
-  rebuyedness+=undevastated*devastation*diff
-  var EB = (Game.auraMult("Elder Battalion")>=1)?1:0
-  if (EB && !useEB) {incorrectEBwarn++}
-  if (EB && useEB) {incorrectEBwarn--}
-  //console.log(cookiesFromClick, undevastated, devastation, diff)
-  };
-
-function NormalizeDevastatedness(value) {
-  return value/(maxUndevastated?maxUndevastated:1)
-  };
-
-function FindUndevastated() { //calculates combo power based on non-devastation factors
-  var cComboPow=1; 
-  for (var i in Game.buffs) {
-    var buff=Game.buffs[i]; 
-    if (buff.multCpS) {
-      cComboPow*=buff.multCpS; 
-      };
-    if (buff.multClick) {
-      if (buff.name=='Devastation') {continue};
-      cComboPow*=buff.multClick
-      };
-    };
-  if (Game.dragonAura == 16 || Game.dragonAura2 == 16) {
-    if (Game.shimmerTypes['golden'].n>0) {
-      cComboPow*=Math.pow(2.23, Game.shimmerTypes['golden'].n); 
-      };
-    var corAura = useEB?15:1;
-    cComboPow/=FindAuraP(corAura);
-    };
-  if (maxUndevastated<cComboPow) {maxUndevastated=cComboPow}
-  return cComboPow
-  };
-
-function FindMaxComboPow() {
-  var mComboPow=1;
-  var rComboPow=1; 
-  var bsCount=0; 
-  var isBS=false; 
-  var godzPow=1; 
-  for (var i in Game.buffs) {
-    var buff=Game.buffs[i]; 
-    for (var obj in Game.Objects) {
-      if (Game.goldenCookieBuildingBuffs[obj][0]==buff.name) {
-        isBS=true; 
-        bsCount++;
-        };
-      };
-    if (buff.multCpS) {
-      mComboPow*=buff.multCpS; 
-      //if consistent building special, instead store the difference between the buff gotten and the maximum (cursor), functionally negating the extra (or less) of the building special effect
-      if (ConsistentBuffs(isBS?'building special':buff.type.name, bsCount)) {rComboPow*=buff.multCpS; if (isBS) {rComboPow*=(1+iniBC/10)/buff.multCpS};};
-      isBS=false
-      }; 
-    if (buff.multClick) {
-      mComboPow*=buff.multClick
-      if (buff.name=='Devastation') {godzPow*=buff.multClick};
-      if (ConsistentBuffs(buff.type.name)) {rComboPow*=buff.multClick;};
-      };
-    };
-  if (Game.shimmerTypes['golden'].n>0) {
-    mComboPow*=Math.pow(2.23, Game.shimmerTypes['golden'].n); 
-    var corAura = useEB?15:1; 
-    mComboPow/=FindAuraP(corAura);
-    };
-  if (maxComboPow<mComboPow) {maxComboPow=mComboPow; relComboPow=rComboPow; maxBSCount=bsCount; maxGodz=godzPow}; 
-  return {maxComboPow: mComboPow, relComboPow: rComboPow, bsCount: bsCount, godzPow: godzPow};
-  };
-
-//Returns true if buffName can be gotten consistently, otherwise return false
-function ConsistentBuffs(buffName, bsCount) {
-  let icBuffs=['dragonflight','blood frenzy','click frenzy','frenzy','dragon harvest']
-  for (let i=0; i<bsCount; i++) {icBuffs.push('building special')}
-  index=icBuffs.indexOf(forceFtHoF); if (forceFtHoF && index!=-1) icBuffs.splice(index, 1);
-  index=icBuffs.indexOf('frenzy'); if (HasStartBuff(0) && index!=-1) icBuffs.splice(index, 1);
-  index=icBuffs.indexOf('dragon harvest'); if (HasStartBuff(3) && index!=-1) icBuffs.splice(index, 1);
-  for (var i=0; i<BuffCount(9); i++) {index=icBuffs.indexOf('building special'); if (index!=-1) icBuffs.splice(index, 1)};
-  if (iniSpawn && get('iniGC')>=0) {index=icBuffs.indexOf(Game.goldenCookieChoices[get('iniGC')]); if (index!=-1) icBuffs.splice(index, 1)};
-  if (iniDO && get('iniGC2')>=0) {index=icBuffs.indexOf(Game.goldenCookieChoices[get('iniGC2')]); if (index!=-1) icBuffs.splice(index, 1)};
-  if (iniDEoRL && get('iniGC3')>=0) {index=icBuffs.indexOf(Game.goldenCookieChoices[get('iniGC3')]); if (index!=-1) icBuffs.splice(index, 1)};
-  for (let i in icBuffs) {if (icBuffs[i] == buffName) {return false}};
-  return true
-  };
-
-//Power of all the consistent buffs (preset + scry)
-function AllConsistentBuffsPow() {
-  var cBuffs=[];
-  var cBuffsPow=1
-  if (forceFtHoF!='random') {cBuffs.push(forceFtHoF)};
-  if (HasStartBuff(0) && !(cBuffs.includes('frenzy'))) {cBuffs.push('frenzy')};
-  if (HasStartBuff(3) && !(cBuffs.includes('dragon harvest'))) {cBuffs.push('dragon harvest')};
-  if (iniSpawn && get('iniGC')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC')])) || Game.goldenCookieChoices[get('iniGC')]=='building special')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC')])}
-  if (iniDO && get('iniGC2')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC2')])) || Game.goldenCookieChoices[get('iniGC2')]=='building special')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC2')])}
-  if (iniDEoRL && get('iniGC3')>=0 && (!(cBuffs.includes(Game.goldenCookieChoices[get('iniGC3')])) || Game.goldenCookieChoices[get('iniGC3')]=='building special')) {cBuffs.push(Game.goldenCookieChoices[get('iniGC3')])}
-  for (var i=0; i<BuffCount(9); i++) {cBuffs.push('building special')};
-  for (var i in cBuffs) {
-    buff=cBuffs[i]
-    if (buff=='frenzy') {cBuffsPow*=7}
-    else if (buff=='dragon harvest') {cBuffsPow*=Game.Has('Dragon fang')?17:15}
-    else if (buff=='dragonflight') {cBuffsPow*=Game.Has('Dragon fang')?1223:1111}
-    else if (buff=='building special') {cBuffsPow*=1+(iniBC/10)}
-    else if (buff=='click frenzy') {cBuffsPow*=777}
-    else if (buff=='blood frenzy') {cBuffsPow*=666}
-    else {console.log('score may be inaccurate: consistent golden cookie outcome unregistered (may be due to having some setting as storm or lucky or something like that)')}
-    };
-  return cBuffsPow
-  };
-
-let trackers = {};
-let logicTrackers = [];
-class tracker {
-  constructor(key, update, triggerCondition, defaultV) {
-    this.key = key;
-    trackers[key] = this;
-    console.log(this);
-    this.updateFormula = Scorecode.tokenize(update);
-    /**
-     * possible triggerConditions:
-     * string - hooks onto that particular hook, if available. If not, a backup selection of hooks are available
-     * function - custom function that returns true/false to trigger update
-     * true - uses the logic hook
-     * false - does not auto-update, must be updated manually
-     */
-    this.triggerCondition = triggerCondition;
-    if (typeof triggerCondition === 'string') {
-      if (Game.modHooks[triggerCondition]) {
-        Game.registerHook(triggerCondition, (val) => { this.update(val); return val; });
-      } else {
-        //backup hooks
-        /*const backupHooks = {
-          'click': 'click',
-          'goldenCookiePop': 'shimmerPop',
-          'buffDie': 'updateBuffs',
-          'logic': 'logic'
-        };
-        if (backupHooks[triggerCondition] && Game.hooks[backupHooks[triggerCondition]]) {
-          Game.registerHook(backupHooks[triggerCondition], () => { this.update(); });
-        } else {
-          throw new Error(`tracker: triggerCondition string "${triggerCondition}" does not correspond to a valid hook.`);
-        }*/
-      }
-    } else if (triggerCondition === true || typeof triggerCondition === 'function') {
-      logicTrackers.push(this);
-    }
-    this.defaultV = defaultV ?? (() => 0);
-    this.reset();
-  }
-  state;
-
-  reset() {
-    //console.log(this.key + ': ' + this.state);
-    this.state = this.defaultV();
-  }
-  update() {
-    //console.log(this.key);
-    const val = Scorecode(this.updateFormula, { value: this.state });
-    if (val !== undefined) {
-      this.state = val;
-    }
-  }
-  getVal() {
-    return this.state;
-  }
-}
-let watchers = {};
-class watcher {
-  constructor(key, func, description, argumentsRequiredCount) {
-    this.key = key;
-    this.func = func;
-    this.description = description ?? loc('No description available.');
-    this.argumentsRequired = argumentsRequiredCount ?? 0;
-    
-    watchers[key] = this;
-  }
-
-  getValue() {
-    return this.func(...arguments);
-  }
-}
-function watchKey(key, ...args) {
-  return (watchers[key] && watchers[key].getValue(...args)) || 0;
-}
-function getKeyArgumentsCount(key) {
-  return (watchers[key] && watchers[key].argumentsRequired) || 0;
-}
-new watcher('cookies this ascend', () => Game.cookiesEarned);
-new watcher('cookies all time', () => Game.cookiesEarned + Game.cookiesReset);
-new watcher('cookies in bank', () => Game.cookies);
-new watcher('handmade cookies', () => Game.handmadeCookies);
-new watcher('gc onscreen count', () => Game.shimmerTypes.golden.n);
-new watcher('reindeers onscreen count', () => Game.shimmerTypes.reindeer.n);
-new watcher('cps', () => Game.cookiesPs);
-new watcher('cpc', () => Game.computedMouseCps);
-new watcher('raw cps', () => Game.cookiesPsRaw);
-new watcher('is consistent buff', e => {
-  let bsCount = 0;
-  for (let i in Game.buffs) {
-    if (parseInt(i) >= e) {
-      break;
-    }
-    if (Game.buffs[i].type.name == 'building buff') { bsCount++; }
-  }
-  return ConsistentBuffs(Object.values(Game.Objects)[e], bsCount);
-}, 'whether or not the buff can be considered consistent. Argument 1: buff index');
-new watcher('consistent buffs pow', () => AllConsistentBuffsPow());
-new watcher('consistent exec pow', () => {
-  let pow = 1;
-  let bsCount = 0;
-  for (let i in Game.buffs) {
-    if (Game.buffs[i].type.name == 'building buff') { 
-      bsCount++;
-    }
-    let buff = Game.buffs[i];
-    if (ConsistentBuffs(buff.type.name, bsCount)) {
-      if (buff.multCpS) {
-        if (buff.type.name == 'building buff') {
-          pow *= (1 + (0.1 * get('buildingCountAnchor')));
-        } else {
-          pow *= buff.multCpS;
-        }
-      };
-      if (buff.multClick) {
-        pow *= buff.multClick;
-      };
-    }
-  }
-  return pow;
-});
-const allGCAndBuffsMap = {
-  'Elder frenzy': ['ef', 'blood frenzy'],
-  'Click frenzy': 'cf',
-  'Building special': ['bs', 'building buff'].concat(Object.keys(Game.goldenCookieBuildingBuffs).map(e => loc(e))).concat(Object.values(Game.goldenCookieBuildingBuffs).map(e => loc(e[0]))),
-  'Frenzy': 'f',
-  'Cursed finger': 'cuf',
-  'Cookie storm': ['storm', 'cs'],
-  'Dragon Harvest': ['dh', 'reaper of fields', 'rof'],
-  'Dragonflight': ['df'],
-  'Building rust': ['br', 'building debuff'].concat(Object.keys(Game.goldenCookieBuildingBuffs).map(e => loc(e))).concat(Object.values(Game.goldenCookieBuildingBuffs).map(e => loc(e[1]))),
-  'Devastation': 'godzamok',
-  'Sweet': ['free sugar lump', 'lump', 'wweet!'],
-  'Cookie storm drop': ['drop', 'csd'],
-  'Lucky': 'l',
-  'Clot': [],
-  'Ruin': [],
-  'Blab': [],
-};
-const allGCAndBuffsMapReversed = (obj => Object.fromEntries(Object.entries(obj).flatMap(([k, v]) => ([].concat(v)).map(val => [val, k]))))(allGCAndBuffsMap); //lazy so I just grabbed it from ai
-const goldenCookieChoicesLowercase = Game.goldenCookieChoices.map(e => e.toLowerCase());
-const otherBuffs = [
-  'devastation', 'everything must go', 'sugar blessing', 'haggler\'s luck', 'haggler\'s misery',
-  'crafty pixies', 'nasty goblins', 'magic adept', 'magic inept', 'sugar frenzy', 'loan 1', 'loan 1 (interest)',
-  'loan 2', 'loan 2 (interest)', 'loan 3', 'loan 3 (interest)', 'gifted out'
-];
-function getBuffAccessName(e) {
-  const buffName = (allGCAndBuffsMapReversed[e.toLowerCase()] ?? e).toLowerCase();
-  let buff = null;
-  if (goldenCookieChoicesLowercase.includes(buffName)) {
-    if (goldenCookieChoicesLowercase.indexOf(buffName) % 2 == 0) { 
-      //is the "proper name"
-      buff = Game.goldenCookieChoices[goldenCookieChoicesLowercase.indexOf(buffName)];
-    } else {
-      //is the "key"
-      buff = Game.goldenCookieChoices[goldenCookieChoicesLowercase.indexOf(buffName) - 1];
-    }
-  } else if (!otherBuffs.includes(buffName)) { 
-    throw new Error('Buff type not found! ("' + e + '")');
-  } else { 
-    buff = cap(buffName);
-  }
-  return buff;
-}
-function buildingSpecialsCount(debuff) {
-  let n = 0;
-  for (let i in Game.buffs) {
-    if (Game.buffs[i].type.name == (debuff?'building debuff':'building buff')) { 
-      n++;
-    }
-  }
-  return n;
-}
-new watcher('check buff', e => { 
-  const name = getBuffAccessName(e);
-  return !!(Game.buffs[e] || Game.buffs[name] || (name == 'Building special' && buildingSpecialsCount()) || (name == 'Building rust' && buildingSpecialsCount(true))); 
-}, 'Checks if a given buff exists. Argument 1: buff name in English (accepts common abbreviations, case-insensitive except for building specials)', 1);
-new watcher('buff count', () => Object.keys(Game.buffs).length);
-new watcher('bs count', e => buildingSpecialsCount());
-new watcher('buff CpS mult', e => {
-  let buff = null;
-  if (typeof e === 'number') {
-    buff = Object.values(Game.buffs)[e];
-  } else {
-    const name = getBuffAccessName(e);
-    if (!Game.buffs[name]) { return 0; }
-    buff = Game.buffs[name];
-  }
-  return buff.multCpS ?? 1;
-}, 'Gets the multCpS of the non-BS buff specified if it currently exists. If not, returns 0. Argument 1: buff index, or buff name in English (accepts common abbreviations, case-insensitive except for building specials)', 1);
-new watcher('buff click mult', e => {
-  if (typeof e === 'number') {
-    return Object.values(Game.buffs)[e].multClick ?? 1;
-  }
-  const name = getBuffAccessName(e);
-  if (!Game.buffs[name]) { return 0; }
-  return (Game.buffs[name].multClick ?? 1);
-}, 'Gets the multCpS of the non-BS buff specified if it currently exists. If not, returns 0. Argument 1: buff index, or buff name in English (accepts common abbreviations, case-insensitive except for building specials)', 1);
-new watcher('buff is', (index, name) => (Object.keys(Game.buffs)[index] === getBuffAccessName(name)), 
-'Compares an existing buff index to a buff name, returns true if the index and the name matches', 2);
-new watcher('buff index', e => Object.keys(Game.buffs).indexOf(getBuffAccessName(e)), 'Gets the index of a buff name.', 1);
-new watcher('bs power', e => { 
-  let mComboPow = 1;
-  for (let i in Game.buffs) {
-    for (let i in Game.buffs) {
-      if (Game.buffs[i].type.name == 'building buff') { 
-        mComboPow *= Game.buffs[i].multCpS;
-      }
-    }
-  }
-  return mComboPow;
-});
-new watcher('rust power', e => { 
-  let mComboPow = 1;
-  for (let i in Game.buffs) {
-    for (let i in Game.buffs) {
-      if (Game.buffs[i].type.name == 'building debuff') { 
-        mComboPow *= Game.buffs[i].multCpS;
-      }
-    }
-  }
-  return mComboPow;
-});
-new watcher('auraP', e => FindAuraP(e), 'It\'s not super clear what this does', 1);
-new watcher('building count', e => { if (typeof e === 'number') { return Game.ObjectsById[e].amount; } return Game.Objects[cap(e.toLowerCase())].amount; },
-'Returns the amount of a certain building. Argument 1: building name or building id (0-indexed)');
-Game.registerHook('logic', function() {
-  if (!window.CCCEMInterfaceReady) { return; }
-  for (let i in logicTrackers) {
-    if (typeof logicTrackers[i].triggerCondition === 'function') {
-      if (logicTrackers[i].triggerCondition.call(logicTrackers[i])) {
-        logicTrackers[i].update();
-      }
-    } else {
-      logicTrackers[i].update();
-    }
-  }
-});
-function resetAllTrackers() {
-  for (let key in trackers) {
-    trackers[key].reset();
-  }
-}
-class logicTracker extends tracker {
-  constructor(key, update, defaultV) {
-    super(key, update, true, defaultV);
-  }
-}
-class hookTracker extends tracker {
-  constructor(key, update, hookName, defaultV) {
-    if (typeof hookName !== 'string') {
-      throw new Error('hookTracker requires a string as hookName');
-    }
-    super(key, update, hookName, defaultV);
-  }
-}
-let initTrackers = [];
-class initTracker extends tracker {
-  constructor(key, update, defaultV) {
-    super(key, update, false, defaultV);
-    initTrackers.push(this);
-  }
-}
-class manualTracker extends tracker {
-  constructor(key, update, defaultV) {
-    super(key, update, false, defaultV);
-  }
-}
-class dynamicTracker extends tracker {
-  constructor(key, update, func, defaultV) {
-    super(key, update, func, defaultV);
-  }
-}
-class helperTracker extends tracker {
-  constructor(key, update, defaultV) {
-    super(key, update, false, defaultV);
-    this.update();
-  }
-  getVal() {
-    return Scorecode.parse(this.updateFormula);
-  }
-}
-class fakeTracker extends tracker {
-  constructor(key, update) {
-    super(key, update, false);
-  }
-  getVal() {
-    return Scorecode(this.updateFormula);
-  }
-}
-
-function trackGet(key) {
-  if (trackers[key]) {
-    return trackers[key].getVal();
-  }
-}
-new helperTracker('multiply', `(('a', 'b')#('a' * 'b'))`);
-new helperTracker('add', `(('a', 'b')#('a' + 'b'))`);
-new helperTracker('consistentBuffCpSPower', `('i')#([buff is;$'i';bs]?(1 + 0.1 * [[buildingCountAnchor]]):[buff CpS mult;$'i'])`)
-new helperTracker('buffPower', `('i')#([buff click mult;$'i']*[buff CpS mult;$'i'])`);
-new initTracker('initialRawCps', `[raw cps]`);
-new initTracker('initialCbta', `[cookies this ascend]`);
-new initTracker('initialHandmade', `[handmade cookies]`)
-new hookTracker('clickCount', '\'value\' + 1', 'click');
-new logicTracker('maxCps', '\'value\' max [cps]', () => 1);
-new logicTracker('maxCpc', '\'value\' max [cpc]', () => 1);
-new fakeTracker('cookiesGained', '[cookies this ascend] - "initialCbta"');
-new fakeTracker('handmadeGains', '[handmade cookies] - "initialHandmade"');
-new fakeTracker('initialRaw', '"initialRawCps"');
-new logicTracker('clickCoefficient', `[cpc] / [cps] / (([buff count]){('i')#([buff click mult;$'i'])}("multiply"))`);
-new fakeTracker('effectiveClicks', '("handmadeGains" / "maxCpc") min "clickCount"');
-new fakeTracker('consistentBuffsPow', '[consistent buffs pow]');
-new logicTracker('consistentExecPow', '[consistent exec pow] max \'value\'');
-new fakeTracker('totalBuffPower', `(([buff count]){('i')#("buffPower"@('i'))}("multiply"))`);
-new logicTracker('maxBuffPow', '"totalBuffPower" max \'value\'', () => 1);
-new logicTracker('maxGCOnscreens', '[gc onscreen count] max \'value\'');
-new logicTracker('maxComboPow', '("totalBuffPower" * (2.23 ^ [gc onscreen count]) / [auraP;$([[useEB]]?15:1)]) max \'value\'');
-new logicTracker('maxUndevastation', '("totalBuffPower" * (2.23 ^ [gc onscreen count]) / ([check buff;Devastation]?("buffPower"@([buff index;Devastation])):1) / [auraP;$([[useEB]]?15:1)]) max \'value\'', () => 1);
-new fakeTracker('devastatedness', '"effectiveClicks" * "godzPower"'); 
-new fakeTracker('godzPower', '"maxComboPow" / "maxUndevastation"');
-new logicTracker('bsCount', '[bs count] max \'value\'');
-//custom language
-let scoringFormula = `
-  "cookiesGained" / ("maxComboPow" * "initialRaw" * "consistentBuffsPow" / "consistentExecPow")
-`;
-function evaluateScore() {
-  try {
-    return Scorecode(scoringFormula.trim());
-  } catch (e) {
-
-  }
-}
-
-function PrintScore() {
-  if (!produceGrades) { return; }
-  if (invalidateScore) {
-    invalidateScore = 0;
-    return function() { Game.Notify('Score invalid', 'Settings changed since reset!',[10,6]); invalidateScore=0; };
-  }
-  var cookieGain=Game.cookiesEarned-iniCE
-  var clickGain=Game.handmadeCookies-iniHM
-  var consistentPow = AllConsistentBuffsPow();
-  var scoreRed=(maxComboPow*iniRaw*consistentPow/relComboPow);
-  var score=(cookieGain/scoreRed)*scoreCorVal*autoScoreCor;
-  var originalScore = score;
-  score/=1.333e6;
-
-  var z ='​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ ​ '
-  devastatedness = NormalizeDevastatedness(devastatedness);
-  rebuyedness = NormalizeDevastatedness(rebuyedness)/devastatedness;
-  var clicks = Math.trunc(0.000000001+(devastatedness/maxGodz));
-
-  //console.log(maxUndevastated);
-
-  // Build history stats and push a new historyEntry
-  const scoreI = evaluateScore()*scoreCorVal*autoScoreCor;
-  const scoreStatO = new scoreStat(scoreI, scoreI / 1.333e6 * 100);
-  const stats = [
-    scoreStatO,
-    new cpsStat(cookieGain / iniRaw),
-    new godzStat(trackGet('godzPower')),
-    new clicksStat(trackGet('effectiveClicks')),
-    new devastatednessStat(trackGet('devastatedness')),
-    new comboStat(trackGet('maxComboPow')),
-    new relComboStat(trackGet('consistentExecPow')),
-    new bsCountStat(trackGet('bsCount')),
-    new cookieGainStat(trackGet('cookiesGained')),
-    new handmadeGainStat(trackGet('handmadeGains')),
-    new iniRawStat(trackGet('initialRaw'))
-  ];
-
-  const scoreStatO2 = new scoreStat(originalScore, score * 100);
-  const statsA = [
-    scoreStatO2,
-    new cpsStat(cookieGain / iniRaw),
-    new godzStat(maxGodz),
-    new clicksStat(clicks),
-    new devastatednessStat(devastatedness),
-    new rebuyStat(rebuyedness),
-    new comboStat(maxComboPow),
-    new relComboStat(relComboPow),
-    new consistentPowStat(consistentPow),
-    new bsCountStat(maxBSCount),
-    new cookieGainStat(cookieGain),
-    new handmadeGainStat(clickGain),
-    new iniRawStat(iniRaw)
-  ];
-
-  // compute click-based derived stats if possible (mirror later calculations)
-  let clickScore = (cookieGain > 0) ? score * (clickGain / cookieGain) * 1.05 : 0;
-  if (clickScore) {
-    const clickDiffCor = (devastatedness / maxGodz) / (clicks || 1);
-    const godzScore = clickScore / (clickDiffCor || 1);
-    const trueDevastated = rebuyedness * (clicks || 1) * maxGodz;
-    const scorePerClick = (godzScore && trueDevastated) ? (godzScore / trueDevastated) * 1333000 : 0;
-    const scoreCorrection = (godzScore) ? ((trueDevastated / 4250) / (godzScore)) : 0;
-
-    stats.push(new scorePerClickStat(scorePerClick));
-    stats.push(new scoreCorrectionStat(scoreCorrection));
-  } else {
-    stats.push(new scorePerClickStat(0));
-    stats.push(new scoreCorrectionStat(0));
-  }
-
-  if (originalScore > historySettings.scoreRegisterThreshold) { new historyEntry(statsA, {
-    startTimestamp: currentStartTimestamp,
-    timestamp: Date.now(),
-    presetUsed: activePreset,
-    notes: 'ORIGINAL SCORING'
-  }); }
-  if (originalScore > historySettings.scoreRegisterThreshold) { new historyEntry(stats, {
-    startTimestamp: currentStartTimestamp,
-    timestamp: Date.now(),
-    presetUsed: activePreset,
-    notes: 'EXPERIMENTAL SCORING'
-  }); }
-  attemptsDone++;
-  currentStartTimestamp = Date.now();
-
-  logStr='';
-  for (let i in stats) {
-    if (stats[i] instanceof scoreStat) { continue; }
-    if (stats[i].constructor.noteworthy) { 
-      logStr += stats[i].getNotifStr();
-      logStr += '<br>';
-    }
-  }
-  return function() { 
-    if (invalidateScore==0) {Game.Notify('Score: ' + SimpleBeautify(Math.floor(originalScore)) + ' (' + (score * 100).toFixed(1) + '%)', logStr + ((originalScore > historySettings.scoreRegisterThreshold)?'For more details, see history.':'Not enough score to register history. Gain at least '+SimpleBeautify(historySettings.scoreRegisterThreshold)+' score to register.'), scoreStatO.getIcon())}
-    if (scoreCorNotify && clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
-      Game.Notify('Large score fault',
-        'Score per click: ' + scorePerClick.toFixed(4) +
-        'Score correction value: ' + scoreCorrection.toFixed(4) +
-        z + 'Automatic score correction: ' + autoScoreCor.toFixed(4) +
-        z + 'Set score mult to: ' + scoreCorrection*scoreCorVal
-        ,[1,7]);
-      };
-    if (scoreCorNotify && clickScore && incorrectEBwarn>0) {Game.Notify('EB setting fault','EB setting not matching usage of Elder Battalion',[1,7]);}
-  }
-};
-
-var historyEntries = [];
-var favoritedEntries = new Set();
-var attemptsDone = 0;
-var historySettings = {
-  scoreRegisterThreshold: 1,
-};
-var statTypesList = {};
-var currentStartTimestamp = Date.now();
-class historyEntry {
-  constructor(stats, configs) {
-    this.stats = [].concat(stats);
-
-    configs = configs ?? {};
-    this.name = configs.name ?? 'Attempt #' + Beautify(attemptsDone + 1);
-    this.startTimestamp = configs.startTimestamp ?? (0); //finish later
-    this.timestamp = configs.timestamp ?? Date.now();
-    this.presetUsed = configs.presetUsed ?? activePreset;
-    this.notes = configs.notes ?? '';
-
-    this.index = historyEntries.length;
-    historyEntries.push(this);
-  }
-  favorited = false
-
-  getLStr(extended) {
-    let statsList = [];
-    for (let i in this.stats) {
-      if (!extended && !this.stats[i].constructor.summaryworthy) { continue; }
-      statsList.push(this.stats[i]);
-    }
-
-    const columns = 2;
-    const gridStyle = 'grid-template-columns:repeat(' + columns + ',1fr);';
-
-    let cells = '';
-    let colPos = 0; 
-    for (let i = 0; i < statsList.length; i++) {
-      const wantSpan = Math.min(statsList[i].cellsOccupying, columns);
-      const remaining = columns - colPos || columns;
-      const span = Math.min(wantSpan, remaining);
-
-      cells += '<div class="statsCell" style="grid-column:span ' + span + ';">' + statsList[i].getLStr(extended) + '</div>';
-
-      colPos += span;
-      if (colPos >= columns) { colPos = 0; }
-    }
-
-    let str = '<div class="block historyEntry" '+Game.clickStr+'="openSpecificAttempt('+this.index+');">';
-    str += '<div id="topSection" style="width: 100%; height: 24px; text-align: left;">';
-    str += '<div class="title" style="font-size: 20px; display: inline-block;">' + this.name + '<div class="listing" style="display: inline-block;">' + (this.presetUsed ? 'Preset: ' + this.presetUsed.name : 'No preset') + (this.notes?(' - ' + this.notes):'') + '</div></div>' +
-      '<span style="float: right;">'+loc('Duration: %1', Game.sayTime((this.timestamp - this.startTimestamp) / 1000 * Game.fps, -1)) + '</span>';
-    str += '</div><div class="line"></div>';
-
-    str += '<div class="statsGrid" style="' + gridStyle + '">' + cells + '</div>';
-    return str + '</div>';
-  }
-
-  favorite() {
-    this.favorited = true;
-    favoritedEntries.add(this);
-  }
-}
-var toReloadHistory = false;
-function openHistory() {
-  let str = '<id history><h3>'+loc('Combo history')+'</h3><div id="historyMainSection"><div class="block">'+loc('This is a list of your past combo attempts this session.')+'</div><div class="block" style="height: 550px; overflow-y: scroll;">';
-
-  for (let i in historyEntries) {
-    str += historyEntries[i].getLStr();
-  }
-  if (!historyEntries.length) {
-    str += loc('Get at least <b>%1</b> score from an attempt to be stored here. Press try again to end an attempt.', SimpleBeautify(Math.floor(historySettings.scoreRegisterThreshold)));
-  }
-
-  str += '</div></div>';
-  str += '<div id="historyExtendedView" style="display: none;"></div>';
-  str += '<div id="historySettings" style="display: none;"></div>'
-  Game.Prompt(str, [[loc('Go back'), 'switchToMenu(\'historyMainSection\');'], [loc('Close'), 'Game.ClosePrompt();'], [loc('Open history settings'), 'openSettings();']], 0, 'widePrompt');
-  l('prompt').classList.add('ultraWide');
-  l('promptOption0').style.display = 'none';
-}
-function switchToMenu(id) {
-  const list = [
-    'historyMainSection',
-    'historyExtendedView',
-    'historySettings'
-  ];
-  for (let i in list) {
-    l(list[i]).style.display = 'none';
-  }
-  l(id).style.display = '';
-  if (id == 'historyMainSection') {
-    l('promptOption0').style.display = 'none';
-    l('promptOption2').style.display = '';
-    if (toReloadHistory) {
-      toReloadHistory = false;
-      openHistory();
-    }
-  } else {
-    l('promptOption0').style.display = '';
-    l('promptOption2').style.display = 'none';
-  }
-}
-function openSpecificAttempt(id) {
-  switchToMenu('historyExtendedView');
-  if (!historyEntries[id]) { 
-    l('historyExtendedView').innerHTML = loc('Unknown error');
-    return;
-  }
-  let str = '';
-  str += '<div class="block">';
-  str += historyEntries[id].getLStr(true);
-  str = str.replace('historyEntry', 'historyEntry alwaysHighlighted');
-  str += '</div>';
-  l('historyExtendedView').innerHTML = str;
-}
-function openSettings() {
-  switchToMenu('historySettings');
-  
-  let str = '';
-  str += '<div class="block">';
-  str += '<div class="title" style="height: 24px; font-size: 20px; margin-top: 5px;">'+loc('Stats displayed in reset notification')+'</div>';
-  for (let i in statTypesList) {
-    str += statTypesList[i].prototype.getSmallToggleButton('noteworthy');
-  }
-  str += '<div class="line"></div><div class="title" style="height: 24px; font-size: 20px; margin-top: 10px;">'+loc('Stats displayed in history viewer')+'</div>';
-  for (let i in statTypesList) {
-    str += statTypesList[i].prototype.getSmallToggleButton('summaryworthy');
-  }
-  str += '</div>';
-
-  l('historySettings').innerHTML = str;
-}
-function saveHistorySettings() {
-  let obj = {};
-  obj.normalSettings = escape(JSON.stringify(historySettings));
-  let str = '';
-  for (let i in statTypesList) {
-    str += statTypesList[i].save() + '_';
-  }
-  obj.statSettings = str;
-  return utf8_to_b64(JSON.stringify(obj));
-}
-function loadHistorySettings(str) {
-  if (!str) { return; }
-  try {
-    const obj = JSON.parse(b64_to_utf8(str));
-    if (obj.normalSettings) {
-      Object.assign(historySettings, JSON.parse(unescape(obj.normalSettings)));
-    }
-    if (obj.statSettings) {
-      const parts = (obj.statSettings || '').split('_');
-      let idx = 0;
-      for (let i in statTypesList) {
-        const part = parts[idx++] ?? '0';
-        if (statTypesList[i].load) statTypesList[i].load(part);
-      }
-    }
-  } catch (e) {
-    Game.Notify(loc('History settings failed to load!'), e?.message, [0, 7]);
-    console.error(e);
-  }
-}
-class stat {
-  //baseline class, to extend
-  constructor(detail) {
-    this.detail = detail;
-  }
-  static key = 'base';
-  static name = 'Stat';
-  static description = 'Stat description';
-  static cellsOccupying = 1;
-  static noteworthy = false; //displayed in notif
-  static summaryworthy = false; //displayed in history without opening details
-  detail = null;
-
-  getIcon() {
-    return [0, 0];
-  }
-  getLStr(extended) {
-    return '<div class="block stat">'
-      + '<div class="statIcon">'
-        + '<div class="statIconActual" style="'+writeIcon(this.getIcon())+'"></div>'
-      + '</div>'
-      + '<div style="flex:1;text-align:left;">'
-        + '<div class="title stat">'
-          + loc(this.constructor.name)
-          + '<span class="statDescription" title="' + loc(this.constructor.description || '') + '">?</span>'
-        + '</div>'
-        + '<div class="statDetails">'
-          + this.getDetailDisplay(extended)
-        + '</div>'
-      + '</div>'
-    + '</div>';
-  }
-  getSmallToggleButton(property) {
-    //small button containing that just identifies this stat
-    return `
-    <a class="option prefButton option${this.constructor[property]?'':' off'}" ${Game.clickStr}="statTypesList['${this.constructor.key}']['${property}'] = !statTypesList['${this.constructor.key}']['${property}']; openSettings(); toReloadHistory = true;">${loc(this.constructor.name)}</a>
-    `;
-  }
-  getNotifStr() {
-    return loc('<b>%1:</b> %2', [this.constructor.name, this.getDetailDisplay()]);
-  }
-  static save() {
-    //idk
-    return '' + (Number(this.noteworthy) * 2 + Number(this.summaryworthy));
-  }
-  static load(str) {
-    str = parseInt(str);
-    if (Math.floor(str / 2) % 2) { 
-      this.noteworthy = true;
-    } else {
-      this.noteworthy = false;
-    }
-    if (str % 2) {
-      this.summaryworthy = true;
-    } else {
-      this.summaryworthy = false;
-    }
-  }
-
-  register(cl) {
-    statTypesList[cl.key] = cl;
-  }
-}
-class scoreStat extends stat {
-  constructor(detail, percent) {
-    super(detail);
-    this.percent = percent;
-  }
-  static key = 'score';
-  static name = 'Score';
-  static description = 'An evaluation of your execution in terms of skill displayed. Luck (such as how many buffs) do not factor into the calculations.';
-  static noteworthy = true;
-  static summaryworthy = true;
-
-  getDetailDisplay() {
-    let scoreDisplay = '';
-    if (this.detail > 1e10) { 
-      scoreDisplay += Beautify(this.detail, 0);
-    } else { 
-      scoreDisplay += SimpleBeautify(Math.floor(this.detail));
-    }
-    if (this.percent < 1e6) { scoreDisplay += ' (' + SimpleBeautify(Math.floor(this.percent)) + '%)'; }
-    return scoreDisplay;
-  }
-  getIcon() {
-    const score = this.detail / 1.333e6;
-    let icon;
-    if (score > 2.75) { icon = [1, 7] }
-    else if (score > 2.5) { icon = [3, 1, cccemSpritesheet] }
-    else if (score > 2.25) { icon = [2, 1, cccemSpritesheet] }
-    else if (score > 2) { icon = [1, 1, cccemSpritesheet] }
-    else if (score > 1.75) { icon = [33, 4] }
-    else if (score > 1.5) { icon = [32, 4] }
-    else if (score > 1.25) { icon = [0, 1, cccemSpritesheet] }
-    else if (score > 1) { icon = [14, 5] }
-    else if (score > 0.85) { icon = [13, 5] }
-    else if (score > 0.7) { icon = [12, 5] }
-    else if (score > 0.6) { icon = [3, 0, cccemSpritesheet] }
-    else if (score > 0.5) { icon = [2, 0, cccemSpritesheet] }
-    else if (score > 0.4) { icon = [1, 0, cccemSpritesheet] }
-    else if (score > 0.3) { icon = [0, 0, cccemSpritesheet] }
-    else if (score > 0.2) { icon = [2, 5] }
-    else if (score > 0.1) { icon = [1, 5] }
-    else if (score > 0.01) { icon = [0, 5] }
-    else if (score > 0) { icon = [12, 8] }
-    else { icon = [12, 8]; }
-    return icon;
-  }
-  getSmallToggleButton(property) {
-    //small button containing that just identifies this stat
-    if (property == 'noteworthy') { return '';}
-    return `
-    <a class="option prefButton option${this.constructor[property]?'':' off'}" ${Game.clickStr}="statTypesList['${this.constructor.key}']['${property}'] = !statTypesList['${this.constructor.key}']['${property}']; openSettings(); toReloadHistory = true;">${this.constructor.name}</a>
-    `;
-  }
-}
-stat.prototype.register(scoreStat);
-//some of below icons are suggested by hellranger
-class cpsStat extends stat {
-  static key = 'cps';
-  static name = 'CpS gained';
-  static description = 'Amount of cookies in terms of CpS gained during the attempt.';
-  static summaryworthy = true;
-  getIcon() {
-    const years = this.detail / (365 * 24 * 60 * 60);
-    const map = {
-      1e15: [22, 0],
-      1e14: [21, 0],
-      1e13: [31, 2],
-      1e12: [30, 2],
-      1e11: [31, 1],
-      1e10: [30, 1],
-      1e9: [29, 1],
-      1e8: [28, 1],
-      1e7: [27, 1],
-      1e6: [26, 1],
-      1e5: [25, 1],
-      1e4: [24, 1],
-      1e3: [23, 1],
-      1e2: [22, 1],
-      10: [21, 1],
-      1: [20, 0],
-      0: [24, 18]
-    };
-    const mapM = [0, 1, 10, 100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15].reverse();
-    for (let i of mapM) {
-      if (Number(i) <= years) {
-        return map[i];
-      }
-    }
-    return [0, 7];
-  } 
-  getDetailDisplay(extended) {
-    return convertSeconds(this.detail).split(', ').slice(0, extended?Infinity:1).join(', ');
-  }
-}
-stat.prototype.register(cpsStat);
-class godzStat extends stat {
-  static key = 'godz';
-  static name = 'Strength of Godzamok';
-  static description = 'Maximum strength of the Devastation (Godzamok) buff.';
-  static summaryworthy = true;
-  getIcon() { return [23, 18]; } 
-  getDetailDisplay() {
-    return Beautify(this.detail);
-  }
-}
-stat.prototype.register(godzStat);
-class clicksStat extends stat {
-  static key = 'clicks';
-  static name = 'Effective clicks';
-  static description = 'Estimated number of clicks useful in the attempt.';
-  getIcon() {
-    const map = {
-      70: [0, 35],
-      65: [0, 25],
-      60: [0, 21],
-      55: [0, 19],
-      50: [0, 18],
-      40: [0, 2],
-      30: [0, 1],
-      0: [0, 0]
-    }
-    const mMap = Object.keys(map).reverse();
-    for (let i of mMap) {
-      if (Number(i) <= this.detail) {
-        return map[i];
-      }
-    }
-    return [0, 7];
-  } // placeholder
-  getDetailDisplay() {
-    return Beautify(this.detail);
-  }
-}
-stat.prototype.register(clicksStat);
-class devastatednessStat extends stat {
-  static key = 'devastatedness';
-  static name = 'Devastatedness';
-  static description = 'Maximum Godzamok power, multiplied by the amount of clicks during devastation.';
-  static noteworthy = true;
-  static summaryworthy = true;
-  getIcon() { 
-    const map = {
-      8000: [11, 15],
-      7500: [11, 30],
-      7000: [11, 21],
-      6500: [11, 24],
-      6000: [11, 23],
-      5000: [11, 22],
-      3500: [11, 19],
-      2500: [11, 13],
-      1000: [11, 0],
-      0: [11, 15]
-    }
-    const mMap = Object.keys(map).reverse();
-    for (let i of mMap) {
-      if (Number(i) <= this.detail) {
-        return map[i];
-      }
-    }
-    return [0, 7];
-  }
-  getDetailDisplay() {
-    return Beautify(this.detail);
-  }
-}
-stat.prototype.register(devastatednessStat);
-class rebuyStat extends stat {
-  static key = 'rebuyMult';
-  static name = 'Rebuy multiplier';
-  static description = 'Multiplier contribution from rebuying behavior (if enabled).';
-  getIcon() { return [2, 6]; }
-  getDetailDisplay() {
-    if (!this.detail) { return 'Not rebuying'; }
-    return this.detail.toFixed(3);
-  }
-}
-stat.prototype.register(rebuyStat);
-class comboStat extends stat {
-  static key = 'comboStrength';
-  static name = 'Combo strength';
-  static description = 'Maximum observed combo multiplier during the attempt.';
-  getIcon() { return [23, 6]; }
-  getDetailDisplay() {
-    return Beautify(this.detail);
-  }
-}
-stat.prototype.register(comboStat);
-class relComboStat extends stat {
-  static key = 'relComboStrength';
-  static name = 'Strength of constant buffs';
-  static description = 'Cumulative strength of buffs that are generally considered guaranteed.';
-  getIcon() { return [0, 14]; }
-  getDetailDisplay() {
-    return Beautify(this.detail);
-  }
-}
-stat.prototype.register(relComboStat);
-class consistentPowStat extends stat {
-  static key = 'consistentPow';
-  static name = 'Strength of constant buffs';
-  static description = 'Cumulative strength of buffs that are generally considered guaranteed.';
-  getIcon() { return [10, 14]; }
-  getDetailDisplay() {
-    return Beautify(this.detail);
-  }
-}
-stat.prototype.register(consistentPowStat);
-class bsCountStat extends stat {
-  static key = 'bsCount';
-  static name = 'Number of BSs';
-  static description = 'Number of building-special buffs observed in the attempt.';
-  getIcon() { return [5, 6]; } 
-  getDetailDisplay() {
-    return String(this.detail ?? '');
-  }
-}
-stat.prototype.register(bsCountStat);
-class cookieGainStat extends stat {
-  static key = 'cookiesGained';
-  static name = 'Cookie gained';
-  static description = 'Total cookies gained during the attempt.';
-  getIcon() { return [26, 17]; }
-  getDetailDisplay() {
-    return Beautify(this.detail);
-  }
-}
-stat.prototype.register(cookieGainStat);
-class handmadeGainStat extends stat {
-  static key = 'handmadeGain';
-  static name = 'Handmade gain';
-  static description = 'Cookies directly produced by clicks during the attempt.';
-  getIcon() { return [11, 26]; } //placeholder?
-  getDetailDisplay() {
-    return Beautify(this.detail);
-  }
-}
-stat.prototype.register(handmadeGainStat);
-class iniRawStat extends stat {
-  static key = 'initialRaw';
-  static name = 'Initial Raw CpS';
-  static description = 'Baseline raw cookies-per-second at the start of the attempt.';
-  getIcon() { return [3, 5]; } 
-  getDetailDisplay() {
-    return Beautify(this.detail);
-  }
-}
-stat.prototype.register(iniRawStat);
-class scorePerClickStat extends stat {
-  static key = 'scorePerClick';
-  static name = 'Score per Click';
-  static description = 'Estimated contribution to score per effective click.';
-  getIcon() { 
-    const map = {
-      20000: [21, 32],
-      18000: [21, 25],
-      16000: [29, 6],
-      14000: [11, 8],
-      12000: [11, 7],
-      10000: [11, 6],
-      0: [10, 0]
-    }
-    const mMap = Object.keys(map).reverse();
-    for (let i of mMap) {
-      if (Number(i) <= this.detail) {
-        return map[i];
-      }
-    }
-    return [0, 7];
-  }
-  getDetailDisplay() {
-    return SimpleBeautify(Math.floor(this.detail));
-  }
-}
-stat.prototype.register(scorePerClickStat);
-class scoreCorrectionStat extends stat {
-  static key = 'scoreCorrection';
-  static name = 'Score correction value';
-  static description = 'Automatic correction factor computed for score normalization.';
-  getIcon() { return [16, 5]; }
-  getDetailDisplay() {
-    return this.detail.toFixed(4);
-  }
-}
-stat.prototype.register(scoreCorrectionStat);
-
-function BuffsDesc(buffsStr) {//give a more readable description of the buff parameters in the prompt
-  let str=''
-  let buffsArr = buffsStr.split(";")
-  for (let i in buffsArr) {
-    if (!buffsArr[i]) {break}
-    let buffArr = buffsArr[i].split(",")
-    str += 'Name: ' + Game.buffTypes[parseInt(buffArr[0])].name + '\n'
-    str += 'Max Time: ' + Number(buffArr[1]/Game.fps) + '\n'
-    str += 'Time: ' + Number(buffArr[2]/Game.fps) + '\n'
-    if (buffArr[3]) str+='Pow: '+Number(buffArr[3]) + '\n'
-		if (typeof buffArr[4]!=='undefined') str+='Obj: '+parseInt(buffArr[4]) + '\n'
-		if (typeof buffArr[5]!=='undefined') str+='Arg 3: '+Number(buffArr[5]) + '\n'
-    str += '\n'
-    };
-  return str.slice(0, -2)
-  };
-
-function MakeBuffsStr(buffsStr) {//returns a buff string, takes buff description or buffsStr as input and returns buffsStr. If description, also multiply time by fps
-  buffsStr = buffsStr.toLowerCase().replace(/\s/g,'')
-  buffsStr = buffsStr.replaceAll('name:',';')
-  buffsStr = buffsStr.replaceAll('maxtime:',',')
-  buffsStr = buffsStr.replaceAll('time:',',')
-  buffsStr = buffsStr.replaceAll('pow:',',')
-  buffsStr = buffsStr.replaceAll('obj:',',')
-  buffsStr = buffsStr.replaceAll('arg3:',',')
-  for (let i=Game.buffTypes.length-1; i>=0; i--) {
-    buffsStr = buffsStr.replaceAll(Game.buffTypes[i].name.replace(/\s/g,''), i)
-    };
-  if (!buffsStr) return ''
-  if (buffsStr[0] == ';') {
-    buffsStr = buffsStr.slice(1) + ';'
-    buffsStr = ModifyBuffTimes(buffsStr)
-    };
-  return buffsStr
-  };
-
-function ModifyBuffTimes(buffsStr) {//multiplies buff times by Game.fps
-  let buffsArr = buffsStr.split(';')
-  buffsStr=''
-  for (let i in buffsArr) {
-    if (!buffsArr[i]) {continue}
-    let buffArr = buffsArr[i].split(',')
-    buffArr[1] *= Game.fps
-    buffArr[2] *= Game.fps
-    buffsStr+=buffArr.join()+';'
-    };
-  return buffsStr
-}
-
-function AddStartBuff(type, mTime, time, pow, obj, arg3) {//add a buff to the starting buffs. mTime, time, pow, obj will all use default values if not specified
-  let buff=''
-  let isBS = (type == 9 || type == 10)
-  if (!mTime) {mTime = Math.ceil(Game.buffTypes[type].baseDur*GetEffectDurMod())}
-  if (!time) {time = mTime} else {time = Math.min(time, mTime)}
-  if (!pow) {pow = Game.buffTypes[type].basePow}
-  if (!isBS) {obj=0}
-  else if (typeof obj == 'undefined') {obj=-1}
-
-  //remove buff if it already exists in the list. Exception is made for unspecified BSs, up to 20 BSs
-  if (!isBS  ||  obj >= 0  ||  BuffCount(type) > Object.keys(Game.goldenCookieBuildingBuffs).length-1) {RemoveStartBuff(IndexBuff(type, obj))}
-  
-  buff+= type + ',' + mTime*Game.fps + ',' + time*Game.fps + ',' + pow
-  if (isBS) buff+= ',' + obj
-  if (typeof arg3!=='undefined') buff+= ',' + arg3
-  CCCEMButtons['buffs'].changeState(get('buffs')+buff+';')
-  };
-
-function BuffCount(type) {//counts the number of buffs of a type in the starting buffs, mainly for counting number of BSs
-  let buffsArr = get('buffs').split(";")
-  let c=0
-  for (let i in buffsArr) {
-    if (!buffsArr[i]) {continue}
-    let buffArr = buffsArr[i].split(",")
-    let bType = buffArr[0]
-    if (bType == type) {c++}
-    };
-  return c
-  };
-
-function HasStartBuff(type, obj) {//check for matching buff type. type and obj are numbers. If Obj is used as a parameter, check for matching BS type. Return true/false
-  if (typeof IndexBuff(type, obj) == 'number') return true
-  return false
-  };
-
-function IndexBuff(type, obj) {//check for matching starting buff type. type and obj are numbers. If Obj is used as a parameter, check for matching BS type. Return index
-  let buffsArr = get('buffs').split(";")
-  for (let i in buffsArr) {
-    if (!buffsArr[i]) {continue}
-    let buffArr = buffsArr[i].split(",")
-    let bType = buffArr[0]
-    let bObj = buffArr[4]
-    if (bType != type) {continue}
-    if ((bType == 9 || bType == 10) && bObj != obj) {continue};
-    return parseInt(i)
-    };
-  return false
-  };
-
-function RemoveStartBuff(index) {//removes the buff at the target index from the starting buff list
-  if (index === false) {return}
-  if (!index) index=0
-  let str = ''
-  let buffsArr = get('buffs').split(";")
-  buffsArr.splice(index, 1)
-  for (let i in buffsArr) {if (buffsArr[i]) str+=buffsArr[i]+';'}
-  CCCEMButtons['buffs'].changeState(str)
-  };
-
-window.setupFinderIntegration = function() {
-    Game.LoadMod(castFinderPath); 
-	code = forceFtHoF;
-    RedrawCCCEM();
-}
-
 let cccemShiftDetect = false;
 let cccemCtrlDetect = false;
 document.addEventListener('keydown', function(e) { 
@@ -1476,6 +106,7 @@ class CCCEMButton {
     if (options.preNewLine === true) { 
       options.preNewLine = '<div class="flexbreak"></div>';
     }
+    this.parent = null;
     this.newLine = options.newLine ?? '';
     this.preNewLine = options.preNewLine ?? '';
     this.advanced = options.advanced ?? true;
@@ -1640,6 +271,23 @@ class buttonType {
   getTip() {
     return '';
   }
+  attachment = null; //for external use, can be used to attach a callback function that runs when this button is attached to a category, with this keyword set to the button and the category passed as an argument
+  attach(configs) {
+    this.willSave = false;
+    this.parent = { state: null };
+    if (!configs) { return this; }
+    this.attachment = configs;
+    this.parent.state = configs.state; //mainly make sure to have a key that matches
+    return this;
+  }
+  assignState(value) {
+    if (this.attachment && this.attachment.callback) {
+      this.attachment.callback(value);
+    } else { 
+      this.parent.state = value;
+      this.triggerVarFunc();
+    }
+  }
   willSave = true
   save() {
     return this.parent.state;
@@ -1648,12 +296,20 @@ class buttonType {
     //fallback
     if (!str) { return; }
     if (!isNaN(parseFloat(str))) { str = parseFloat(str); }
-    this.parent.state = str;
-    if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
+    this.assignState(str);
   }
   default() {
     return null; 
     //returns default value for the button/variable, but is actually changed later on by presets so it just prevents crashing and funny stuff
+  }
+  resetDefault() {
+    //pretty much only used for attachments
+    if (this.attachment && this.attachment.value) {
+      this.state = this.attachment.value;
+      return this;
+    }
+    this.state = this.default();
+    return this;
   }
 }
 class triggerButton extends buttonType {
@@ -1720,42 +376,49 @@ class inputButton extends buttonType {
   static heading = loc('Input variable')
   static subHeading = loc('Please input what you want the variable to be set to.')
   static readonly = false
+  onClick() {
+    invalidateScoreS();
+    dynamicPrompt(this.getPromptStr(), this.getOptions());
+    this.addEvents(getLatestPrompt());
+  }
   getPromptStr() {
     let str = '<id NumImport><h3>'
-      + loc(this.constructor.heading)
+      + this.constructor.heading
       + '</h3><div class="block">'
-      + loc(this.constructor.subHeading)
+      + this.constructor.subHeading
       + '<div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div></div><div class="block"><textarea id="textareaPrompt" style="'+this.getStyles()+'"'
       + (this.constructor.readonly?'readonly':'')
       + '>'
       + this.parent.state
       + '</textarea></div>'
-    return str
+    return str;
   }
   getOptions() {
     return [
       [loc("Load"),
-        `Game.ClosePrompt();
-        \nCCCEMButtonsList[${this.parent.id}].type.onInputConfirmation(l('textareaPrompt').value.trim());
-        \nRedrawCCCEM();`],
-      [loc("Nevermind")]
+        `PlaySound(\'snd/tickOff.mp3\');`],
+      [loc("Nevermind"), `PlaySound(\'snd/tickOff.mp3\');restorePromptLayer();`]
   ]}
+  addEvents(baseNode) {
+    const textareaPrompt = baseNode.querySelector('#textareaPrompt');
+    if (this.autoSet) { textareaPrompt.value = this.autoSet.call(this) }
+    textareaPrompt.focus();
+    textareaPrompt.select();
+    AddEvent(baseNode.querySelector('#promptOption0'), 'click', e => {
+      const content = textareaPrompt.value.trim();
+      restorePromptLayer();
+      this.onInputConfirmation(content);
+      RedrawCCCEM();
+    })
+  }
   getStyles() {
     return 'width:100%;height:128px;';
   }
   getTip() {
     return loc('Click to input value.');
   }
-  afterCall() {
-    if (this.autoSet) { l('textareaPrompt').value = this.autoSet.call(this) }
-    l('textareaPrompt').focus();
-    l('textareaPrompt').select();
-  }
   onInputConfirmation(content) {
-    this.parent.state = content;
-    if (this.parent.updateVarFunc) {
-      this.parent.updateVarFunc.call(this.parent, this.parent.state);
-    }
+    this.assignState(content);
   }
   getColorStr() {
     return 'neatocyan';
@@ -1766,11 +429,6 @@ class inputButton extends buttonType {
   triggerSetVar() {
     this.onClick();
     RedrawCCCEM();
-  }
-  onClick() {
-    invalidateScoreS();
-    Game.Prompt(this.getPromptStr(), this.getOptions());
-    this.afterCall();
   }
   load(str) {
     this.parent.state = str;
@@ -1791,7 +449,9 @@ class numberInputButton extends inputButton {
   static heading = loc('Input number')
   static subHeading = loc('Please input a number the variable should be equal to.')
   parse(names, state) {
-    return loc(names[0], Beautify(state, this.precision));
+    const beautified = Beautify(state, this.constructor.precision);
+    const prefix = (beautified !== Beautify(state, this.constructor.precision + 1)) ? '~' : '';
+    return loc(names[0], prefix + beautified);
   }
   getStyles() {
     return 'width:100%;height:32px;font-size:24px;text-align:center;';
@@ -1801,10 +461,7 @@ class numberInputButton extends inputButton {
       Game.Notify(loc('Setting value failed!'), loc('The value set was not a number!'), [7, 7]);
       return; 
     }
-    this.parent.state = Number(content);
-    if (this.parent.updateVarFunc) {
-      this.parent.updateVarFunc.call(this.parent, this.parent.state);
-    }
+    this.assignState(Number(content));
   }
   getTip() {
     return loc('Click to input number.');
@@ -1870,10 +527,7 @@ class gardenPlantAgeSetButton extends inputButton {
     if (map[content]) { content = map[content]; }
     if (content.endsWith('%')) { content = content.slice(0, content.length - 1); }
     if (!isNaN(parseFloat(content))) { content = parseFloat(content); if (content < 1 && content >= 0) { content = content * 100; } }
-    this.parent.state = content;
-    if (this.parent.updateVarFunc) {
-      this.parent.updateVarFunc.call(this.parent, this.parent.state);
-    }
+    this.assignState(content);
   }
 }
 class cycleButton extends buttonType {
@@ -1888,6 +542,13 @@ class cycleButton extends buttonType {
   parseConvert = e => e;
   fuseWrapper = null;
   aliases = {};
+  static promptClass = 'widePrompt';
+  static header = loc('Select value');
+  attachment = {
+    clickHtml: me => {
+      return 'CCCEMButtons[\''+me.parent.key+'\'].type.onInputConfirmation(this.dataset.selectId);Game.ClosePrompt();'
+    }
+  }
   getTip() {
     return loc('Click to select a value.');
   }
@@ -1899,25 +560,24 @@ class cycleButton extends buttonType {
   }
   onClick() {
     invalidateScoreS();
-    Game.Prompt(this.getPromptStr(), this.getOptions(), 0, 'widePrompt');
-    this.addEvents(l('prompt'));
+    dynamicPrompt(this.getPromptStr(), this.getOptions(), this.constructor.promptClass);
+    this.addEvents(getLatestPrompt());
   }
   getPromptStr() {
     return `<id chooseOption><h3>
-    ${loc('Select value')}</h3><div class="line"></div>
+    ${this.constructor.header}</h3><div class="line"></div>
     <div class="block">
     <div style="display:flex;gap:3px;align-items:center;">
-      <input id="cccemSearch" type="search" placeholder="Type to search for the value..." class="framed" style="flex:1;box-sizing:border-box;padding:6px;margin-left: 5px;" />
+      <input id="cccemSearch" type="search" placeholder="${loc('Type to search for the value...')}" class="framed" style="flex:1;box-sizing:border-box;padding:6px;margin-left: 5px;" />
       <button id="cccemClear" class="framed" style="padding:4px 8px;height:34px;cursor:pointer;" onclick="l('cccemSearch').value='';l('cccemSearch').dispatchEvent(new Event('input'));l('cccemSearch').focus();">X</button>
     </div>
     <div id="cccemSearchResults" style="margin-top:6px;height:200px;overflow:auto;">${this.getEntries()}</div>
-    </div>`
+    </div>`;
   }
   getOptions() {
     return [
       [loc('Confirm'), 
-        'CCCEMButtons[\''+this.parent.key+'\'].type.onInputConfirmation(l(\'cccemSearchResults\').childNodes[0].dataset.selectId);'
-        +'Game.ClosePrompt();'], 
+        ''], 
       [loc('Nevermind')]
   ]}
   addEvents(baseNode) {
@@ -1925,11 +585,17 @@ class cycleButton extends buttonType {
       baseNode.querySelector('#cccemSearchResults').innerHTML = this.getEntries(e.target.value);
     });
     baseNode.querySelector('#cccemSearch').focus();
+    /*AddEvent(baseNode.querySelector('#promptOption0'), 'click', e => {
+      restorePromptLayer();
+      this.onInputConfirmation(getLatestPrompt().querySelector('#cccemSearchResults').childNodes[0].dataset.selectId);
+    });*/
   }
   getEntries(searchString) {
     let str = '';
+    const min = (typeof this.min === 'function')?this.min():this.min;
+    const max = (typeof this.max === 'function')?this.max():this.max;
     if (!searchString) {
-      for (let i = this.min; i <= this.max; i = this.next(i)) {
+      for (let i = min; i <= max; i = this.next(i)) {
         str += this.getSearchButton(i);
       }
       return str;
@@ -1937,7 +603,7 @@ class cycleButton extends buttonType {
     if (typeof Fuse !== 'undefined' && Fuse) {
       if (!this.fuseWrapper) { 
         let list = [];
-        for (let i = this.min; i <= this.max; i = this.next(i)) {
+        for (let i = min; i <= max; i = this.next(i)) {
           list.push({ name: this.parseConvert(i), alias: (typeof this.aliases === 'function')?(this.aliases(i)):(this.aliases[i]?([].concat(this.aliases[i])):[]), id: i });
         }
         this.fuseWrapper = new Fuse(list, { ignoreLocation: true, threshold: 0.4, keys: ['name', 'alias'] }); 
@@ -1952,7 +618,7 @@ class cycleButton extends buttonType {
     const maxEntriesToDisplay = 5;
     const list = new Array(maxEntriesToDisplay);
     list.fill(null);
-    for (let i = this.min; i <= this.max; i = this.next(i)) {
+    for (let i = min; i <= max; i = this.next(i)) {
       const label = this.parseConvert(i);
       if (!label) { continue; }
       const d = this.levenshtein(searchString, label);
@@ -1981,12 +647,11 @@ class cycleButton extends buttonType {
     if (!isNaN(content)) { 
       content = Number(content);
     }
-    this.parent.state = content;
-    this.triggerVarFunc();
+    this.assignState(content);
     RedrawCCCEM();
   }
   getSearchButton(value) {
-    return '<div id="cccemSearchEntry'+value+'" data-select-id="'+value+'" class="block cccemSearchDisplay" '+Game.clickStr+'="CCCEMButtons[\''+this.parent.key+'\'].type.onInputConfirmation(this.dataset.selectId);Game.ClosePrompt();">'+this.parseConvert(value)+'</div>';
+    return '<div id="cccemSearchEntry'+value+'" data-select-id="'+value+'" class="block cccemSearchDisplay" '+Game.clickStr+'="'+this.attachment.clickHtml(this)+'">'+this.parseConvert(value)+'</div>';
   }
   levenshtein(matcher, matchee) {
     //BACKUP METHOD
@@ -2025,7 +690,7 @@ class cycleButton extends buttonType {
     if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
   }
   default() { 
-    return Math.min(Math.max(0, this.min), this.max); 
+    return Math.min(Math.max(0, (typeof this.min === 'function')?this.min():this.min), (typeof this.max === 'function')?this.max():this.max); 
   }
 }
 class twoStepCycle extends cycleButton {
@@ -2036,6 +701,7 @@ class twoStepCycle extends cycleButton {
   parseConvert = e => (e <= -1 ? loc('Random') : Game.goldenCookieChoices[e-1]);
 }
 class seasonalCycleButton extends cycleButton {
+  static header = loc('Choose season');
   constructor() {
     super(0, 209, e => ((e > 0) ? Game.seasons[Game.UpgradesById[e].season].name : loc('none')));
   }
@@ -2046,7 +712,831 @@ class seasonalCycleButton extends cycleButton {
     return from;
   }
 }
+class confirmationButton extends buttonType {
+  constructor(warningStr) {
+    super();
+    //type: function
+    this.warningStr = warningStr;
+  }
+  onClick() {
+    dynamicPrompt(this.getPromptStr(), this.getOptions());
+    this.addEvents(getLatestPrompt());
+  }
+
+  static heading = loc('Are you sure?');
+  getPromptStr() {
+    return `<id confirmInput><h3>${this.constructor.heading}</h3>
+      <div class="line"></div>
+      <div class="block" style="${this.warningStr?'':'display: none;'}">${this.warningStr(this.parent.state)}</div>
+    `;
+  }
+  getOptions() {
+    return [
+      [loc("Yes"),
+        `PlaySound(\'snd/tickOff.mp3\');`],
+      [loc("Nevermind"), `PlaySound(\'snd/tickOff.mp3\');restorePromptLayer();`]
+    ];
+  }
+  addEvents(baseNode) {
+    AddEvent(baseNode.querySelector('#promptOption0'), 'click', e => {
+      restorePromptLayer();
+      this.assignState(true);
+    });
+  }
+}
+class iconSelectButton extends buttonType {
+  constructor(autoSet) {
+    super();
+    if (autoSet) { this.autoSet = autoSet; }
+  }
+  getColorStr() {
+    return 'neatopurple';
+  }
+  getTip() {
+    return loc('Click to select an icon.');
+  }
+  buffer = null;
+  static promptClass = 'widePrompt ultraWide';
+
+  onClick() {
+    invalidateScoreS();
+    dynamicPrompt(this.getPromptStr(), this.getOptions(), this.constructor.promptClass);
+    this.addEvents(getLatestPrompt());
+  }
+  getOptions() {
+    return [
+      [loc('Confirm'), 'PlaySound(\'snd/tickOff.mp3\');'], 
+      [loc('Nevermind'), 'PlaySound(\'snd/tickOff.mp3\');restorePromptLayer();']
+  ]}
+  onInputConfirmation(result) {
+    this.assignState(result.length?result:null);
+    RedrawCCCEM();
+  }
+  parse(names, state) {
+    if (!state || state.length !== 2) { return loc(names[0], loc('(none)')); }
+    return loc(names[0], ['<span class="icon" style="background:url('+Game.resPath+'img/icons.png?v='+Game.version+');margin:-20px -20px -19px -18px;transform:scale(0.45);display:inline-block;'+writeIcon(state)+'"></span>', state[0], state[1]]);
+  }
+
+  getPromptStr() {
+    return '<div id="cccem_icon_results" class="block">' + loc('Click an icon to select it. No selection yet.') + '</div>' +
+      '<div class="block" style="text-align:center;">' +
+      '<canvas id="cccem_icon_canvas" style="max-width:820px; max-height:520px; width:100%; height:auto; display:block; margin: 8px auto; border: 1px solid #555;"></canvas>' +
+      '</div>';
+  }
+  addEvents(baseNode) {
+    const l = s => baseNode.querySelector('#' + s);
+    const canvas = l('cccem_icon_canvas');
+    const results = l('cccem_icon_results');
+    if (!canvas || !results) { return; }
+
+    document.getElementById('prompt').classList.add('ultraWide');
+
+    const image = Pic('img/icons.png');
+    const ctx = canvas.getContext('2d');
+
+    const defaultSelect = this.parent.state ?? [16, 5];
+    this.buffer = defaultSelect;
+
+    AddEvent(baseNode.querySelector('#promptOption0'), 'click', e => {
+      const x = canvas.dataset.iconX;
+      const y = canvas.dataset.iconY;
+      if (x === undefined || y === undefined) {
+        this.onExit();
+        restorePromptLayer();
+        return;
+      }
+      const result = this.onExit();
+      restorePromptLayer();
+      this.onInputConfirmation(result);
+    });
+
+    function setupAndDraw(img) {
+      const tileW = 48;
+      const tileH = 48;
+
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      const maxW = 820;
+      const maxH = 520;
+      const scale = Math.min(maxW / canvas.width, maxH / canvas.height, 1);
+      canvas.style.width = Math.round(canvas.width * scale) + 'px';
+      canvas.style.height = Math.round(canvas.height * scale) + 'px';
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.rect(0, 0, 1000, 1000);
+      ctx.drawImage(img, 0, 0);
+
+      const handler = function (ev, x, y) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const cx = x ?? (ev.clientX - rect.left) * scaleX;
+        const cy = y ?? (ev.clientY - rect.top) * scaleY;
+
+        const ix = Math.floor(cx / tileW);
+        const iy = Math.floor(cy / tileH);
+
+        canvas.dataset.iconX = ix;
+        canvas.dataset.iconY = iy;
+        canvas.dataset.pixelX = Math.floor(cx);
+        canvas.dataset.pixelY = Math.floor(cy);
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0);
+
+        const left = ix * tileW;
+        const top = iy * tileH;
+        const right = (ix + 1) * tileW;
+        const bottom = (iy + 1) * tileH;
+
+        ctx.lineWidth = Math.max(2, Math.round(Math.min(canvas.width, canvas.height) / 400));
+        ctx.strokeStyle = 'rgba(255,80,80,0.95)';
+        ctx.beginPath();
+
+        ctx.moveTo(0, top + 0.5);
+        ctx.lineTo(canvas.width, top + 0.5);
+
+        ctx.moveTo(0, bottom + 0.5);
+        ctx.lineTo(canvas.width, bottom + 0.5);
+
+        ctx.moveTo(left + 0.5, 0);
+        ctx.lineTo(left + 0.5, canvas.height);
+
+        ctx.moveTo(right + 0.5, 0);
+        ctx.lineTo(right + 0.5, canvas.height);
+        ctx.stroke();
+
+        ctx.lineWidth = Math.max(1, Math.round(Math.min(canvas.width, canvas.height) / 800));
+        ctx.strokeStyle = 'rgba(255,200,80,0.95)';
+        ctx.strokeRect(left + 0.5, top + 0.5, tileW - 1, tileH - 1);
+
+        results.dataset.iconX = ix;
+        results.dataset.iconY = iy;
+        results.innerHTML = loc('Click on an icon to select it. Selected icon coordinates: <b>(%1, %2)</b>.', [ix, iy]);
+      };
+
+      if (canvas._cccem_icon_handler) {
+        canvas.removeEventListener('click', canvas._cccem_icon_handler);
+      }
+      canvas._cccem_icon_handler = handler;
+      canvas.addEventListener('click', handler);
+
+      handler(null, defaultSelect[0] * tileW, defaultSelect[1] * tileH);
+    }
+
+    if (image.complete && image.width && image.height) {
+      setupAndDraw(image);
+    } else {
+      const int = setInterval(() => {
+        const newImg = Pic('img/icons.png');
+        if (newImg.complete && newImg.width && newImg.height) {
+          clearInterval(int);
+          setupAndDraw(newImg);
+        }
+      }, 50);
+    }
+  }
+  onExit() {
+    const canvas = getLatestPrompt().querySelector('#cccem_icon_canvas');
+    const results = getLatestPrompt().querySelector('#cccem_icon_results');
+    // detach click handler if present
+    if (canvas && canvas._cccem_icon_handler) {
+      canvas.removeEventListener('click', canvas._cccem_icon_handler);
+      delete canvas._cccem_icon_handler;
+    }
+    let x = null, y = null;
+    if (canvas && canvas.dataset.iconX !== undefined && canvas.dataset.iconY !== undefined) {
+      x = parseInt(canvas.dataset.iconX, 10);
+      y = parseInt(canvas.dataset.iconY, 10);
+    } else if (results && results.dataset.iconX !== undefined && results.dataset.iconY !== undefined) {
+      x = parseInt(results.dataset.iconX, 10);
+      y = parseInt(results.dataset.iconY, 10);
+    }
+    if (x === null || y === null || Number.isNaN(x) || Number.isNaN(y)) {
+      return [];
+    }
+    canvas.width = 1;
+    canvas.height = 1;
+    canvas.replaceWith(canvas.cloneNode(true));
+    if (canvas.parentNode) {
+      canvas.parentNode.removeChild(canvas);
+    }
+    this.buffer = [x, y];
+    return [x, y];
+  }
+  default() {
+    if (this.autoSet) { return this.autoSet; }
+    return null;
+  }
+}
+class listManagementButton extends cycleButton { 
+  constructor() {
+    super(...arguments);
+  }
+  static promptClass = 'widePrompt ultraWide';
+  static header = loc('Edit list');
+  static deletionSVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+    xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="2"
+    stroke-linecap="round" stroke-linejoin="round">
+
+    <path d="M3 6h18"/>
+    <path d="M9 6V4h6v2"/>
+
+    <rect x="6" y="6" width="12" height="14" rx="2"/>
+
+    <line x1="10" y1="10" x2="10" y2="18"/>
+    <line x1="14" y1="10" x2="14" y2="18"/>
+
+    </svg>`;
+  static deletionConfirmation = (new confirmationButton(e => loc('You are about to delete the item <b>%1</b>!<br>Deletion cannot be undone.', e))).attach();
+  getPromptStr() {
+    return `<id chooseOption><noClose><h3>
+    ${this.constructor.header}</h3><div class="line"></div>
+    <div class="block">
+    <div style="display:flex;gap:3px;align-items:center;">
+      <input id="cccemSearch" type="search" placeholder="${loc('Type to search for the value...')}" class="framed" style="flex:1;box-sizing:border-box;padding:6px;margin-left: 5px;" />
+      <button id="cccemClear" class="framed" style="padding:4px 8px;height:34px;cursor:pointer;" onclick="l('cccemSearch').value='';l('cccemSearch').dispatchEvent(new Event('input'));l('cccemSearch').focus();">X</button>
+    </div>
+
+    <div id="cccemChoiceWrapper" data-current-entry="-1">
+      <div id="cccemLeftCol" style="height: 100%; min-height: 200px;">
+        <div id="cccemSearchResults" style="margin-top:6px;min-height:200px; height: 100%; max-height: 450px;overflow:auto;" data-cccem-list>
+          ${this.getEntries()}
+        </div>
+
+        <div id="marginContainer" style="background: black;">
+          ${this.getAddButtons()}
+        </div>
+      </div>
+
+      <div id="cccemRightCol" style="max-height: 450px; overflow: auto;" data-cccem-entry-details>
+        ${this.getEntryDetails(null)}
+      </div>
+    </div>
+    </div>`;
+  }
+  getAddButtons() { return ''; }
+  addEvents(baseNode) {
+    AddEvent(baseNode.querySelector('#cccemSearch'), 'input', e => {
+      baseNode.querySelector('#cccemSearchResults').innerHTML = this.getEntries(e.target.value);
+    });
+    baseNode.querySelector('#cccemSearch').focus();
+    baseNode.querySelector('#cccemSearchResults').style.maxHeight = (450 - baseNode.querySelector('#marginContainer').offsetHeight) + 'px'
+    this.addAdditionalEvents(baseNode);
+  }
+  addAdditionalEvents(baseNode) {
+    
+  }
+  setEntryDetails(entry) {
+    this.saveEntry();
+    getLatestPrompt().querySelector('#cccemRightCol').innerHTML = this.getEntryDetails(entry);
+    getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry = entry;
+    this.addPerEntryEvents(entry, getLatestPrompt().querySelector('#cccemRightCol'));
+  }
+  addPerEntryEvents(entry, baseNode) {
+
+  }
+  getEntryDetails(entry) {
+    throw new Error('getEntryDetails not implemented');
+  }
+  getOptions() {
+    return [
+      [loc('All done!'), 
+        'CCCEMButtons[\''+this.parent.key+'\'].type.saveEntry();'
+        +'Game.ClosePrompt();'], 
+      [loc('Close')]
+  ]}
+  parseFormulaAnnotation(str) {
+    if (!str) { return ''; }
+    return Scorecode.annotate(str);
+  }
+  saveEntry() {
+    
+  }
+  getSearchButton(value) {
+    return '<div id="cccemSearchEntry'+value+'" data-select-id="'+value+'" class="block cccemSearchDisplay" '+
+    Game.clickStr+'="getLatestPrompt().querySelector(\'#cccemSearchEntry\'+getLatestPrompt().querySelector(\'#cccemChoiceWrapper\').dataset.currentEntry)?.classList?.remove(\'highlighted\');this.classList.add(\'highlighted\');CCCEMButtons[\''+this.parent.key+'\'].type.setEntryDetails('+value+');">'+this.parseConvert(value)+'</div>';
+  }
+}
+class trackerManagementButton extends listManagementButton {
+  constructor() {
+    super(0, () => (trackersById.length - 1), e => { 
+      if (trackersById[e].constructor.type === 'hook') {
+        return trackersById[e].key;
+      }
+      return loc('%1: %2', [trackersById[e].constructor.type.toUpperCase(), trackersById[e].key]);
+    });
+  }
+  static promptClass = 'widePrompt ultraWide';
+  static header = loc('Edit trackers');
+  static conditionSelect = (new cycleButton(0, () => (Object.keys(cccemModHooks).length - 1), e => cccemModHooksById[e].name, [])).attach();
+  getAddButtons() {
+    return `<a class="option focused" id="cccemAddTrackerBtn" data-cccem-action="add-tracker" style="display:block;margin-top:8px;background:black;">${loc('Add tracker')}</a>
+        <a class="option" id="cccemAddFakeBtn" data-cccem-action="add-tracker" style="display:inline-block;width:calc(50%-16px);background:black;">${loc('Add relay')}</a>
+        <a class="option" id="cccemAddHelperBtn" data-cccem-action="add-tracker" style="display:inline-block;width:calc(50%-16px);background:black;">${loc('Add helper')}</a>`;
+  }
+  addAdditionalEvents(baseNode) {
+    AddEvent(baseNode.querySelector('#cccemAddTrackerBtn'), 'click', e => {
+      const track = this.createNewTracker('hook');
+      this.setEntryDetails(track.id);
+      baseNode.querySelector('#cccemSearchResults').innerHTML = this.getEntries(e.target.value);
+    });
+    AddEvent(baseNode.querySelector('#cccemAddFakeBtn'), 'click', e => {
+      const track = this.createNewTracker('relay');
+      this.setEntryDetails(track.id);
+      baseNode.querySelector('#cccemSearchResults').innerHTML = this.getEntries(e.target.value);
+    });
+    AddEvent(baseNode.querySelector('#cccemAddHelperBtn'), 'click', e => {
+      const track = this.createNewTracker('helper');
+      this.setEntryDetails(track.id);
+      baseNode.querySelector('#cccemSearchResults').innerHTML = this.getEntries(e.target.value);
+    });
+  }
+
+  getEntryDetails(entry) {
+    if (entry === null) { 
+      return '<div style="width:100%; height: 100%; margin: auto;">' + loc('Select a tracker to get started...') + '</div>';
+    }
+    const t = trackersById[entry];
+    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&#34;').replace(/'/g,'&#39;');
+    return `
+    <div class="block" style="text-align: center;">
+      <div class="title minor">${loc('Name')}</div>
+      <input id="trackerKey" class="framed trackerInput" value="${esc(t.key)}" />
+      <div class="title minor" style="margin-top:8px;">${loc('Description')}</div>
+      <textarea id="trackerDesc" class="framed trackerInput">${esc(t.description)}</textarea>
+    </div>
+
+    <div class="block" style="text-align: center;">
+      <div class="title minor">${loc('Formula')}</div>
+      <div class="framed trackerInput editor" style="height:${t.constructor.type === 'hook' ? '120px' : '360px' }; max-height: 75%; line-height:110%; position: relative;">
+        <pre id="trackerFormulaDisplay">${this.parseFormulaAnnotation(t.originalFormula)}</pre>
+        <textarea id="trackerFormula" spellcheck="false"
+        onchange="trackersById[${entry}].setFormula(this.value);"
+        oninput="getLatestPrompt().querySelector('#trackerFormulaDisplay').innerHTML = CCCEMButtons['${this.parent.key}'].type.parseFormulaAnnotation(this.value);"
+        onscroll="getLatestPrompt().querySelector('#trackerFormulaDisplay').scrollLeft = this.scrollLeft; getLatestPrompt().querySelector('#trackerFormulaDisplay').scrollTop = this.scrollTop;"
+        >${esc(t.originalFormula)}</textarea>
+      </div>
+
+      ${t.constructor.type === 'hook' ? `<div class="title minor" style="margin-top:8px;">${loc('Value on reset')}</div>
+      <input id="trackerDefault" class="framed trackerInput" value="${esc(typeof t.defaultV === 'function' ? t.defaultV() : t.defaultV)}" />`:''}
+    </div>
+
+    ${t.constructor.type === 'hook' ? `
+    <div class="block" style="text-align: center;" id="conditionConfigSection" data-current-configuring-condition="-1">
+      <div class="title minor">${loc('Trigger conditions - triggers if any of the below is true')}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;justify-content:center;">
+      <a class="option" ${Game.clickStr}="getLatestPrompt().querySelector('#conditionConfigSection').dataset.currentConfiguringCondition = ${t.triggerConditions.length};CCCEMButtons['${this.parent.key}'].type.configureCondition(${i})">${'+'}</a>
+      ${ (t.triggerConditions || []).map((c, i) => `
+        <a class="option" ${Game.clickStr}="CCCEMButtons['${this.parent.key}'].type.configureCondition(${i})">${cccemModHooks[c].name}</a>
+      `).join('') }
+      </div>
+    </div>
+    ` : '' }
+
+    <a id="deleteItem" class="option" style="margin-top: 5px;">${loc('Delete')}<span style="display: inline-flex; justify-content: center; align-items: center; transform: translateY(1px) translateX(2px);">${this.constructor.deletionSVG}</span></a>
+    `;
+  }
+  configureCondition(item) {
+    this.saveEntry();
+    if (!getLatestPrompt().querySelector('#conditionConfigSection')) { return; }
+    getLatestPrompt().querySelector('#conditionConfigSection').dataset.currentConfiguringCondition = parseInt(item);
+    this.constructor.conditionSelect.attach({ 
+      state: this.parent.state,
+      clickHtml: me => {
+        return `restorePromptLayer();CCCEMButtons['${this.parent.key}'].type.commitCondition(${item}, this.dataset.selectId);`
+      },
+      callback: value => {
+        this.commitCondition(item, value);
+      }
+    }).onClick();
+  }
+  addPerEntryEvents(entry, baseNode) {
+    const track = trackersById[entry];
+    if (baseNode.querySelector('#deleteItem')) { AddEvent(baseNode.querySelector('#deleteItem'), 'click', e => {
+      this.constructor.deletionConfirmation.attach({
+        state: track.key,
+        callback: value => {
+          if (!value) { return; }
+          delete trackers[entry];
+          trackersById.splice(entry, 1);
+          for (let i in trackersById) {
+            trackersById[i].id = parseInt(i);
+          }
+          getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry = -1;
+          restorePromptLayer();
+          this.onClick();
+        }
+      }).onClick();
+    }); }
+  }
+  commitCondition(modifying, condition) {
+    const modifyingEntry = trackersById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry];
+
+    if (modifying >= modifyingEntry.triggerConditions.length) { 
+      modifyingEntry.addTriggerCondition(cccemModHooksById[condition].key);
+    } else { 
+      modifyingEntry.setTriggerConditions(modifyingEntry.triggerConditions.map((c, i) => (i === modifying ? cccemModHooksById[condition].key : c)));
+    }
+    this.setEntryDetails(modifyingEntry.id);
+  }
+  createNewTracker(type) {
+    let name = 'tracker ' + Beautify(trackersById.length);
+    while (trackers[name]) {
+      name += 'qwertyuiopasdfghjklzxcvbnm'[Math.floor(26 * Math.random())];
+    }
+    switch(type) {
+      case 'hook': return new HookTracker(name, '\'value\'', []);
+      case 'relay': return new FakeTracker(name, '0');
+      case 'helper': return new HelperTracker(name, '()#(0)');
+      default: throw new Error('Unrecognized tracker type to create: ' + placeholderID);
+    }
+  }
+
+  saveEntry() {
+    if (!getLatestPrompt().querySelector('#cccemChoiceWrapper')) { return; }
+    const track = trackersById[parseInt(getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry)];
+    if (!track) { return; } // = -1 for example
+
+    track.save();
+  }
+}
+class watcherViewButton extends listManagementButton {
+  constructor() {
+    super(0, () => (watchersById.length - 1), e => watchersById[e].key);
+    for (let i in this.eventListeners) {
+      this.eventListeners[i].bind(this);
+    }
+  }
+  static promptClass = 'widePrompt ultraWide';
+  static header = loc('View watchers');
+  getEntryDetails(entry) {
+    if (entry === null) { 
+      return '<div style="width:100%; height: 100%; margin: auto;">' + loc('Select a watcher to get started...') + '</div>';
+    }
+    const w = watchersById[entry];
+    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&#34;').replace(/'/g,'&#39;');
+    return `
+    <div class="block" style="text-align: center;">
+      <div class="title minor">${loc('Name: %1', esc(w.key))}</div>
+      <textarea id="watcherDesc" class="framed trackerInput" style="height: 120px;" readonly>${esc(w.description)}</textarea>
+    </div>
+    `;
+  }
+}
+class displayClauseEditingButton extends inputButton {
+  constructor() {
+    super();
+  }
+
+  static heading = loc('Input clause info')
+  static subHeading = loc('Change details about the clause below.')
+  static readonly = false
+  getPromptStr() {
+    return `<id NumImport><h3>${loc(this.constructor.heading)}</h3>
+      <div class="block">${loc(this.constructor.subHeading)}
+        <div id="importError" class="warning" style="font-weight:bold;font-size:11px;"></div>
+      </div>
+      <div class="block">
+        <div class="framed trackerInput editor" style="height:50px; line-height:110%; position: relative;">
+          <pre id="formulaDisplay" class="formulaDisplay">${this.parseFormulaAnnotation(this.parent.state[0])}</pre>
+          <textarea id="textareaPrompt" class="framed formula" style="${this.getStyles()}"${this.constructor.readonly ? 'readonly' : ''}>${this.parent.state[0]}</textarea>
+        </div>
+        <div class="line"></div>
+        <label class="displayAnnotation" style="text-align: center;">${loc('Text displayed when the formula matches.')}</label>
+        <div class="framed trackerInput" style="height: 30px; line-height: 100%; position: relative;"> 
+          <textarea id="clauseResult" class="framed centeredTextarea" style="width: 100%; height: 20px;" placeholder="${loc('Enter text here')}">${this.parent.state[1]}</textarea>
+        </div>
+      </div>`;
+  }
+  addEvents(baseNode) {
+    const textareaPrompt = baseNode.querySelector('#textareaPrompt');
+    const clauseResult = baseNode.querySelector('#clauseResult');
+    if (this.autoSet) { textareaPrompt.value = this.autoSet.call(this) }
+    textareaPrompt.focus();
+    textareaPrompt.select();
+    AddEvent(baseNode.querySelector('#promptOption0'), 'click', e => {
+      const content = textareaPrompt.value.trim();
+      const result = clauseResult.value.trim();
+      restorePromptLayer();
+      this.onInputConfirmation([content, result]);
+      RedrawCCCEM();
+    });
+    AddEvent(baseNode.querySelector('#textareaPrompt'), 'input', e => {
+      baseNode.querySelector('#formulaDisplay').innerHTML = this.parseFormulaAnnotation(e.target.value);
+    });
+  }
+  parseFormulaAnnotation(str) {
+    if (!str) { return ''; }
+    return Scorecode.annotate(str);
+  }
+}
+class statManagementButton extends listManagementButton {
+  constructor() {
+    super(0, () => (statTypesById.length - 1), e => { if (statTypesById.length) { return statTypesById[e].name } else { return '?'; } });
+  }
+  static promptClass = 'widePrompt ultraWide';
+  static header = loc('Edit stats');
+  static displayFormatSelect = (new cycleButton(0, () => (Object.keys(statDisplayTypes).length - 1), e => statDisplayTypesById[e].name, [])).attach();
+  static iconSelect = (new iconSelectButton([0, 7]).attach());
+  static iconThresholdInput = (new numberInputButton(0).attach());
+  static displayClauseEditing = (new displayClauseEditingButton().attach());
+  getAddButtons() {
+    return `<a class="option focused" id="cccemAddStatBtn" data-cccem-action="add-stat" style="display:block;margin-top:8px;background:black;">${loc('Add stat')}</a>`;
+  }
+  addAdditionalEvents(baseNode) {
+    AddEvent(baseNode.querySelector('#cccemAddStatBtn'), 'click', e => {
+      const stat = this.createNewStat();
+      this.setEntryDetails(stat.id);
+      baseNode.querySelector('#cccemSearchResults').innerHTML = this.getEntries(e.target.value);
+      getLatestPrompt().querySelector('[data-select-id="'+stat.id+'"]')?.click?.();
+    });
+  }
+  getEntryDetails(entry) {
+    if (entry === null) { 
+      return '<div style="width:100%; height: 100%; margin: auto;">' + loc('Select a stat to get started...') + '</div>';
+    }
+    const w = statTypesById[entry];
+    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&#34;').replace(/'/g,'&#39;');
+    return this.getEditingStr(w);
+  }
+  getEditingStr(stat) {
+    const t = stat;
+    const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&#34;').replace(/'/g,'&#39;');
+    return `
+    <div class="block" style="text-align: center;">
+      <div class="title minor">${loc('Name')}</div>
+      <input id="trackerKey" class="framed trackerInput" value="${esc(t.name)}" />
+      <div class="title minor" style="margin-top:8px;">${loc('Description')}</div>
+      <textarea id="trackerDesc" class="framed trackerInput" style="height: 50px;">${esc(t.description)}</textarea>
+    </div>
+
+    <div class="block" style="text-align: center;">
+      <div class="title minor">${loc('Formula')}</div>
+      <div class="framed trackerInput editor" style="height:50px; line-height:110%; position: relative;">
+        <pre id="trackerFormulaDisplay" class="formulaDisplay">${this.parseFormulaAnnotation(t.formula)}</pre>
+        <textarea id="trackerFormula" spellcheck="false"
+        oninput="getLatestPrompt().querySelector('#trackerFormulaDisplay').innerHTML = CCCEMButtons['${this.parent.key}'].type.parseFormulaAnnotation(this.value);"
+        onscroll="getLatestPrompt().querySelector('#trackerFormulaDisplay').scrollLeft = this.scrollLeft; getLatestPrompt().querySelector('#trackerFormulaDisplay').scrollTop = this.scrollTop;"
+        >${esc(t.formula)}</textarea>
+      </div>
+    </div>
+    
+    ${t.iconsList ? `
+    <div class="block" style="text-align: center;">
+      <div class="title minor">${loc('Icons')}</div>
+      <div class="line"></div>
+      <div id="iconsList" style="display: flex; flex-direction: row; justify-content: center; flex-wrap: wrap;" data-modifying-icon="-1">
+        ${t.iconsListSorted.map(this.getIconEditingStr, stat).reverse().join('')}
+        <div style="display: flex; justify-content: center; align-items: center; padding: 5px;"><a id="addIconButton" class="option">+</a></div>
+      </div>
+      <label class="displayAnnotation">${loc('Click on an icon or its threshold to edit it. Shift-click to delete an icon.')}</label>
+    </div>
+    ` : ''}
+    
+    ${t.detailDisplayConfigs ? `
+    <div class="block" style="text-align: center;">
+      <div class="title minor">${loc('Display format')}</div>
+      <div class="line"></div>
+      <div style="display: flex; flex-direction: column; justify-content: center;">
+        <div id="displayFormatDemo" class="title stat small">${t.detailDisplayConfigs.type.parse(1234567890, true, t.detailDisplayConfigs.args)}</div>
+        <label class="displayAnnotation">${loc('Click on the above display to edit type.')}</label>
+        <textarea id="displayFormatTestInput" class="framed trackerInput" style="margin-top: 6px; text-align: center; height: 28px; line-height: 15px;" placeholder="${loc('Type a number here to test the display format...')}" " >${1234567890}</textarea>
+        <div id="displayFormatEditing">${this.getDisplayFormatEditingStr(t)}</div>
+      </div>
+
+      <div class="title minor" style="margin-top: 12px;">${loc('Display clauses')}</div>
+      <div class="line"></div>
+      <div id="displayClausesEditing" style="display: flex; flex-direction: row; justify-content: center;">
+        ${t.detailDisplayConfigs.clauses.map(this.getDisplayFormatClause).join('')}
+        <a class="option">+</a>
+      </div>
+      <label class="displayAnnotation">${loc('Click on a clause to edit it, or shift-click to delete it.')}</label>
+    </div>
+    ` : ''}
+    
+    <div class="block" style="text-align: center;">
+      <div class="title minor">${loc('Miscellaneous')}</div>
+      <a id="notifDisplayButton" class="option prefButton option${t.noteworthy?'':' off'}" style="${t.key=='score'?'display: none;':''}"
+        ${Game.clickStr}="if (this.classList.contains('off')) { this.classList.remove('off'); } else { this.classList.add('off'); }">${loc('Displayed in notif')}</a>
+      <a id="summaryDisplayButton" class="option prefButton option${t.summaryworthy?'':' off'}"
+        ${Game.clickStr}="if (this.classList.contains('off')) { this.classList.remove('off'); } else { this.classList.add('off'); }">${loc('Displayed in history viewer')}</a>
+      <label for="cellsOccupying" class="argInputLabel" style="margin-right: 5px;">${loc('Cells occupied:').toUpperCase()}</label><input id="cellsOccupying" class="option framed argInput" value="${t.cellsOccupying}" type="number" min="1" max="5" />
+    </div>
+    
+    <a id="deleteItem" class="option" style="margin-top: 5px;">${loc('Delete')}<span style="display: inline-flex; justify-content: center; align-items: center; transform: translateY(1px) translateX(2px);">${this.constructor.deletionSVG}</span></a>`;
+  }
+  eventListeners = {
+    displayFormatTestInput: e => {
+      this.setDisplayDemo();
+    },
+    displayFormatDemo: e => {
+      this.constructor.displayFormatSelect.attach({ 
+        state: this.parent.state,
+        clickHtml: me => {
+          return `restorePromptLayer();CCCEMButtons['${this.parent.key}'].type.setDisplayType(this.dataset.selectId);`
+        },
+        callback: value => {
+          this.setDisplayType(value);
+        }
+      }).onClick();
+    },
+    statIcon: e => {
+      if (e.shiftKey) { 
+        const t = statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry];
+        const modifying = parseInt(e.target.parentNode.dataset.index);
+        if (modifying < 0 || modifying >= t.iconsListSorted.length) { return; }
+        const threshold = t.iconsListSorted[modifying];
+        delete t.iconsList[threshold];
+        t.iconsListSorted.splice(modifying, 1);
+        this.setEntryDetails(t.id);
+        return;
+      }
+      getLatestPrompt().querySelector('#iconsList').dataset.modifyingIcon = e.target.parentNode.dataset.index;
+      this.constructor.iconSelect.attach({
+        state: statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry].iconsList[statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry].iconsListSorted[e.target.parentNode.dataset.index]],
+        callback: value => {
+          this.setStatIcon(value);
+        }
+      }).onClick();
+    },
+    statIconThreshold: e => {
+      if (e.shiftKey) { 
+        const t = statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry];
+        const modifying = parseInt(e.target.parentNode.dataset.index);
+        if (modifying < 0 || modifying >= t.iconsListSorted.length) { return; }
+        const threshold = t.iconsListSorted[modifying];
+        delete t.iconsList[threshold];
+        t.iconsListSorted.splice(modifying, 1);
+        this.setEntryDetails(t.id);
+        return;
+      }
+      getLatestPrompt().querySelector('#iconsList').dataset.modifyingIcon = e.target.parentNode.dataset.index;
+      this.constructor.iconThresholdInput.attach({
+        state: statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry].iconsListSorted[e.target.parentNode.dataset.index],
+        callback: value => {
+          this.setStatIconThreshold(value);
+        }
+      }).onClick();
+    },
+    displayClause: e => {
+      const t = statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry];
+      const modifying = parseInt(e.target.dataset.index);
+      if (e.shiftKey) { 
+        t.detailDisplayConfigs.clauses.splice(modifying, 1); 
+        this.setEntryDetails(t.id); 
+        return; 
+      }
+      this.constructor.displayClauseEditing.attach({
+        state: [t.detailDisplayConfigs.clauses[modifying].condition ?? '', t.detailDisplayConfigs.clauses[modifying].displayText],
+        callback: value => {
+          t.detailDisplayConfigs.clauses[modifying].condition = value[0];
+          t.detailDisplayConfigs.clauses[modifying].displayText = value[1];
+          this.setEntryDetails(t.id);
+        }
+      }).onClick();
+    },
+    displayClauseCreation: e => {
+      const t = statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry];
+      t.detailDisplayConfigs.clauses.push({ formula: '()#(0)', displayText: '' });
+      this.setEntryDetails(t.id);
+    }
+  }
+  addPerEntryEvents(entry, baseNode) {
+    const t = statTypesById[entry];
+    if (baseNode.querySelector('#displayFormatTestInput')) { AddEvent(baseNode.querySelector('#displayFormatTestInput'), 'input', this.eventListeners.displayFormatTestInput); }
+    if (baseNode.querySelector('#displayFormatDemo')) {
+      AddEvent(baseNode.querySelector('#displayFormatDemo'), 'click', this.eventListeners.displayFormatDemo);
+    }
+    if (baseNode.querySelector('.statIcon')) {
+      baseNode.querySelectorAll('.statIcon').forEach(icon => {
+        AddEvent(icon, 'click', this.eventListeners.statIcon);
+      });
+    }
+    if (baseNode.querySelector('.iconThreshold')) {
+      baseNode.querySelectorAll('.iconThreshold').forEach(threshold => {
+        AddEvent(threshold, 'click', this.eventListeners.statIconThreshold);
+      });
+    }
+    if (baseNode.querySelector('#addIconButton')) {
+      AddEvent(baseNode.querySelector('#addIconButton'), 'click', e => {
+        const t = statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry];
+        const newThreshold = t.iconsListSorted.length ? (t.iconsListSorted[0] + 1) : 0;
+        t.iconsList[newThreshold] = [0, 7];
+        t.iconsListSorted.unshift(newThreshold);
+        this.setEntryDetails(t.id);
+      });
+    }
+    if (baseNode.querySelector('#displayClausesEditing')) {
+      AddEvent(baseNode.querySelector('#displayClausesEditing').querySelector('a.option:last-child'), 'click', this.eventListeners.displayClauseCreation);
+      baseNode.querySelectorAll('#displayClausesEditing a.option:not(:last-child)').forEach(clause => {
+        AddEvent(clause, 'click', this.eventListeners.displayClause);
+      });
+    }
+    if (baseNode.querySelector('#deleteItem')) { AddEvent(baseNode.querySelector('#deleteItem'), 'click', e => {
+      this.constructor.deletionConfirmation.attach({
+        state: t.name,
+        callback: value => {
+          if (!value) { return; }
+          delete statTypesList[entry];
+          statTypesById.splice(entry, 1);
+          for (let i in statTypesById) {
+            statTypesById[i].id = parseInt(i);
+          }
+          getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry = -1;
+          restorePromptLayer();
+          this.onClick();
+        }
+      }).onClick();
+    }); }
+  }
+  getIconEditingStr(threshold, index) {
+    const t = this;
+    let icon = [].concat(t.iconsList[threshold]);
+    if (icon[2] === 'cccemSpritesheet') { icon[2] = cccemSpritesheet; }
+    return `<div class="iconEditCell" data-index="${index}">
+      <div class="statIcon hasIcon" style="${writeIcon(icon)}"></div>
+      <div class="iconThreshold">${Beautify(threshold)}</div>
+    </div>`;
+  }
+  setStatIcon(value) {
+    const t = statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry];
+    const modifying = parseInt(getLatestPrompt().querySelector('#iconsList').dataset.modifyingIcon);
+    if (modifying < 0 || modifying >= t.iconsListSorted.length) { return; }
+    t.iconsList[t.iconsListSorted[modifying]] = value;
+    this.setEntryDetails(t.id);
+  }
+  setStatIconThreshold(value) {
+    const t = statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry];
+    const modifying = parseInt(getLatestPrompt().querySelector('#iconsList').dataset.modifyingIcon);
+    if (modifying < 0 || modifying >= t.iconsListSorted.length) { return; }
+    const oldThreshold = t.iconsListSorted[modifying];
+    t.iconsList[value] = t.iconsList[oldThreshold];
+    delete t.iconsList[oldThreshold];
+    t.iconsListSorted.splice(t.iconsListSorted.indexOf(oldThreshold), 1);
+    t.iconsListSorted.push(value);
+    t.iconsListSorted.sort((a, b) => b - a);
+    this.setEntryDetails(t.id);
+  }
+  getDisplayFormatEditingStr(stat) {
+    const t = stat;
+    let str = `<div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="flex-direction: row; display: flex; justify-content: center;">`;
+
+    for (let i in t.detailDisplayConfigs.type.requiredArgs) {
+      const arg = t.detailDisplayConfigs.type.requiredArgs[i];
+      str += `<div class="block" style="display: flex; align-items: center; gap: 6px;">
+        <label for="${arg.replace(' ', '-')}-field" class="argInputLabel">${arg.toUpperCase()}:</label>
+        <input id="${arg.replace(' ', '-')}-field" type="number" class="option framed argInput" oninput="statTypesList['${t.key}'].detailDisplayConfigs.args['${arg}'] = Number(this.value); CCCEMButtons['${this.parent.key}'].type.setDisplayDemo();" value="${t.detailDisplayConfigs.args[arg] ?? t.detailDisplayConfigs.type.defaults[arg]}" />
+      </div>`;
+    }
+
+    str += `</div></div>`;
+    return str;
+  }
+  setDisplayType(type) {
+    const t = statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry];
+    t.detailDisplayConfigs.type = statDisplayTypesById[type];
+    getLatestPrompt().querySelector('#displayFormatDemo').innerHTML = statDisplayTypes[t.detailDisplayConfigs.type.type].parse(Number(getLatestPrompt().querySelector('#displayFormatTestInput').value), true, t.detailDisplayConfigs.args);
+    getLatestPrompt().querySelector('#displayFormatEditing').innerHTML = this.getDisplayFormatEditingStr(t);
+  }
+  setDisplayDemo() {
+    const t = statTypesById[getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry];
+    getLatestPrompt().querySelector('#displayFormatDemo').innerHTML = statDisplayTypes[t.detailDisplayConfigs.type.type].parse(Number(getLatestPrompt().querySelector('#displayFormatTestInput').value), true, t.detailDisplayConfigs.args);
+  }
+  getDisplayFormatClause(clause, index) {
+    const t = clause;
+    return `<a class="option" data-index="${index}">${t.displayText?(t.displayText.slice(0, 16) + (t.displayText.length > 16?'...':'')):loc('Clause #%1', Beautify(index + 1))}</a>`;
+  }
+
+  createNewStat() {
+    let keyStr = '';
+    while (!keyStr || statTypesList[keyStr]) {
+      keyStr = ('qwertyuiopasdfghjklzxcvbnm')[Math.floor(Math.random() * 26)];
+    }
+    return stat.prototype.register(createStatClass(keyStr, 
+      'New stat', 
+      'New stat description', 
+      { type: statDisplayTypes.simpleNumber }, { 0: [0, 7] }, `0`, { }
+    ));
+  }
+
+  saveEntry() {
+    if (!getLatestPrompt().querySelector('#cccemChoiceWrapper')) { return; }
+    const t = statTypesById[parseInt(getLatestPrompt().querySelector('#cccemChoiceWrapper').dataset.currentEntry)];
+    if (!t) { return; } // = -1 for example
+
+    t.name = l('trackerKey').value;
+    t.description = l('trackerDesc').value;
+    t.formula = l('trackerFormula').value;
+    t.noteworthy = !getLatestPrompt().querySelector('#notifDisplayButton').classList.contains('off');
+    t.summaryworthy = !getLatestPrompt().querySelector('#summaryDisplayButton').classList.contains('off');
+    t.cellsOccupying = parseInt(l('cellsOccupying').value) || 1;
+  }
+}
 class multiSelectButton extends buttonType {
+  //this is unimplemented
   constructor(selection) {
     this.selection = selection; //array, object, or function returning those
     //this.parent.state is the index in the selection
@@ -2084,14 +1574,13 @@ class boolButton extends buttonType {
   }
   onClick() {
     invalidateScoreS();
-    this.parent.state = !this.parent.state;
+    this.assignState(!this.parent.state);
   }
   save() {
     return (this.parent.state?1:0);
   }
   load(str) {
-    this.parent.state = Boolean(parseInt(str));
-    if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
+    this.assignState(Boolean(parseInt(str)));
   }
   default() { 
     return false; 
@@ -2156,7 +1645,7 @@ class keySelectButton extends buttonType {
   }
 
   onKeyConfirmation(e) {
-    this.parent.state = e.keyCode;
+    this.assignState(e.keyCode);
     window.toChangeKeyBind = null;
     Game.Notify(loc('Key set: %1', e.key.toUpperCase()), '');
   }
@@ -2189,6 +1678,8 @@ class savingModule extends buttonType {
     super();
     this.savingFunc = savingFunc ?? null;
     this.loadingFunc = loadingFunc ?? null;
+    this.savingEnabled = true;
+    this.loadingEnabled = true;
   }
   getColorStr() {
     return 'nonexistent';
@@ -2197,10 +1688,24 @@ class savingModule extends buttonType {
     this.parent.nonInteractive = true;
     return '';
   }
+  setSavingEnabled(enabled) {
+    this.savingEnabled = enabled;
+    return this;
+  }
+  setLoadingEnabled(enabled) {
+    this.loadingEnabled = enabled;
+    return this;
+  }
   save() {
+    if (!this.savingFunc || !this.savingEnabled) { 
+      return null;
+    }
     return this.savingFunc();
   }
   load(str) {
+    if (!this.loadingFunc || !this.loadingEnabled) {
+      return;
+    }
     this.loadingFunc(str);
     if (this.parent.updateVarFunc) { this.parent.updateVarFunc.call(this.parent, this.parent.state); }
   }
@@ -2397,10 +1902,16 @@ new buttonCategory('categoryTogglePanel', 1, [
     new buttonInfo('Options group: GCs', 'Options related to buffs and Golden cookies. Also includes many randomness-related options.', [28, 29]),
     null, true
   ),
+  new CCCEMButton('optionsBatch7', 'Scoring & Evaluation options %1',
+    new categoryToggleButton('evaluationSettings'),
+    new buttonInfo('Options group: Evaluation', 'Options related to how an attempt is scored, encompassing the score and other stats.', [28, 29]),
+    null, true
+  ),
   new CCCEMButton('loadPForPause', 'Load P for Pause', 
     new triggerButton(),
     new buttonInfo('Load P for Pause', 'Loads the P for Pause mod, which enables you to speed up, slow down, and stop time.', [8, 35]),
     function() {
+      window.__PForPauseDefaultHotkeysEnabled__ = false;
       Game.LoadMod(pForPausePath); if (hasHarbor) { MacadamiaModList.cccem.mod.loadModRPC.send({ path: pForPausePath }); } this.hidden = true;
     }
   ),
@@ -2531,16 +2042,6 @@ new buttonCategory('gameSettings', 4, [
     new buttonInfo('Prestige', 'Sets the amount of prestige you have.', [20, 7]),
     s => iniP = s
   ),
-  new CCCEMButton('scoreMult', 'Score mult x%1',
-    new numberInputButton(),
-    new buttonInfo('Correction value', 'The value the score should be multiplied by to better match standard values.', [16, 5]),
-    s => scoreCorVal = s, { advanced: false }
-  ),
-  new CCCEMButton('scoreMultVerify', 'Score info %1',
-    new boolButton(),
-    new buttonInfo('Score correction notifications', 'Whether to notify when the score does not conform to the baseline.', [1, 7]),
-    s => scoreCorNotify = s, { advanced: false }
-  ),
   new CCCEMButton('lumps', 'Lumps %1',
     new numberInputButton(),
     new buttonInfo('Lumps', 'The amount of Sugar lumps you start with each attempt.', [29, 14]),
@@ -2568,7 +2069,7 @@ new buttonCategory('gameSettings', 4, [
   ),
   new CCCEMButton('useEB', '%1',
     new boolButton(loc('Use Elder Battalion'), loc('No Elder Battalion')),
-    new buttonInfo('Elder Battalion strategy', 'Changes the building distribution to better fit an Elder Battalion strategy.', [1, 25]),
+    new buttonInfo('Elder Battalion strategy', 'Changes the building distribution and scoring formula to better fit an Elder Battalion strategy.', [1, 25]),
     s => useEB = s, { advanced: false }
   ),
   new CCCEMButton('useRebuy', '%1',
@@ -3052,6 +2553,104 @@ new buttonCategory('gcSettings', 7, [
 CCCEMCategories.gcSettings.complexityHideImmune = false;
 CCCEMButtons['iniSpawnTimer'].hidden = true;
 
+const EVALUATION_UI_ENABLED = false;
+new buttonCategory('evaluationSettings', 8, [
+  new CCCEMButton('documentationLink', 'Help & Documentation regarding this section', 
+    new openExternal('https://cursedsliver.github.io/CCCEM/scorecode-doc'),
+    new buttonInfo('Documentation', 'Opens a link to the documentation for this section.', [0, 22.5]),
+    null, { newLine: true, hidden: !EVALUATION_UI_ENABLED }
+  ),
+  new CCCEMButton('manageTrackers', 'Manage trackers', 
+    new trackerManagementButton(),
+    new buttonInfo('Manage trackers', 'Create and edit trackers used for scoring and tracking stats within an attempt.', [0, 22.5]),
+    null, { newLine: true, hidden: !EVALUATION_UI_ENABLED }
+  ),
+  new CCCEMButton('exportTrackers', 'Export trackers',
+    new readonlyDisplayButton(() => {
+      return stringifyAllTrackers();
+    }),
+    new buttonInfo('Export trackers', 'Exports the current state of all trackers in a string format that can be imported back with the import button. This includes all information about the trackers, including their type, so it can be used to transfer trackers between saves.', [0, 22.5]),
+    null, { hidden: !EVALUATION_UI_ENABLED }
+  ),
+  new CCCEMButton('importTrackers', 'Import trackers',
+    new stringInputButton(),
+    new buttonInfo('Import trackers', 'Imports trackers from a data string. This will overwrite all current trackers, so be careful when using this. The string format is the same as the one given by the export button.', [0, 22.5]),
+    s => {
+      const prevState = CCCEMButtons['immunizeTrackerImports'].state;
+      try {
+        CCCEMButtons['immunizeTrackerImports'].state = false;
+        createTrackersFromData(s);
+        CCCEMButtons['immunizeTrackerImports'].state = prevState;
+        RedrawCCCEM();
+        Game.Notify('Trackers imported!', 'Your trackers have been successfully imported from the provided data string.', 0);
+      } catch (e) {
+        CCCEMButtons['immunizeTrackerImports'].state = prevState;
+        Game.Notify('Import failed', 'The provided string could not be parsed as valid tracker data.', 0);
+      }
+    }, { hidden: !EVALUATION_UI_ENABLED }
+  ),
+  new CCCEMButton('visualizeTrackers', 'Visualizer %1',
+    new boolButton(),
+    new buttonInfo('Tracker visualizer', 'Whether to show the tracker visualizer, which shows and updates with the current state of all trackers.', [0, 22.5]),
+    s => {
+      if (!window.CCCEMStatsPanelLoaded) { return; }
+      if (s) {
+        l('cccemStatsPanel').style.display = '';
+        l('cccemStatsShowBtn').style.display = '';
+      } else {
+        l('cccemStatsPanel').style.display = 'none';
+        l('cccemStatsShowBtn').style.display = 'none';
+      }
+    }, { newLine: true, hidden: !EVALUATION_UI_ENABLED }
+  ),
+  new CCCEMButton('immunizeTrackerImports', 'Immunize imports %1',
+    new boolButton(),
+    new buttonInfo('Immunize tracker imports', 'Prevents trackers from being overridden by other sources, such as settings. This setting will not save.', [0, 22.5]),
+    null, { ignorePreset: true, newLine: true, hidden: true }
+  ), 
+  new CCCEMButton('editStats', 'Edit stats', 
+    new statManagementButton(),
+    new buttonInfo('Edit stats', 'Create and edit stats that can be called by trackers to track custom information within an attempt.', [0, 22.5]),
+    null, { hidden: !EVALUATION_UI_ENABLED }
+  ),
+  new CCCEMButton('freezeStats', 'Freeze stats', 
+    new triggerButton(),
+    new buttonInfo('Freeze stats', 'Make the stats of all existing combo attempts permanently immune to further changes to the stat types. Will erase stat descriptions.', [0, 22.5]),
+    () => { 
+      putAllStatsInStorage();
+    }, { hidden: !EVALUATION_UI_ENABLED }
+  ),
+  new CCCEMButton('exportStats', 'Export stats',
+    new readonlyDisplayButton(() => {
+      return exportStats();
+    }),
+    new buttonInfo('Export stats', 'Exports stats', [0, 12.5]),
+    null, { hidden: !EVALUATION_UI_ENABLED }
+  ),
+  new CCCEMButton('importStats', 'Import stats',
+    new stringInputButton(),
+    new buttonInfo('Import stats', 'Imports stats', [0, 11.5]),
+    s => { 
+      importStats(s);
+    }, { newLine: true, hidden: !EVALUATION_UI_ENABLED }
+  ),
+  new CCCEMButton('scoreMult', 'Score mult x%1',
+    new numberInputButton(),
+    new buttonInfo('Correction value', 'The value the score should be multiplied by to better match standard values.', [16, 5]),
+    s => scoreCorVal = s, { advanced: false }
+  ),
+  new CCCEMButton('scoreMultVerify', 'Score info %1',
+    new boolButton(),
+    new buttonInfo('Score correction notifications', 'Whether to notify when the score does not conform to the baseline.', [1, 7]),
+    s => scoreCorNotify = s, { advanced: false }
+  )
+], 'optionsBatch7');
+CCCEMButtons['exportTrackers'].type.willSave = false;
+CCCEMButtons['importTrackers'].type.willSave = false;
+CCCEMButtons['immunizeTrackerImports'].type.willSave = false;
+CCCEMButtons['exportStats'].type.willSave = false;
+CCCEMButtons['importStats'].type.willSave = false;
+
 new buttonCategory('savingControls', 1e6, [
   new CCCEMButton('saveSettings', 'Save current settings',
     new limeButton(),
@@ -3167,6 +2766,23 @@ new buttonCategory('savingControls', 1e6, [
     }),
     new buttonInfo('History settings save', 'Saves the history settings (hidden button)', [0, 0]), null, { ignorePreset: true }
   ),
+  new CCCEMButton('trackersSaveData', '',
+    new savingModule(() => {
+      return stringifyAllTrackers();
+    }, str => {
+      createTrackersFromData(str);
+    }).setSavingEnabled(false),
+    new buttonInfo('Trackers saving', 'Saves trackers and their data', [0, 0])
+  ),
+  new CCCEMButton('statsSaveData', '',
+    new savingModule(() => {
+      return exportStats();
+    }, str => {
+      console.log(str);
+      importStats(str);
+    }).setSavingEnabled(false),
+    new buttonInfo('Stats saving', 'Saves stats', [0, 0])
+  ),
   new CCCEMButton('miscSaveData', '',
     new savingModule(() => {
       return Game.volume + '_' + (App ? Game.volumeMusic : 'N') + '_' + 'N' + '_' + utf8_to_b64(Game.bakeryName);
@@ -3178,7 +2794,7 @@ new buttonCategory('savingControls', 1e6, [
       if (strs[3]) { Game.bakeryNameSet(b64_to_utf8(strs[3])); }
     }),
     new buttonInfo('Miscellaneous save', 'Saves other random stuff (hidden button)', [0, 0])
-  )
+  ),
 ]);
 
 /*CCCEMCategories['savingSettings'].hidden = true;
@@ -3206,6 +2822,7 @@ function RedrawCCCEM(noinvalidate) {
   devConsoleL = l('devConsole');
   };
 l('devConsole').classList.add('CCCEMInterface');
+l('devConsole').style.maxHeight = `calc(100vh - ${((App?0:l('topBar').getBoundingClientRect().height) + 18)}px)`;
 l('devConsole').addEventListener('mouseenter', () => { l('devConsoleContent').classList.remove('fadeOut'); l('devConsoleContent').classList.remove('initHidden'); l('devConsoleContent').classList.remove('widthCapped'); });
 l('devConsole').addEventListener('mouseleave', () => { l('devConsoleContent').classList.add('fadeOut'); l('devConsoleContent').classList.add('widthCapped'); });
 RedrawCCCEM();
@@ -3213,338 +2830,5 @@ l('devConsoleContent').classList.add('initHidden');
 l('devConsoleContent').classList.add('fadeOut');
 invalidateScore=0;
 
-//colored buttons
-var customStyles = [];
-customStyles.push(`
-  .CCCEMInterface {
-    scrollbar-width: thin; overflow-y:auto;
-    min-width: 24px;
-    width: auto !important;
-    max-height: calc(100vh - ${((App?0:l('topBar').getBoundingClientRect().height) + 18)}px);
-    will-change: opacity, transform;
-  }
-  .CCCEMInterface::-webkit-scrollbar {
-    width: 5px;
-    background-color: #33333333;
-    border: none;
-    border-radius: 3px; 
-  }
-  .CCCEMInterface::-webkit-scrollbar-thumb {
-    width: 5px;
-    background-color: #282b2bff;
-    outline: none;
-    border: none;
-    box-shadow: none;
-    border-radius: 3px; 
-  }
-  .flexbreak { 
-    flex-basis: 100%;
-    height: 0;
-  }
-  .CCCEMInterface.cccem-fade-out {
-    animation: cccem-fade-out 0.5s cubic-bezier(.22,.9,.33,1) forwards;
-  }
-  #devConsoleContent { 
-    display: flex; 
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: 450px;
-  }
-  #devConsoleContent.widthCapped { 
-    width: 24px !important;
-  }
-  #devConsoleContent.fadeOut {
-    animation: cccem-fade-out 0.5s cubic-bezier(.22,.9,.33,1) forwards;
-  }
-  #devConsoleContent.initHidden {
-    pointer-events: none; visibility: hidden; display: none;
-  }
-
-  @keyframes cccem-fade-out {
-    0%   { opacity: 1; transform: translateZ(0) scale(1); }
-    70%  { opacity: 0.15; transform: translateZ(0) scale(0.995); }
-    100% { opacity: 0; transform: translateZ(0) scale(0.99); pointer-events: none; visibility: hidden; }
-  }
-
-  .external:after {
-    content: "↗";
-    font-size: 0.8em;
-    margin-left: 0.25em;
-  }
-  h4.cccemPresetCategoryTitle {
-    text-decoration: underline;
-    margin-bottom: 2px;
-  }
-
-  .cccemSearchDisplay { 
-    border: 1px solid white;
-    padding: 6px;
-    cursor: pointer;
-  }
-  .cccemSearchDisplay:hover {
-    background-color: #363535ff;
-  }
-
-  .statsGrid {
-    display:grid;
-    gap: 5px;
-    align-items: start;
-  }
-  .statsCell {
-    min-width: 0;
-    line-height: 160%;
-  }
-  .block .historyEntry {
-    border-width: 2px;
-    cursor: pointer;
-  }
-  .block .historyEntry:hover { 
-    border: 2px solid white;
-  }
-  .block .historyEntry.alwaysHighlighted {
-    border: 2px solid white !important;
-  }
-  .block.stat {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-  }
-  .statIcon {
-    width: 48px;
-    height: 48px;
-    flex: 0 0 48px;
-  }
-  .statIconActual { 
-    width: 48px;
-    height: 48px;
-    background-repeat: no-repeat;
-    transform-origin: 0 0;
-    background-image: url('img/icons.png');
-  }
-  .title.stat {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 16px;
-  }
-  .statDescription {
-    text-decoration: underline;
-    cursor: help;
-    font-weight: 700;
-    margin-left: 6px;
-  }
-  .statDetails {
-    font-size: 24px;
-    font-weight: 700;
-    margin-top: 6px;
-  }
-
-  .promptBox
-  {
-	position:relative;
-	overflow:hidden;
-	width:250px;
-	padding:16px;
-	margin-left:-18px;
-	left:-125px;
-	text-align:center;
-	/*animation:pucker 0.2s;*/
-  }
-  .promptBox h3,.prompt h3,h4,.fancyText
-{
-	text-align:center;
-	font-weight:bold;
-	font-size:14px;
-	position:relative;
-	font-variant:small-caps;
-	display:inline-block;
-}
-.promptBox h3,.prompt h3,.fancyText
-{
-	color:#ece2b6;
-	text-shadow:0px 1px 0px #733726,0px 2px 0px #875626,0px 2px 1px #000,0px 2px 3px #000;
-	font-family:Georgia,serif;
-	font-size:15px;
-}
-.large .fancyText{font-size:20px;}
-.promptBox h3:before,.promptBox h3:after,.prompt h3:before,.prompt h3:after,.winged:before,.winged:after
-{
-	content:'';
-	display:block;
-	width:39px;
-	height:23px;
-	position:absolute;
-	top:-4px;
-}
-.promptBox h3:before,.prompt h3:before,.winged:before
-{
-	background:url(img/featherLeft.png) no-repeat;
-	left:-39px;
-}
-.promptBox h3:after,.prompt h3:after,.winged:after
-{
-	background:url(img/featherRight.png) no-repeat;
-	right:-39px;
-}
-.promptBox textarea,.promptBox input
-{
-	width:100%;
-	margin:0px;
-	position:relative;
-	left:-3px;
-}
-
-.promptBox.widePrompt
-{
-	width:500px;
-	left:-250px;
-}
-
-.promptBox.legacyPrompt
-{
-	width:400px;
-	left:-200px;
-}
-
-.promptContentBox{margin-top:-8px;}
-.promptContentBox h3{margin-bottom:6px;}
-  `)
-customStyles.push(`
-  .neatocyan, a.option.neatocyan {
-    color: #00bcda;
-	border-color: #00bcda;
-  }`)
-customStyles.push(`
-  a.option.neatocyan:hover {
-    color:#00dcff;
-    border-color: #00dcff;
-  }`)
-customStyles.push(`
-  a.option.neatocyan:active {
-    background-color: #003140;
-  }`)
-customStyles.push(`
-  .neatoyellow, a.option.neatoyellow {
-    color: #b3b304;
-	border-color: #b3b304;
-  }`)
-customStyles.push(`
-  a.option.neatoyellow:hover {
-    color: #e4e400;
-	border-color: #e4e400;
-  }`)
-customStyles.push(`
-  a.option.neatoyellow:active {
-    background-color: #404000;
-  }`)
-customStyles.push(`
-  .neatolime, a.option.neatolime {
-    color: #00de35;
-    border-color: #00de35;
-  }
-  .neatolime.massive { font-size: 140%; padding: 6px 11px; border-width: 2px; font-weight: bold; border-radius: 5px; }`)
-customStyles.push(`
-  a.option.neatolime:hover {
-    color: #26ff5a;
-    border-color: #26ff5a;
-  }`)
-customStyles.push(`
-  a.option.neatolime:active {
-    background-color: #031;
-  }`)
-customStyles.push(`
-  .neatogray, a.option.neatogray {
-    color: #9a949d;
-    border-color: #9a949d;
-  }`)
-customStyles.push(`
-  a.option.neatogray:hover {
-    color: #b6b5b6;
-    border-color: #b6b5b6;
-  }`)
-customStyles.push(`
-  a.option.neatogray:active {
-    background-color: #292329;
-  }`)
-customStyles.push(`
-  .neatowhite, a.option.neatowhite {
-    color: #d4d9db;
-    border-color: #d4d9db;
-  }`)
-customStyles.push(`
-  a.option.neatowhite:hover {
-    color: #ffffff;
-    border-color: #ffffff;
-  }`)
-customStyles.push(`
-  a.option.neatowhite:active {
-    background-color: #2e3538;
-  }`)
-customStyles.push(`
-  .neatoorange, a.option.neatoorange {
-    color: #e8a230;
-    border-color: #e8a230;
-  }`)
-customStyles.push(`
-  a.option.neatoorange:hover {
-    color: #ffc76c;
-    border-color: #ffc76c;
-  }`)
-customStyles.push(`
-  a.option.neatoorange:active {
-    background-color: #332300;
-  }`)
-customStyles.push(`
-  .neatoblue, a.option.neatoblue {
-    color: #7785f2;
-    border-color: #7785f2;
-  }`)
-customStyles.push(`
-  a.option.neatoblue:hover {
-    color: #aab3ff;
-    border-color: #aab3ff;
-  }`)
-customStyles.push(`
-  a.option.neatoblue:active {
-    background-color: #05002f;
-  }`)
-customStyles.push(`
-  .neatofire, a.option.neatofire {
-    color: rgba(255, 85, 55, 1);
-    border-color: rgba(255, 85, 55, 1);
-  }`)
-customStyles.push(`
-  a.option.neatofire:hover {
-    color: rgba(255, 137, 104, 1);
-    border-color: rgba(255, 137, 104, 1);
-  }`)
-customStyles.push(`
-  a.option.neatofire:active {
-    background-color: #2f0000;
-  }`)
-customStyles.push(`
-  .neatopurple, a.option.neatopurple {
-    color: #ba65ff;
-    border-color: #ba65ff;
-  }`)
-customStyles.push(`
-  a.option.neatopurple:hover {
-    color: #daadff;
-    border-color: #daadff;
-  }`)
-customStyles.push(`
-  a.option.neatopurple:active {
-    background-color: #250041;
-  }`)
-customStyles.push(`
-  a.option.nonexistent { 
-    display: none;
-  }
-  `)
-let styleObj = document.createElement('style');
-let stylesStr = '';
-for (let i of customStyles) { stylesStr += i + '\n'; }
-styleObj.textContent = stylesStr;
-l('game').appendChild(styleObj);
-
 window.CCCEMInterfaceReady = true;
+var CCCEMUILoaded = true; // backward compatibility purposes

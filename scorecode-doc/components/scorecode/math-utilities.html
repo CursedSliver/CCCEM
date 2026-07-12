@@ -1,0 +1,48 @@
+<h1>Math utilities</h1>
+<p>
+    The language provides some base-level math utilities for your convenience.
+    <br>There are 5 utility keywords.
+</p>
+<table>
+    <tr class="header-row"> 
+        <th>Utility</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; min &lt;expr&gt;</code></th>
+        <th>Takes the expression with the smaller value.</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; max &lt;expr&gt;</code></th>
+        <th>Takes the expression with the larger value.</th>
+    </tr>
+    <tr>
+        <th><code>sin &lt;expr&gt;</code></th>
+        <th>Takes the sine of the expression in radians.</th>
+    </tr>
+    <tr>
+        <th><code>cos &lt;expr&gt;</code></th>
+        <th>Takes the cosine of the expression in radians.</th>
+    </tr>
+    <tr>
+        <th><code>tan &lt;expr&gt;</code></th>
+        <th>Takes the tangent of the expression in radians.</th>
+    </tr>
+</table>
+<h2>Return value</h2>
+<p>All math utilities return numbers.</p>
+<h2>Examples</h2>
+<p><b><code>min</code></b> - returns the smaller of two values.</p>
+[[codebox:3 min 5          -> 3
+-2 min 4         -> -2]]
+<p><b><code>max</code></b> - returns the larger of two values.</p>
+[[codebox:3 max 5          -> 5]]
+
+<p><b><code>sin</code></b> - takes the sine of the next expression (input in radians).</p>
+[[codebox:sin 1            -> 0.8414709848078965  // sin(1 rad)
+sin (-1)         -> -0.8414709848078965  // sine is odd: sin(-x) = -sin(x)]]
+<p><b><code>cos</code></b> - takes the cosine of the next expression (input in radians).</p>
+[[codebox:cos 1            -> 0.5403023058681398  // cos(1 rad)
+cos (-1)         -> 0.5403023058681398   // cosine is even: cos(-x) = cos(x)]]
+<p><b><code>tan</code></b> - takes the tangent of the next expression (input in radians).</p>
+[[codebox:tan 1            -> 1.5574077246549023  // tan(1 rad)]]

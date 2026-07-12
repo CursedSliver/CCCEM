@@ -1,0 +1,28 @@
+<h1>Referencing trackers</h1>
+<p>
+    You can reference the contents of other trackers even in a tracker.
+    <br>To do this, use the <code>"&lt;tracker name&gt;"</code> syntax.
+    <br>This will usually extract the tracker's stored value. 
+    However, if the tracker is a helper tracker, it will functionally be replaced by the code of the helper tracker. 
+    The helper tracker code will also be able to reference values in the scope that it was called in, but the names need to match.
+</p>
+<p>
+    <b>If you wish to reference the tracker that the code is hosted on, do not use this syntax</b>, instead use the <code>'value'</code> keyword.
+</p>
+<h2>Tracker resolve order</h2>
+<p>
+    When multiple trackers have the same trigger method, when the trigger fires and updates the value of all subscribed trackers,
+    the trackers are updated according to their <b>dependencies</b>. This is to prevent referencing stale values.
+    <br>When a tracker contains a reference to another tracker, that tracker is added to the tracker's dependency list.
+    A tracker will only update after all of its dependencies have already updated. 
+    <br>Tracker references to trackers that do not share the trigger method will not enter the dependency list.
+    <br>Otherwise, there is no strict resolve order and trackers on the same dependency level can be updated in an arbitrary unknown order.
+</p>
+<h3>Circular dependencies</h3>
+<p>
+    Circular dependencies are <b>not allowed</b> in Scorecode. 
+    If a circular dependency is found the trackers will not update 
+    and you will receive an error notification whenever it attempts to update.
+    <br>Note that the dependency list is not smart; if a tracker reference another tracker at all the tracker will be added to the dependency list,
+    even if the tracker reference is skipped in execution (such as via branching code).
+</p>

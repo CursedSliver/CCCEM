@@ -1,0 +1,52 @@
+<h1>Iterations</h1>
+<p>
+    You can iterate over a function in Scorecode; however, rather than a <code>for</code> loop, it is more like
+    <code>Array.prototype.reduce</code> in Javascript, with an accumulator function. 
+    <br>This primarily exists to make interfacing with the game easier; for more complex looping behavior, it is recommended to use recursion instead.
+    <br>The syntax is:
+</p>
+<code>(&lt;iteration count expr&gt;){&lt;body function&gt;}(&lt;accumulator function&gt;)</code>
+<p>
+    The iteration count expression is evaluated once, and the body function is called that many times, 
+    with the accumulator function being called each time the function is called past the first time.
+    <br>The first time that the body function is called, its return value is used as the initial accumulator value.
+    After that, each time the body function is called, 
+    the accumulator function takes in the current iteration count and the current accumulator value, 
+    and returns the new accumulator value.
+</p>
+<p>
+    The body function will be passed the following three arguments, in that order:
+    <ul>
+        <li>The current iteration count, starting at 0 and going up to max - 1</li>
+        <li>The current accumulator value</li>
+        <li>The max iteration count</li>
+    </ul>
+    However, note that all arguments are optional.
+</p>
+<h2>Examples</h2>
+<p><b>Sum 1 + 2 + ... + n</b> - use an accumulator and a summation that adds the current index to the running total.</p>
+[[codebox:(5){('i','a')#('i' + 1)}(('a','b')#('a' + 'b'))         // body returns i+1, sum adds it
+                       -> 15   // see trace below
+// Trace: body(0, 0) = 1 (initial accumulator)
+//   sum(1, body(1, 1) = 2) = 1 + 2 = 3
+//   sum(3, body(2, 3) = 3) = 3 + 3 = 6
+//   sum(6, body(3, 6) = 4) = 6 + 4 = 10
+//   sum(10, body(4, 10) = 5) = 10 + 5 = 15
+
+(10)
+{('i','a')#('i' + 1)}
+(('a','b')#('a' + 'b'))        -> 55   // sum 1..10 = 55]]
+<p><b>Sum of squares 1<sup>2</sup> + 2<sup>2</sup> + ... + n<sup>2</sup></b> - the body returns <code>(i+1)^2</code>.</p>
+[[codebox:5 {('i','a')#(('i' + 1) ^ 2)}(('a','b')#('a' + 'b'))   -> 55   // 1+4+9+16+25 = 55
+10 {('i','a')#(('i' + 1) ^ 2)}(('a','b')#('a' + 'b'))  -> 385  // 1+4+...+100 = 385]]
+<p><b>Using the optional max argument</b> - the body function can request the third argument (the max) by listing it in its argument list.</p>
+[[codebox:4 {('i','a','m')#('i' + 'm')}(('a','b')#('a' + 'b'))   -> 22   // each step adds i + m
+// body(0, 0, 4) = 0 + 4 = 4  (initial accumulator)
+// sum(4, body(1, 4, 4) = 5)    = 4 + 5 = 9
+// sum(9, body(2, 9, 4) = 6)    = 9 + 6 = 15
+// sum(15, body(3, 15, 4) = 7)  = 15 + 7 = 22
+
+3 {('i','a','m')#('m')}(('a','b')#('a' + 'b'))   -> 9   // each step adds m=3
+// body(0, 0, 3) = 3  (initial accumulator)
+// sum(3, body(1, 3, 3) = 3)  = 3 + 3 = 6
+// sum(6, body(2, 6, 3) = 3)  = 6 + 3 = 9]]

@@ -1,0 +1,53 @@
+<h1>High-level overview</h1>
+<p>
+    CCCEM stands for Cookie Clicker Combo Execution Mod, with the goal of enabling
+    easy practice of all kinds of combos. 
+    <br>Practice needs feedback. While you can model your combo scoring based on just
+    how many cookies you get, in bigger combos this amount is heavily influenced by luck.
+    Sometimes you would get more cookies, just because you got more buffs by chance - 
+    this is the problem that the <b>Combo scoring</b> system is designed to solve, 
+    outputting a score based on your displayed skill instead of luck. 
+</p>
+<p>
+    Before CCCEM v3.5, the scoring system is entirely hardcoded and there was no practical method
+    to adapt the scoring formula for all combos. Version 3.5 attempts to solve this problem by 
+    breaking down and opening up the "black box" of the scoring system, turning it into a
+    modular system that anyone can modify; this has the main benefit of allowing users to 
+    adjust their own practice goals, and refine their skills in a way that is most useful for them.
+</p>
+<p> 
+    This system is powered by a custom programming language called "Scorecode", harnessed by three
+    main components: <b>Watchers</b>, <b>Trackers</b>, and <b>Stats</b>. The Scorecode language itself is similar to lambda calculus.
+    More details below.
+</p>
+
+<h2>Score evaluation</h2>
+<p>
+    To analyze the execution, the system keeps information about the game and analyzes them through the following
+    three sections:
+</p>
+<ol>
+    <li><b>Watchers:</b> Watchers constantly gather information from the game. 
+        Each Watcher gather a different, specific type of information. 
+        There is a fixed set of Watchers and they cannot be added, removed, or modified.</li>
+    <li><b>Trackers:</b> Trackers are the main building blocks of the system, keeping track of important information. 
+        Each Tracker can hold one number that they can update at times defined by its settings. 
+        How a Tracker updates its stored value is defined by its Scorecode formula, which pulls information from Watchers or other Trackers.</li>
+    <li><b>Stats:</b> Stats are the final output of the system, and they are calculated based on the Trackers' values. 
+        An example of a stat is the Score, which is displayed at the end of each combo attempt, but other kinds of stats exist. 
+        They combine information from trackers to calculate its value when the player clicks "Try again", also defined by its Scorecode formula.</li>
+</ol>
+<p>Information about the Scorecode language can also be found in this documentation site.</p>
+
+<!-- TODO: add a diagram of the system -->
+
+<h2>Editing the system</h2>
+<p>
+    You can easily edit Trackers or Stats via the corresponding buttons in the Scoring & Evaluation section
+    in the CCCEM Interface, provided that you aren't locked in a preset (click "Edit preset" if it is present) 
+    and that Advanced mode is turned ON.
+    <br>These settings are saved and bundled to your current settings; 
+    exporting your settings will also export them, and the same goes for importing.
+</p>
+
+<!-- Screenshot of the section -->

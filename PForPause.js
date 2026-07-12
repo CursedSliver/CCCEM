@@ -238,6 +238,21 @@ Game.registerMod('P for Pause', {
         });
 
         this.patchDate();
+        this.registerHotkeyCaptureListener();
+        this.registerDefaultHotKeys();
+        AddEvent(document, 'keydown', e => {
+            if (!this.defaultHotkeysEnabled) { return; }
+            if (this.toggleGameSpeedHotkey && !this.awaitingHotkey && e.key.toLowerCase() === this.toggleGameSpeedHotkey) {
+                this.changeGameSpeed(this.pendingTimeFactor);
+            }
+        });
+        AddEvent(document, 'keyup', e => {
+            if (!this.defaultHotkeysEnabled) { return; }
+            if (this.toggleGameSpeedHotkey && !this.awaitingHotkey && e.key.toLowerCase() === this.toggleGameSpeedHotkey) {
+                this.changeGameSpeed(1);
+            }
+        });
+        if (this.defaultHotkeysEnabled) { Game.Notify(loc('P For Pause loaded!'), loc('Press P to pause the game, or press Shift+P to change your game speed.'), 0); }
     },
     changeGameSpeed: function(mult, noCSSUpdates) {
         if (typeof mult != 'number' || mult < 0) { return; }
@@ -386,6 +401,145 @@ Game.registerMod('P for Pause', {
         //utility for stuff that triggers every x ticks, but want to use animT
         return Math.floor(Math.floor(Game.animT) / int + 1e-13) - Math.floor(Game.lastAnimTExact / int + 1e-13);
     },
+    pendingTimeFactor: 1,
+    defaultHotkeysEnabled: window.__PForPauseDefaultHotkeysEnabled__ ?? true,
+    /**
+     * @type {string|false|true} false = never, true = always, string = hotkey
+     */
+    toggleGameSpeedHotkey: true,
+    awaitingHotkey: false,
+    _hotkeyCaptureListener: null,
+    _hotkeyCaptureHook: null,
+    registerDefaultHotKeys: function() {
+        const thisObject = this;
+        AddEvent(document, 'keydown', e => {
+            if (!thisObject.defaultHotkeysEnabled) { return; }
+            if (e.shiftKey && e.key.toLowerCase() === 'p') {
+                thisObject.openInterface();
+            } else if (e.key.toLowerCase() === 'p') {
+                PauseGame();
+            }
+        });
+    },
+    registerHotkeyCaptureListener: function() {
+        //Standalone window keydown listener used only while awaiting a new hotkey.
+        //Intentionally decoupled from CCCEM's keyBindEvents/toChangeKeyBind so this
+        //works when the mod is loaded without CCCEM.
+        if (this._hotkeyCaptureListener) { return; }
+        const thisObject = this;
+        const handler = function(e) {
+            if (!thisObject.awaitingHotkey) { return; }
+            //Ignore lone modifier presses; wait for a real key.
+            if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta' || e.key === 'Escape') { return; }
+            e.preventDefault();
+            e.stopPropagation();
+            if (!Game.promptOn) {
+                //Prompt was already closed by the time the key arrived; abandon.
+                thisObject.cancelHotkeyCapture();
+                return;
+            }
+            thisObject.assignHotkey(e);
+        };
+        //Capture phase so we run before any other handler that might consume the key.
+        AddEvent(window, 'keydown', handler, true);
+        this._hotkeyCaptureListener = handler;
+
+        //Hook for logic to detect if the prompt was closed without a key being assigned.
+        this._hotkeyCaptureHook.bind(this);
+        Game.registerHook('logic', this._hotkeyCaptureHook);
+    },
+    formatHotkeyLabel: function(value) {
+        if (value === true) { return loc('Always'); }
+        if (value === false) { return loc('Never'); }
+        if (typeof value === 'string' && value.length > 0) { return value.toUpperCase(); }
+        return loc('Never');
+    },
+    refreshHotkeyButton: function() {
+        const btn = l('hotkeyButton');
+        if (!btn) { return; }
+        btn.innerHTML = loc('Hotkey: %1', this.formatHotkeyLabel(this.toggleGameSpeedHotkey));
+    },
+    _hotkeyCaptureHook: function() {
+        //the this keyword is bound to the mod object.
+        if (!this.awaitingHotkey) {
+            return;
+        }
+        if (!Game.promptOn) {
+            //Prompt was closed without a key being assigned; cancel listening.
+            const out = l('hotkeySetOutput');
+            if (out) { out.innerHTML = loc('Press above button to set. Shift+Space to set always. Ctrl+Space to set never.'); }
+            this.awaitingHotkey = false;
+            this.refreshHotkeyButton();
+            Game.removeHook('logic', hook);
+            this._hotkeyCaptureHook = null;
+        }
+    },
+    beginHotkeyCapture: function() {
+        this.awaitingHotkey = true;
+    },
+    cancelHotkeyCapture: function() {
+        this.awaitingHotkey = false;
+        const out = l('hotkeySetOutput');
+        if (out) { out.innerHTML = loc('Press above button to set. Shift+Space to set always. Ctrl+Space to set never.'); }
+    },
+    assignHotkey: function(e) {
+        let newValue;
+        if (e.key === ' ' && e.ctrlKey) {
+            e.preventDefault();
+            newValue = false; //Never
+        } else if (e.key === ' ' && e.shiftKey) {
+            e.preventDefault();
+            newValue = true; //Always
+        } else {
+            newValue = (typeof e.key === 'string' && e.key.length > 0) ? e.key.toLowerCase() : String(e.key).toLowerCase();
+        }
+        this.toggleGameSpeedHotkey = newValue;
+        this.awaitingHotkey = false;
+        if (this._hotkeyCaptureHook) {
+            Game.removeHook('logic', this._hotkeyCaptureHook);
+            this._hotkeyCaptureHook = null;
+        }
+        this.refreshHotkeyButton();
+        const out = l('hotkeySetOutput');
+        if (out) { out.innerHTML = loc('Press above button to set. Shift+Space to set always. Ctrl+Space to set never.'); }
+        if (this.toggleGameSpeedHotkey === true) {
+            this.changeGameSpeed(this.pendingTimeFactor);
+        } else {
+            this.changeGameSpeed(1);
+        }
+        Game.Notify(loc('Game speed hotkey set: %1', this.formatHotkeyLabel(this.toggleGameSpeedHotkey)), '', 0);
+    },
+    openInterface: function() {
+        Game.Prompt(`<h3>${loc('Modify Game Speed')}</h3>
+            <div class="line"></div>
+            <div class="block" style="text-align: center;">
+                <div><b>${loc('Game speed multiplier')}</b></div>
+                <div class="line"></div>
+                <input type="number" id="pForPauseSpeedInput" value="${this.pendingTimeFactor}" min="0" style="width: 100%;">
+                <div class="line"></div>
+                <a id="hotkeyButton" class="option">${loc('Hotkey: %1', this.formatHotkeyLabel(this.toggleGameSpeedHotkey))}</a>
+                <div id="hotkeySetOutput"><small>${loc('Press above button to set. Shift+Space to set always. Ctrl+Space to set never.')}</small></div>
+            </div>
+        `, [[loc('OK')]]);
+        AddEvent(l('hotkeyButton'), 'click', () => {
+            l('hotkeySetOutput').innerHTML = loc('Waiting for keypress...');
+            this.beginHotkeyCapture();
+        });
+        AddEvent(l('pForPauseSpeedInput'), 'change', () => {
+            const input = l('pForPauseSpeedInput');
+            if (!input) { return; }
+            const newValue = parseFloat(input.value);
+            if (isNaN(newValue) || newValue < 0) {
+                input.value = this.timeFactor;
+                return;
+            }
+            this.pendingTimeFactor = newValue;
+            if (this.toggleGameSpeedHotkey === true || 
+                (typeof this.toggleGameSpeedHotkey === 'string' && this.toggleGameSpeedHotkey.length === 1 && 
+                    (Game.keys[this.toggleGameSpeedHotkey.charCodeAt(0)] || Game.keys[this.toggleGameSpeedHotkey.toUpperCase().charCodeAt(0)])))
+                { this.changeGameSpeed(newValue); }
+        });
+    },
     save: function() {
         return '' + this.timeFactor;
     },
@@ -451,6 +605,19 @@ if (typeof Macadamia != 'undefined' && Macadamia && !hasPForPausePort) {
 		version: "1.0.0"
 	});
 }
+
+AddLanguage('EN', 'english', {
+    'Game speed multiplier': 'Game speed multiplier',
+    'Hotkey: %1': 'Hotkey: %1',
+    'Press above button to set. Shift+Space to set always. Ctrl+Space to set never.': 'Press above button to set. Shift+Space to set always. Ctrl+Space to set never.',
+    'Modify Game Speed': 'Modify Game Speed',
+    'Waiting for keypress...': 'Waiting for keypress...',
+    'Always': 'Always',
+    'Never': 'Never',
+    'Game speed hotkey set: %1': 'Game speed hotkey set: %1',
+    'P For Pause loaded!': 'P For Pause loaded!',
+    'Press P to pause the game, or press Shift+P to change your game speed.': 'Press P to pause the game, or press Shift+P to change your game speed.'
+}, true);
 
 
 if (!(typeof CCCEMUILoaded === 'undefined')) {

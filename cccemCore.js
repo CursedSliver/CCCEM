@@ -65,13 +65,14 @@
 //version 3.41: added localization support
 //version 3.42: overhauled code to support steam, added stuff in options
 //version 3.43: removed save and load and dispersed options into other categories, made the practice mode text not display on web
+//version 3.44: fixed critical issues, major scoring evaluation algorithm rework, added sub-website
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 window.PRACTICE_MODE = true;
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3.43';
+var CCCEMVerReal = 'v3.44';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -658,9 +659,7 @@ function ResetAll(manual) {
   if (iniSeed=='R') {Game.seed=tempseed}
   Game.CalculateGains();
   if (manual) {autoScoreCor=AutoScoreCorrect()};
-  for (let i in initTrackers) {
-    initTrackers[i].update();
-  }
+  cccemModHooks.tryAgain.run();
   iniRaw = Game.cookiesPsRaw;
   ResetGame();
   ResetMinigames();
@@ -674,6 +673,7 @@ function ResetAll(manual) {
   SpawnGoldenCookies();
   Game.bakeryNameSet(name);
   Game.specialTab = 'dragon';
+  if (manual) { Game.BuildStore(); }
   };
 
 function SetBuildings(buildCount, EB, rebuy) {
@@ -823,7 +823,7 @@ function CheckMinigamesLoaded() {
   };
 
 function CheckModLoaded() {
-  if (typeof CCCEMUILoaded === "undefined" && CheckMinigamesLoaded()) {Game.Notify(loc('Mod partially not loaded'),loc('Assets loads experienced a timeout. Try again later.'),[15, 5]," ")};
+  if (typeof CCCEMInterfaceReady === "undefined" && CheckMinigamesLoaded()) {Game.Notify(loc('Mod partially not loaded'),loc('Assets loads experienced a timeout. Try again later.'),[15, 5]," ")};
   };
 
 var gameSettings = [];
@@ -1071,6 +1071,7 @@ var CCCEMContainerModObj = null;
 Game.registerMod('CCCEMContainer', {
   init:function() { CCCEMContainerModObj = this; },
   ready: false,
+  toTriggerPresetOverride: true,
   save:function() { 
     if (!pureWriteSave) {
     	return getSettingsCode();
@@ -1166,6 +1167,7 @@ Game.registerMod('CCCEMContainer', {
       CCCEMPresets.initialization.invoke();
     } 
     ResetAll();
+    Game.BuildStore()
   },
   addLang: function(key, name, json) {
     AddLanguage(key, name, json, true);
@@ -1185,11 +1187,21 @@ function loadAllPrerequisites() {
     url: 'https://cdn.jsdelivr.net/npm/fuse.js@7.1.0',
     optional: true
   }, {
+    load: () => { let div = document.createElement('link'); div.id = 'CCCEMStyles'; div.href = cccemDir+'cccemStyles.css'; div.rel = 'stylesheet'; div.type = 'text/css'; document.body.appendChild(div); },
+    optional: true,
+  }, {
     url: cccemDir+"Scorecode.js",
     check: () => typeof Scorecode !== 'undefined'
   }, {
+    url: cccemDir+"cccemEvaluation.js",
+    check: () => (typeof CCCEMEvaluationLoaded !== 'undefined' && CCCEMEvaluationLoaded)
+  }, {
     url: cccemDir+"cccemInterface.js",
-    check: () => (typeof CCCEMUILoaded !== 'undefined' && CCCEMUILoaded)
+    check: () => (typeof CCCEMInterfaceReady !== 'undefined' && CCCEMInterfaceReady)
+  }, {
+    url: cccemDir+"cccemStatsPanel.js",
+    check: () => (typeof CCCEMStatsPanelLoaded !== 'undefined' && CCCEMStatsPanelLoaded),
+    optional: true
   }, {
     url: cccemDir+'cccemPresets.js',
     check: () => (typeof __GENERATE_PRESETS__ !== 'undefined' && __GENERATE_PRESETS__),
@@ -1207,7 +1219,7 @@ function loadAllPrerequisites() {
       let item = list[idx];
 
       if (item.optional) {
-        try { Game.LoadMod(item.url); } catch (err) { }
+        try { if (item.load) { item.load(); } else { Game.LoadMod(item.url); } } catch (err) { }
         processItem(idx + 1); return;
       }
 
@@ -1220,9 +1232,9 @@ function loadAllPrerequisites() {
         if (item.check()) { processItem(idx + 1); return; }
       } catch (err) { reject(err); return; }
 
-      if (item.url) {
+      if (item.url && !item.load) {
         try { Game.LoadMod(item.url); } catch (err) { /* continue to polling anyway */ }
-      }
+      } else if (item.load) { item.load(); }
 
       const start = Date.now();
       const iv = setInterval(() => {
@@ -1264,7 +1276,6 @@ if (Game.ready && !l('topbarFrenzy')) {
 
 function InitializeMod() {
   InitBuffMod()
-  console.log(hasSettingsSet)
   Game.Reset(1);
   Game.bgType = 23;
   if (hasSettingsSet) {
@@ -1283,6 +1294,7 @@ function InitializeMod() {
     Game.Notify(loc("CCCEM %1 Loaded!", CCCEMVerReal), (App?loc("Go to options to exit practice mode."):loc("Your save will return upon closing the game."))+'<br>'+loc('Select a preset via hovering the button at top left, and customize it to your liking.'), [18, 6], " ") 
   } else { Game.Notify(loc("CCCEM %1 Loaded!", CCCEMVerReal), loc("Stored settings successfully loaded."), [19, 6], " "); }
   Game.prefs.autosave=0
+  Game.BuildStore()
   Game.SaveTo = Game.mods['CCCEMLoader'].saveToDestination;
 }
 

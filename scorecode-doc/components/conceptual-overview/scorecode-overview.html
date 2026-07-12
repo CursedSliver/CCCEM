@@ -1,0 +1,34 @@
+<h1>Scorecode overview</h1>
+<p>
+    Scorecode is a custom programming language that is used in Trackers and Stats. (See High-level overview for more details)
+    <br>It is an almost-pure functional programming language, similar to Haskell. 
+    For example, variables cannot be dynamically created or deleted, functions have no side effects, 
+    and the only inputs are values returned from Watchers. Functions are also first-class values.
+    <br>Each Tracker holds exactly one number that is updated according to their own Scorecode formula, and that's all the "variables" available.
+</p>
+
+<h2>Language syntax overview</h2>
+
+<ul>
+    <li>Types: numbers and functions. Non-zero numbers are considered true, zero is false.</li>
+    <li>Math operators: <code>+ - * / % ^</code></li>
+    <li>Boolean operators: <code>| & !</code></li>
+    <li>Parentheses/scoping: <code>( )</code></li>
+    <li>Comparison operators: <code>&lt; &gt; =</code></li>
+    <li>Branching: <code>&lt;expr returning zero or nonzero&gt;?&lt;expr if true&gt;:&lt;expr if false&gt;</code></li>
+    <li>Constants: <code>true false &lt;arbitrary numbers&gt;</code></li>
+    <li>Math utilities: <code>min max sin cos tan</code> (min and max go between two expressions like math operators, trig goes before expression)</li>
+    <li>Function declaration: <code>(&lt;arguments separated by commas&gt;)#(&lt;function body&gt;)</code></li>
+    <li>Calling functions: <code>(&lt;function&gt;)@(&lt;arguments separated by commas&gt;)</code></li>
+    <li>Iterations: (similar to Array.prototype.reduce in JS) <code>(&lt;iteration count){&lt;body function&gt;}(&lt;accumulator function&gt;)</code></li>
+    <li>Game state access:
+        <ul>
+            <li>Watchers: <code>[&lt;watcher name&gt;;&lt;arguments with or without $ before&gt;]</code></li>
+            <li>Trackers: <code>"&lt;tracker name&gt;"</code></li>
+            <li>Value of the tracker that the code is attached to: <code>'value'</code></li>
+            <li>CCCEM settings: <code>[[&lt;setting ID&gt;]]</code></li>
+        </ul>
+    </li>
+    <li>Ignored: ALL whitespaces not inside watcher names, tracker names, and CCCEM settings. 
+        Code does not have to be on one line. Comments are declared with <code>//</code>.</li>
+</ul>

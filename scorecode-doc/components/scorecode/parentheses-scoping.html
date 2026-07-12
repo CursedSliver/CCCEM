@@ -1,0 +1,11 @@
+<h1>Parentheses/scoping</h1>
+<p>
+    A lone parentheses is a scoping operator.
+    <br>Expressions within a parenthesis will be evaluated independently and the result will be returned, 
+    ignoring operator precendence.
+</p>
+<h2>Examples</h2>
+<p><b>Overriding operator precedence</b> - without parentheses, <code>*</code> binds tighter than <code>+</code>. Parentheses force the addition to happen first.</p>
+[[codebox:(2 + 3) * 4        -> 20    // (2+3)*4 = 20, parentheses win
+(1 | 0) & 0       -> 0     // OR is grouped first, then AND
+(1 | 0) * 4       -> 4     // If parenthesis not present, it would evaluate to 1]]

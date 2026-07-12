@@ -1,0 +1,38 @@
+<h1>Comparison operators</h1>
+<p>
+    A comparison operator takes in two expressions and returns a pesudo-boolean value (in other words, 0 for false, 1 for true).
+    <br>There are three types of comparison operators.
+</p>
+<table>
+    <tr class="header-row"> 
+        <th>Operator</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; &lt; &lt;expr&gt;</code></th>
+        <th>Greater than: Returns 1 if the first expression is greater than the second expression, otherwise 0.</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; = &lt;expr&gt;</code></th>
+        <th>Equal to: Returns 1 if the first expression is equal to the second expression, otherwise 0.</th>
+    </tr>
+    <tr>
+        <th><code>&lt;expr&gt; &gt; &lt;expr&gt;</code></th>
+        <th>Less than: Returns 1 if the first expression is less than the second expression, otherwise 0.</th>
+    </tr>
+</table>
+<h2>Return value</h2>
+<p>All comparison operators return numbers: 0 for false, 1 for true.</p>
+<h2>Examples</h2>
+<p><b>Less than (<code>&lt;</code>)</b> - returns 1 when the left side is strictly less than the right side.</p>
+[[codebox:1 &lt; 2          -> 1]]
+<p><b>Greater than (<code>&gt;</code>)</b> - returns 1 when the left side is strictly greater than the right side.</p>
+[[codebox:2 > 1          -> 1]]
+<p><b>Equal to (<code>=</code>)</b> - returns 1 when the two sides are exactly equal. 
+    Note the single <code>=</code>; there is no <code>==</code> or <code>===</code>.
+    Can be used on two strings to check for exact equality.
+</p>
+[[codebox:1 = 1          -> 1
+1 = 2          -> 0
+(2 + 2) = 4    -> 1
+[str;yes] = [str;yes] -> 1]]
