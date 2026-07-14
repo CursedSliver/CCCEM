@@ -1082,7 +1082,7 @@ function PrintScore() {
   //console.log(maxUndevastated);
 
   // Build history stats and push a new historyEntry
-  const scoreI = evaluateScore()*autoScoreCor;
+  const scoreI = evaluateScore();
   const scoreStatO = new statTypesList.score(scoreI, scoreI / 1.333e6 * 100);
   let stats = [
     scoreStatO

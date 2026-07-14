@@ -19,6 +19,7 @@
     "PForPause.js",
     "castFinder.js",
     "testFile.js",
+    "autoclicker.js",
     "locPatches/**/*"
   ],
   "exclude": [
