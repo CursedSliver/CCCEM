@@ -1056,7 +1056,8 @@ function evaluateScore() {
   try {
     return Scorecode(scoringFormula.trim());
   } catch (e) {
-
+    Game.Notify(loc('Score error!'));
+    return 0;
   }
 }
 
@@ -1070,7 +1071,7 @@ function PrintScore() {
   var clickGain=Game.handmadeCookies-iniHM
   var consistentPow = AllConsistentBuffsPow();
   var scoreRed=(maxComboPow*iniRaw*consistentPow/relComboPow);
-  var score=(cookieGain/scoreRed)*autoScoreCor;
+  var score=(cookieGain/scoreRed);
   var originalScore = score;
   score/=1.333e6;
 
@@ -1143,7 +1144,7 @@ function PrintScore() {
   }
   return function() { 
     if (invalidateScore==0) {Game.Notify('Score: ' + SimpleBeautify(Math.floor(originalScore)) + ' (' + (score * 100).toFixed(1) + '%)', logStr + ((originalScore > historySettings.scoreRegisterThreshold)?'For more details, see history.':'Not enough score to register history. Gain at least '+SimpleBeautify(historySettings.scoreRegisterThreshold)+' score to register.'), scoreStatO.getIcon())}
-    if (scoreCorNotify && clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
+    if (scoreCorNotify && typeof clickScore !== 'undefined' && clickScore && (scoreCorrection<0.99 || scoreCorrection>1.01)) {
       Game.Notify('Large score fault',
         'Score per click: ' + scorePerClick.toFixed(4) +
         'Score correction value: ' + scoreCorrection.toFixed(4) +
@@ -1151,7 +1152,7 @@ function PrintScore() {
         z + 'Set score mult to: ' + scoreCorrection*scoreCorVal
         ,[1,7]);
       };
-    if (scoreCorNotify && clickScore && incorrectEBwarn>0) {Game.Notify('EB setting fault','EB setting not matching usage of Elder Battalion',[1,7]);}
+    if (scoreCorNotify && typeof clickScore !== 'undefined' && clickScore && incorrectEBwarn>0) {Game.Notify('EB setting fault','EB setting not matching usage of Elder Battalion',[1,7]);}
   }
 };
 
