@@ -17358,6 +17358,6 @@ window.onload=function()
 		else loadLangAndLaunch(lang);
 	}
 
-	window.PRESETMODS = ['cccem.js'];
+	window.PRESETMODS = ['autoclicker.js', 'cccem.js'];
 	window.locally_hosted = true;
 };

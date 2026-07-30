@@ -2565,6 +2565,11 @@ new buttonCategory('evaluationSettings', 8, [
     new buttonInfo('Manage trackers', 'Create and edit trackers used for scoring and tracking stats within an attempt.', [0, 22.5]),
     null, { newLine: true, hidden: !EVALUATION_UI_ENABLED }
   ),
+  new CCCEMButton('viewWatchers', 'View watchers', 
+    new watcherViewButton(),
+    new buttonInfo('View watchers', 'View watchers', [0, 22.5]),
+    null, { hidden: !EVALUATION_UI_ENABLED }
+  ),
   new CCCEMButton('exportTrackers', 'Export trackers',
     new readonlyDisplayButton(() => {
       return stringifyAllTrackers();
@@ -2650,6 +2655,10 @@ CCCEMButtons['importTrackers'].type.willSave = false;
 CCCEMButtons['immunizeTrackerImports'].type.willSave = false;
 CCCEMButtons['exportStats'].type.willSave = false;
 CCCEMButtons['importStats'].type.willSave = false;
+window.ENABLE_EVALUATION_UI = function() {
+  const buttons = ['documentationLink', 'manageTrackers', 'viewWatchers', 'exportTrackers', 'importTrackers', 'visualizeTrackers', 'immunizeTrackerImports', 'editStats', 'freezeStats', 'exportStats', 'importStats'];
+  buttons.forEach(e => CCCEMButtons[e].hidden = false);
+}
 
 new buttonCategory('savingControls', 1e6, [
   new CCCEMButton('saveSettings', 'Save current settings',
