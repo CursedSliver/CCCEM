@@ -1913,7 +1913,7 @@ new buttonCategory('categoryTogglePanel', 1, [
     function() {
       window.__PForPauseDefaultHotkeysEnabled__ = false;
       Game.LoadMod(pForPausePath); if (hasHarbor) { MacadamiaModList.cccem.mod.loadModRPC.send({ path: pForPausePath }); } this.hidden = true;
-    }
+    }, { hidden: !!App }
   ),
   new CCCEMButton('optionsBatchPForPause', 'P for Pause options %1',
     new categoryToggleButton('PForPause'),
@@ -1924,7 +1924,7 @@ new buttonCategory('categoryTogglePanel', 1, [
     new buttonInfo('Load Cast Finder', 'Loads the Grimoire Cast Finder mod, which allows you to program specific strings of cast outcomes to find.<br>Disables the FtHoF button on load.', [17, 27]),
     function() {
       Game.LoadMod(castFinderPath); if (hasHarbor) { MacadamiaModList.cccem.mod.loadModRPC.send({ path: castFinderPath }); } this.hidden = true;
-    }
+    }, { hidden: !!App }
   ),
   new CCCEMButton('optionsBatchCastFinder', 'Cast Finder options %1',
     new categoryToggleButton('CastFinder'),
@@ -2674,12 +2674,12 @@ new buttonCategory('savingControls', 1e6, [
   new CCCEMButton('quit', 'Exit practice',
     new limeButton(),
     new buttonInfo('Exit practice mode', 'Unloads CCCEM without saving its current setting, returning you to your original save.', [2, 7]),
-    () => { Game.toReload = true; }, { hidden: !App || !window.locally_hosted, preNewLine: true }
+    () => { Game.toReload = true; window.prepareWarn(); }, { hidden: !App || !window.locally_hosted, preNewLine: true }
   ),
   new CCCEMButton('saveAndQuit', 'Save and Exit',
     new limeButton(),
     new buttonInfo('Save and exit', 'Saves CCCEM settings, then unloads the changes, returning you to your original save.', [2, 7]),
-    () => { customSave(); Game.toReload = true; }, { hidden: !App || !window.locally_hosted }
+    () => { customSave(); Game.toReload = true; window.prepareWarn(); }, { hidden: !App || !window.locally_hosted }
   ),
   new CCCEMButton('buildingRelatedSaveData', '', 
     new savingModule(() => {
@@ -2818,7 +2818,7 @@ CCCEMButtons['buffObj'].changeState(-1);
 function RedrawCCCEM(noinvalidate) {
   if (hasHarbor) { MacadamiaModList.cccem.mod.syncSettingsRPC.send({ code: getSettingsCode() }); }
   var str='';
-  str+='<div class="icon" style="position:absolute;left:-9px;top:-6px;background-position:'+(-28*48)+'px '+(-12*48)+'px;"></div>';
+  str+='<div class="icon" style="position:absolute;left:-9px;top:-6px;background-position:'+(-28*48)+'px '+(-12*48)+'px;"></div><div id="debugLog" style="display:none;"></div>';
   
   str+='<div id="devConsoleContent" class="'+(l('devConsoleContent')?((l('devConsoleContent').classList.contains('fadeOut') || l('devConsoleContent').classList.contains('initHidden'))?'initHidden':''):'initHidden')+'">';
   str+='<div class="title" style="font-size:14px;margin:6px;">CCCEM interface</div><div class="line"></div>';
@@ -2838,6 +2838,11 @@ RedrawCCCEM();
 l('devConsoleContent').classList.add('initHidden');
 l('devConsoleContent').classList.add('fadeOut');
 invalidateScore=0;
+
+if (App) {
+  window.__PForPauseDefaultHotkeysEnabled__ = false;
+  Game.LoadMod(pForPausePath);
+}
 
 window.CCCEMInterfaceReady = true;
 var CCCEMUILoaded = true; // backward compatibility purposes

@@ -135,6 +135,10 @@ var hasSettingsSet=0; //whether there is a saved preferred settings
 var pureWriteSave=true; //whether CCCEM saving will be invoked upon Game.WriteSave(); true is dont invoke
 
 Game.WriteSave();
+var old = Game.SaveTo;
+Game.SaveTo = 'CCCEMBackup';
+Game.WriteSave();
+Game.SaveTo = old;
 
 var FtHoFOutcomes= ['random','blood frenzy','click frenzy','building special','frenzy','cursed finger','multiply cookies','cookie storm','free sugar lump','cookie storm drop','blab'];
 var FtHoFOutcomesMap = {};
@@ -174,7 +178,11 @@ function retrieveSave(data, ignoreVersionIssues) {
 			{
 				if (App)
 				{
-					App.getMostRecentSave(function(data){Game.LoadSave(data,true);});
+					App.getMostRecentSave(function(data){
+            var save = unescape(data);
+            if (save.length < 1) return;
+            currentSave = b64_to_utf8(save.split('!END!')[0]);
+          });
 					return false;
 				}
 				if (Game.useLocalStorage)
@@ -1157,6 +1165,7 @@ Game.registerMod('CCCEMContainer', {
       let modContent = JSON.parse(strs[i].split('(-_-)')[1]);
       if (CCCEMCategories[categoryName]) {
         CCCEMCategories[categoryName].loadDataSlot(modContent, fromPreset);
+        if (typeof RedrawCCCEM === 'function') { RedrawCCCEM(); }
       } else {
         modDataSlotsYetToBeLoaded.set(categoryName, modContent);
       }

@@ -639,7 +639,7 @@ if (typeof CCCEMUILoaded !== 'undefined') {
             new buttonInfo('Execute Cast Finder', 'Executes the code in the Cast Finder.', [11, 10]),
             () => CCCEMIntegratedExecute(), { advanced: false }
         ),
-        new CCCEMButton('cfAutoExec', 'Auto execute [##]',
+        new CCCEMButton('cfAutoExec', 'Auto execute %1',
             new boolButton("On", "Off"),
             new buttonInfo('Auto execute', 'Whether the Cast Finder is ran upon pressing Try Again. Disabling would cause the outcome to become randomized.', [17, 22]),
             s => { autoExecute = s; }, { advanced: false }
@@ -653,12 +653,12 @@ if (typeof CCCEMUILoaded !== 'undefined') {
                 usingPreload=true;
             }
         ),
-        new CCCEMButton('cfUsePreload','Use preload [##]',
+        new CCCEMButton('cfUsePreload','Use preload %1',
             new boolButton("On", "Off"),
             new buttonInfo('Use Preload', 'Whether or not to choose one of the precomputed seeds (from preloading) to use upon trying again.<br>If enabled, the cast count will be hidden.', [34, 12]),
             s => usingPreload = s
         ),
-        new CCCEMButton('cfPreloadNum','Preload backups [##]',
+        new CCCEMButton('cfPreloadNum','Preload backups %1',
             new numberInputButton(),
             new buttonInfo('Preload backups', 'Set the amount of seeds to compute for each sequence.<br>Useful for simulating the other elements of rng that cannot normally be replicated with preloading.', [17, 20]),
             s => preLoadAmountPerSequence = s, true

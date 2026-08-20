@@ -624,10 +624,10 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
     class gameSpeedKeySelect extends keySelectButton {
         parseConvert = key => { 
             if (key == -1) {
-                return 'Always';
+                return loc('Always');
             }
             if (key == 0) {
-                return 'Never';
+                return loc('Never');
             }
             return String.fromCharCode((96 <= key && key <= 105) ? key - 48 : key).toUpperCase(); 
         }
@@ -639,7 +639,7 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
             } 
 
             window.toChangeKeyBind = this.parent.key;
-            Game.Notify('Press a key to set!<br>press esc to set as Never, and click button again to set as Always', '');
+            Game.Notify(loc('Press a key to set!<br>press esc to set as Never, and click button again to set as Always'), '', 0);
         }
 
         onKeyConfirmation(e) {
@@ -647,7 +647,7 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
                 Game.Notify('Key cleared!', '');
                 this.parent.state = 0;
             } else {
-                Game.Notify('Key set: '+e.key.toUpperCase(), '');
+                Game.Notify(loc('Key set: %1', e.key.toUpperCase()), '', 0);
                 this.parent.state = e.keyCode;
             }
             window.toChangeKeyBind = null;
@@ -659,7 +659,7 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
         }
     }
     new CCCEMExternalCategory('PForPause', 'P for Pause', [
-        new CCCEMButton('gamePause', '[##]', 
+        new CCCEMButton('gamePause', '%1', 
             new boolButton('Unpause', 'Pause'),
             new buttonInfo('Game pause', 'Stops the game from performing logic ticks until unpaused.', [8, 22]),
             function() { PauseGame(); this.state = gamePause; }, 
@@ -671,17 +671,17 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
             () => { TickStep(); },
             true
         ),
-        new CCCEMButton('pauseKey','Pause: [##]',
+        new CCCEMButton('pauseKey','Pause: %1',
             new keySelectButton(80),
             new buttonInfo('Pause key select', 'Selects the key that pauses the game on press.', [0, 8]),
             down => { if (!down) { return; } PauseGame(); CCCEMButtons['gamePause'].state = gamePause; }
         ),
-        new CCCEMButton('tickKey','Tick: [##]',
+        new CCCEMButton('tickKey','Tick: %1',
             new keySelectButton(84),
             new buttonInfo('Tick key select', 'Selects the key that performs a single logic tick on press.', [0, 8]),
             down => { if (!down) { return; } TickStep(); }, true
         ),
-        new CCCEMButton('gamespeed','Gamespeed multiplier: [##]',
+        new CCCEMButton('gamespeed','Gamespeed multiplier: %1',
             new numberInputButton(2),
             new buttonInfo('Gamespeed multiplier', 'Sets the multiplier that will be applied when the gamespeed trigger is used.', [23, 11]),
             s => {
@@ -691,7 +691,7 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
                 }
             }, { advanced: false }
         ),
-        new CCCEMButton('gamespeedKey','Trigger method: [##]',
+        new CCCEMButton('gamespeedKey','Trigger method: %1',
             new gameSpeedKeySelect(0),
             new buttonInfo('Gamespeed trigger method', 'Selects the key that changes the game speed to the specified game speed when held.', [0, 8]),
             down => { if (!down) { PForPause.changeGameSpeed(1); return; } PForPause.changeGameSpeed(timeFactorWhenEnabled); }, { advanced: false }

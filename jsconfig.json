@@ -20,6 +20,7 @@
     "castFinder.js",
     "testFile.js",
     "autoclicker.js",
+    "shortbreadLoader.js",
     "locPatches/**/*"
   ],
   "exclude": [

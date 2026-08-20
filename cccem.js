@@ -15,8 +15,8 @@ const __CCCEM_INIT_FUNCTION__ = function() {
             }
             eval('Game.UpdateMenu='+Game.UpdateMenu.toString()
                 .replace('if (App && App.writeModUI)', 'str += Game.mods[\'CCCEMLoader\'].getMenuStr(); if (App && App.writeModUI)')
-                .replace('Game.toSave=true;Game.toQuit=true;', 'Game.toSave=true;Game.toQuit=true;if (window.PRACTICE_MODE) { Game.toSave=false; }')
-                .replace('Save & Quit', 'window.PRACTICE_MODE?\'Quit\':\'Save & Quit\'')
+                .replace('Game.toSave=true;Game.toQuit=true;', 'Game.toSave=true;Game.toQuit=true;if (window.PRACTICE_MODE) { Game.toSave=false; window.prepareWarn(); }')
+                .replace('"Save & Quit"', 'window.PRACTICE_MODE?\'Quit\':\'Save & Quit\'')
             );
             if (!App) { this.initialize(); }
             clearInterval(interval);
@@ -31,6 +31,20 @@ const __CCCEM_INIT_FUNCTION__ = function() {
         alert(cccemTimeoutErrors[curLang] ?? cccemTimeoutErrors['EN']);
         clearInterval(interval);
     }, 8000);
+    window.prepareWarn = function() {
+        setTimeout(() => {
+            Game.Prompt('<id prepareWarn><noClose><h3>'+loc('Exit error')+'</h3><div class="line"></div><div class="block">'+
+                loc('It appears that exiting failed. To exit, manually close the game via the default button for closing any window in your OS, or use the Task Manager, then reopen the game. As far as we know this is an issue in the game itself and is not fixable.')
+            +'</div>', []);
+        }, 1000);
+    }
+    window.attemptRestoreSaveFromCCCEM = function() { 
+        try { if (localStorageGet('CCCEMBackup')) { 
+            Game.LoadSave(localStorageGet('CCCEMBackup'), true);
+        } } catch(e) {
+            Game.Notify(loc('Failed to restore save from backup.'), e.message, 0);
+        }
+    }
 };
 
 (function() { 
@@ -102,13 +116,15 @@ const __CCCEM_INIT_FUNCTION__ = function() {
 
                     str += '<div class="listing" style="color:rgba(255,255,255,0.5); font-size:12px;">' + (window.PRACTICE_MODE ? loc('You are currently in practice mode.') : loc('You are currently NOT in practice mode.')) + '</div>';
 
-                    str += '<a class="smallFancyButton" style="' + (window.PRACTICE_MODE ? '' : 'opacity: 0.5; border: 1px solid gray;') + '" onclick="if (window.PRACTICE_MODE) { Game.toReload = true; }">' + loc('Exit practice mode') + '</a>';
-                    str += '<a class="smallFancyButton" style="' + (window.PRACTICE_MODE ? '' : 'opacity: 0.5; border: 1px solid gray;') + '" onclick="if (window.PRACTICE_MODE) { customSave(); Game.toReload = true; }">' + loc('Save settings & exit practice mode') + '</a>';
+                    str += '<a class="smallFancyButton" style="' + (window.PRACTICE_MODE ? '' : 'opacity: 0.5; border: 1px solid gray;') + '" onclick="if (window.PRACTICE_MODE) { Game.toReload = true; window.prepareWarn(); }">' + loc('Exit practice mode') + '</a>';
+                    str += '<a class="smallFancyButton" style="' + (window.PRACTICE_MODE ? '' : 'opacity: 0.5; border: 1px solid gray;') + '" onclick="if (window.PRACTICE_MODE) { customSave(); Game.toReload = true; window.prepareWarn(); }">' + loc('Save settings & exit practice mode') + '</a>';
                 } else {
                     str += '<div class="listing" style="color:rgba(255,255,255,0.5); font-size:12px;">' + loc('To exit practice mode, simply unload the mod by reloading the game or removing it from your mod manager.') + '</div>';
                 }
                 str += '<div class="line"></div>';
                 str += '<div class="listing" style="color:rgba(255,255,255,0.5); font-size:12px;">' + loc('Questions, concerns, or want to discuss? You will be most likely to find other CCCEM users <a href="%1" target="_blank">in the official cookie clicker discord server</a>. Channels are #cookie-clicker or #dashnet-modding.', 'https://discord.gg/cookie') + '</div>';
+                if (localStorageGet && localStorageGet('CCCEMBackup')) { str += '<div class="line"></div>';
+                str += '<div class="listing" style="color:rgba(255,255,255,0.5); font-size:12px;">' + loc('Lost your save to this mod? My apologies, but do try <a onclick="window.attemptRestoreSaveFromCCCEM();">loading from backup</a>!') + '</div>'; }
                 str += '</div></div>';
                 return str;
             },

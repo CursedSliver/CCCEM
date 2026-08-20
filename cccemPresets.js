@@ -69,8 +69,8 @@ class CCCEMPreset {
 
     CCCEMCategories['interfaceBegin'].hidden = false;
     CCCEMCategories['savingControls'].hidden = false;
-    CCCEMButtons['loadPForPause'].hidden = false;
-    CCCEMButtons['loadCastFinder'].hidden = false;
+    if (!App) { CCCEMButtons['loadPForPause'].hidden = false; }
+    if (!App) { CCCEMButtons['loadCastFinder'].hidden = false; }
     CCCEMButtons['createPreset'].hidden = false;
 
     ResetAll();
@@ -229,8 +229,8 @@ new CCCEMPreset('initialization', initSettings, //used for loading the mod for t
   CCCEMCategories['interfaceBegin'].hidden = true;
   CCCEMCategories['savingControls'].hidden = true;
 
-  CCCEMButtons['loadPForPause'].hidden = true;
-  CCCEMButtons['loadCastFinder'].hidden = true;
+  if (!App) { CCCEMButtons['loadPForPause'].hidden = true; }
+  if (!App) { CCCEMButtons['loadCastFinder'].hidden = true; }
   CCCEMButtons['createPreset'].hidden = true;
 
   CCCEMButtons['exportSettings'].hidden = true;
@@ -244,8 +244,8 @@ window.freePreset = function() {
   CCCEMCategories['interfaceBegin'].hidden = false;
   CCCEMCategories['savingControls'].hidden = false;
 
-  CCCEMButtons['loadPForPause'].hidden = false;
-  CCCEMButtons['loadCastFinder'].hidden = false;
+  if (!App) { CCCEMButtons['loadPForPause'].hidden = false; }
+    if (!App) { CCCEMButtons['loadCastFinder'].hidden = false; }
   CCCEMButtons['createPreset'].hidden = false;
 
   CCCEMButtons['exportSettings'].hidden = false;
