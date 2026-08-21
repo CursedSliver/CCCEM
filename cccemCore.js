@@ -66,13 +66,14 @@
 //version 3.42: overhauled code to support steam, added stuff in options
 //version 3.43: removed save and load and dispersed options into other categories, made the practice mode text not display on web
 //version 3.44: fixed critical issues, major scoring evaluation algorithm rework, added sub-website
+//version 3.5: steam release
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 window.PRACTICE_MODE = true;
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3.44';
+var CCCEMVerReal = 'v3.5';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -219,8 +220,13 @@ function customSave() {
     Game.toSave = false;
     if (!currentSave) { return; }
     let str = currentSave.replace('!END!', '');
-    str = str.replace(/\|\|(.*)/, str.match(/\|\|.*?\|\|/));
-    str+=Game.saveModData();
+    if (str.match(/([|;])CCCEMContainer:.*?(;|$)/).length) {
+      str = str.replace(/([|;])CCCEMContainer:.*?(;|$)/, 
+        '$1CCCEMContainer:' + Game.safeSaveString(getSettingsCode()) + '$2'
+      );
+    } else {
+      str += (str.endsWith('||')?'':';') + 'CCCEMContainer:' + Game.safeSaveString(getSettingsCode());
+    }
     if (Game.useLocalStorage)
 				{
 					//so we used to save the game using browser cookies, which was just really neat considering the game's name
@@ -880,17 +886,8 @@ function StripCCCEMData(data) {
   str=str.split('!END!')[0];
 	str=b64_to_utf8(str);
   if (!str)  return ''
-  str=str.split('|');
-  spl=(str[9]||'').split(';');
-  for (var i in spl) {
-		if (spl[i]) {
-			var data=spl[i].split(':');
-			var modId=data[0];
-			if (modId=='CCCEMContainer') {spl.splice(i, 1)}
-		  }
-    }
-  str[9] = spl.join(';')
-  str = str.join('|')
+  str = str.replace(/([|;])CCCEMContainer:.*?(;|$)/, '$1');
+  str = str.replace(/[|;]$/, '');
   str = utf8_to_b64(str)+'!END!';
   str = escape(str)
   return str
@@ -1072,8 +1069,9 @@ function oldLoadFunc(str, noNotify) {
 
 var settingsToLoad = '';
 
-function throwCCCEMLoadIssue(str) {
+function throwCCCEMLoadIssue(str, save) {
   Game.Prompt('<id CCCEMLoadIssue><h3>'+loc('CCCEM Settings load failed!')+'</h3><div class="line"></div><div class="block">'+str+'</div>', [[loc('OK')]]);
+  if (save) { console.log(save); }
 }
 var CCCEMContainerModObj = null;
 Game.registerMod('CCCEMContainer', {
@@ -1127,10 +1125,12 @@ Game.registerMod('CCCEMContainer', {
     const BOTTOM = '>>ContainerEnd<<';
 
     //no loc for now since not useful information
-    if (!str.startsWith(TOP)) { throwCCCEMLoadIssue('CCCEMContainer load: top marker not found'); return; }
+    if (!str.startsWith(TOP)) { throwCCCEMLoadIssue('CCCEMContainer load: top marker not found', str); return; }
     const midIdx = str.indexOf('<<', TOP.length);
-    if (midIdx === -1) { throwCCCEMLoadIssue('CCCEMContainer load: malformed top marker (missing <<)'); return; }
-    if (!str.endsWith(BOTTOM)) { throwCCCEMLoadIssue('CCCEMContainer load: end marker not found'); return; }
+    if (midIdx === -1) { throwCCCEMLoadIssue('CCCEMContainer load: malformed top marker (missing <<)', str); return; }
+    if (!str.endsWith(BOTTOM)) { throwCCCEMLoadIssue('CCCEMContainer load: end marker not found', str); return; }
+
+    str = Game.safeLoadString(str);
 
     const importedCCCEMVersion = str.slice(TOP.length, midIdx).trim();
     const currentVer = parseFloat(CCCEMVer.slice(1, CCCEMVer.length));
@@ -1193,7 +1193,7 @@ function loadAllPrerequisites() {
   const list = [{
     check: () => Game.ready && CheckMinigamesLoaded()
   }, {
-    url: 'https://cdn.jsdelivr.net/npm/fuse.js@7.1.0',
+    url: App?cccemDir+'libraries/Fuse.js':'https://cdn.jsdelivr.net/npm/fuse.js@7.1.0',
     optional: true
   }, {
     load: () => { let div = document.createElement('link'); div.id = 'CCCEMStyles'; div.href = cccemDir+'cccemStyles.css'; div.rel = 'stylesheet'; div.type = 'text/css'; document.body.appendChild(div); },
@@ -1216,7 +1216,10 @@ function loadAllPrerequisites() {
     check: () => (typeof __GENERATE_PRESETS__ !== 'undefined' && __GENERATE_PRESETS__),
     exec: () => __GENERATE_PRESETS__()
   }, {
-    exec: () => { CCCEMContainerModObj.ready = true; }
+    exec: () => { 
+      CCCEMContainerModObj.ready = true; 
+      Game.runModHook('check'); // for CCCEMUILoaded
+    }
   }];
   return new Promise((resolve, reject) => {
     const pollInterval = 50;

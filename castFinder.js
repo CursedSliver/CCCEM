@@ -621,8 +621,8 @@ function CCCEMIntegratedExecute() {
 }
 
 Game.registerHook('check', function() { Game.Unlock('Open Cast Finder');});
-
-if (typeof CCCEMUILoaded !== 'undefined') { 
+(function() { function registerCCCEM() {
+    if (typeof CCCEMUILoaded === 'undefined') { return false; }
     new CCCEMExternalCategory('CastFinder', 'Cast Finder', [
         new CCCEMButton('cfCode', 'Open Cast Finder', 
             new stringInputButton(),
@@ -691,5 +691,19 @@ if (typeof CCCEMUILoaded !== 'undefined') {
     	CCCEMButtons["cfCode"].changeState("nn^"+forceFtHoF)
     }
     codes = compile(get("cfCode"));
+    CCCEMButtons['loadCastFinder'].hidden = true;
     RedrawCCCEM();
+    return true;
+}; 
+const hook = () => {
+    try { if (registerCCCEM()) {
+        Game.removeHook('check', hook);
+    } } catch(e) {
+        Game.removeHook('check', hook);
+        console.error('Failed to register CCCEM plugin!', e);
+    }
+};
+if (!registerCCCEM()) { 
+    Game.registerHook('check', hook);
 }
+})();

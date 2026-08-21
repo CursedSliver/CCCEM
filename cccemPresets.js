@@ -69,8 +69,8 @@ class CCCEMPreset {
 
     CCCEMCategories['interfaceBegin'].hidden = false;
     CCCEMCategories['savingControls'].hidden = false;
-    if (!App) { CCCEMButtons['loadPForPause'].hidden = false; }
-    if (!App) { CCCEMButtons['loadCastFinder'].hidden = false; }
+    if (!App) { CCCEMButtons['loadPForPause'].hidden = CCCEMButtons['loadPForPause'].hidden || false; }
+    if (!App) { CCCEMButtons['loadCastFinder'].hidden = CCCEMButtons['loadCastFinder'].hidden || false; }
     CCCEMButtons['createPreset'].hidden = false;
 
     ResetAll();
@@ -244,8 +244,8 @@ window.freePreset = function() {
   CCCEMCategories['interfaceBegin'].hidden = false;
   CCCEMCategories['savingControls'].hidden = false;
 
-  if (!App) { CCCEMButtons['loadPForPause'].hidden = false; }
-    if (!App) { CCCEMButtons['loadCastFinder'].hidden = false; }
+  if (!App) { CCCEMButtons['loadPForPause'].hidden = CCCEMButtons['loadPForPause'].hidden || false; }
+    if (!App) { CCCEMButtons['loadCastFinder'].hidden = CCCEMButtons['loadCastFinder'].hidden || false; }
   CCCEMButtons['createPreset'].hidden = false;
 
   CCCEMButtons['exportSettings'].hidden = false;

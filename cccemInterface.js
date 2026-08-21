@@ -1911,7 +1911,6 @@ new buttonCategory('categoryTogglePanel', 1, [
     new triggerButton(),
     new buttonInfo('Load P for Pause', 'Loads the P for Pause mod, which enables you to speed up, slow down, and stop time.', [8, 35]),
     function() {
-      window.__PForPauseDefaultHotkeysEnabled__ = false;
       Game.LoadMod(pForPausePath); if (hasHarbor) { MacadamiaModList.cccem.mod.loadModRPC.send({ path: pForPausePath }); } this.hidden = true;
     }, { hidden: !!App }
   ),
@@ -2841,7 +2840,9 @@ invalidateScore=0;
 
 if (App) {
   window.__PForPauseDefaultHotkeysEnabled__ = false;
-  Game.LoadMod(pForPausePath);
+  if (!window.PForPause) {
+    Game.LoadMod(pForPausePath);
+  }
 }
 
 window.CCCEMInterfaceReady = true;

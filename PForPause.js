@@ -9,9 +9,12 @@
 //version 2.121 reverted changes and changed approach to prevent deletion of other elements
 //version 2.2 fixed new integration with CCCEMUI buttons
 //version 2.3 integrated into v2.058
+//version 2.31 fixed issues with breaking if not all minigames are unlocked
+//version 2.4 fixed even more issues, readied for steam release
 
-var gamePause=0
-var gardenStepDifference=Game.Objects.Farm.minigame?(Game.Objects.Farm.minigame.nextStep-Date.now()):0
+if (typeof gamePause === 'undefined' ) { var gamePause=0
+var gardenStepDifference=
+(typeof Game !== 'undefined' && Game && Game.ready)?(Game.Objects.Farm.minigame?(Game.Objects.Farm.minigame.nextStep-Date.now()):0):0;
 var pantheonSwapDifference=0
 var lumpTimeDifference=0
 var gfdID=0
@@ -22,6 +25,12 @@ var pForPause=[[80, "P"], [84, "T"], [82, "R"], [0, 'Never']] //keycodes for pau
 var changeKeyBind=0
 var gameSpeedMultTriggerKeybind=0; //never active
 var timeFactorWhenEnabled=1;
+var PForPause = null;
+var timeFactorE = 1;
+var originalFpsE = 30;
+var previousTimeFactor = 1;
+
+var legacyPause = (typeof legacyPause !== 'undefined')?legacyPause:false; }
 
 function Clamp(val, min, max) {return Math.max(min, Math.min(val, max))}
 
@@ -34,13 +43,29 @@ function HoldVars() {
 
 function PauseGame() {
     gamePause=!gamePause; 
-    for (let anim of PForPause.allAnimations) {
-        if (gamePause) { anim.pause(); }
-        else { anim.play(); }
+    if (legacyPause) {
+        for (let anim of PForPause.allAnimations) {
+            if (gamePause) { anim.pause(); }
+            else { anim.play(); }
+        }
+        HoldVars();
+    } else if (gamePause) {
+        previousTimeFactor = PForPause.timeFactor;
+        PForPause.changeGameSpeed(0);
+        Game.Notify(loc('Game paused - press P again to unpause'), '', 0, 1.5);
+    } else if (!gamePause) {
+        PForPause.changeGameSpeed(previousTimeFactor);
+        Game.Notify(loc('Game unpaused'), '', 0, 1.5);
     }
-    HoldVars();
 }
 function TickStep() {
+    if (!legacyPause) {
+        const prev = PForPause.timeFactor;
+        PForPause.changeGameSpeed(1);
+        Game.Logic(); 
+        PForPause.changeGameSpeed(prev);
+        return;
+    }
     gardenStepDifference-=1000/PForPause.fFps; 
     pantheonSwapDifference+=1000/PForPause.fFps; 
     Game.lumpTimeDifference+=1000/PForPause.fFps; 
@@ -83,18 +108,14 @@ function changeGrimoire() {
         Game.Popup('<div style="font-size:80%;">'+loc("Casting %1<br>for %2 magic...",[spell.name,Beautify(cost)])+'</div>',Game.mouseX,Game.mouseY);
     };
     const M = Game.ObjectsById[7].minigame;
-    eval('Game.ObjectsById[7].minigame.logic='+Game.ObjectsById[7].minigame.logic.toString().replace('+=M.magicPS', '+=M.magicPS*PForPause.timeFactor').replaceAll('Game.T%5', 'PForPause.checkAnimTWasAMultipleOf(5)'));
 }
-setTimeout(function() { if (Game.ObjectsById[7].minigame && Game.ObjectsById[7].minigameLoaded) { changeGrimoire(); } })
 
-eval("Game.Loop="+Game.Loop.toString().replace("Game.Logic();","if (!gamePause) {Game.Logic();} else {Game.Objects.Farm.minigame.nextStep=Math.floor(Date.now()+gardenStepDifference); Game.Objects.Temple.minigame.swapT=Math.floor(Date.now()-pantheonSwapDifference); Game.lumpT=Math.floor(Date.now()-lumpTimeDifference)}"));
-eval("Game.Loop="+Game.Loop.toString().replace("Game.accumulatedDelay+=((time-Game.time)-1000/Game.fps);","if (!gamePause) Game.accumulatedDelay+=((time-Game.time)-1000/Game.fps);"))
+(function() { function p() {
+eval("Game.Loop="+Game.Loop.toString().replace("Game.Logic();","if (!gamePause || !legacyPause) {Game.Logic();} else {if (Game.Objects.Farm.minigame && Game.Objects.Farm.minigameLoaded) { Game.Objects.Farm.minigame.nextStep=Math.floor(Date.now()+gardenStepDifference); } if (Game.Objects.Temple.minigame && Game.Objects.Temple.minigameLoaded) { Game.Objects.Temple.minigame.swapT=Math.floor(Date.now()-pantheonSwapDifference); } Game.lumpT=Math.floor(Date.now()-lumpTimeDifference)}"));
+eval("Game.Loop="+Game.Loop.toString().replace("Game.accumulatedDelay+=((time-Game.time)-1000/Game.fps);","if (!gamePause || !legacyPause) Game.accumulatedDelay+=((time-Game.time)-1000/Game.fps);"))
 eval("Game.Logic="+Game.Logic.toString().replace("//minigames","//minigames \nfor (var i in gfdArr) {gfdArr[i][1]+=1000/PForPause.fFps;}"))
 eval("Game.harvestLumps="+Game.harvestLumps.toString().replace("Game.lumpT=Date.now();","Game.lumpT=Date.now(); lumpTimeDifference=0;"))
 
-var PForPause = null;
-var timeFactorE = 1;
-var originalFpsE = 30;
 Game.registerMod('P for Pause', {
     init: function() {
         PForPause = this;
@@ -225,29 +246,35 @@ Game.registerMod('P for Pause', {
             PForPause.lastFrame = now;
         });
 
-        this.changeMinigame('Farm', ['logic', 'draw', 'reset', 'soilTooltip', 'buildPanel']);
-        this.changeMinigame('Bank', [], function(M) {
-            eval('M.logic='+M.logic.toString().replace('M.tickT++;', 'M.tickT += PForPause.timeFactor;'));
-        });
-        this.changeMinigame('Temple', ['logic', 'draw', 'reset', 'useSwap']);
-        this.changeMinigame('Wizard tower', [], function(M) {
-            eval('M.logic='+M.logic.toString()
-                .replace('M.magic+=M.magicPS', 'M.magic+=M.magicPS * PForPause.timeFactor')
-            );
-            //PForPause.fallbackReplace('M.draw', '-Game.animT*', '-Game.realT*', '-Game.T*');
-        });
+        const changeAllMinigames = function() {
+            this.changeMinigame('Farm', ['logic', 'draw', 'reset', 'soilTooltip', 'buildPanel']);
+            this.changeMinigame('Bank', [], function (M) {
+                eval('M.logic=' + M.logic.toString().replace('M.tickT++;', 'M.tickT += PForPause.timeFactor;'));
+            });
+            this.changeMinigame('Temple', ['logic', 'draw', 'reset', 'useSwap']);
+            this.changeMinigame('Wizard tower', [], function (M) {
+                changeGrimoire();
+                eval('M.logic=' + M.logic.toString()
+                    .replace('M.magic+=M.magicPS', 'M.magic+=M.magicPS * PForPause.timeFactor')
+                    .replaceAll('Game.T%5', 'PForPause.checkAnimTWasAMultipleOf(5)')
+                );
+                //PForPause.fallbackReplace('M.draw', '-Game.animT*', '-Game.realT*', '-Game.T*');
+            });
+        }
+        changeAllMinigames.call(this);
+        Game.registerHook('reset', hard => hard && changeAllMinigames.call(this));
 
         this.patchDate();
         this.registerHotkeyCaptureListener();
         this.registerDefaultHotKeys();
         AddEvent(document, 'keydown', e => {
-            if (!this.defaultHotkeysEnabled) { return; }
+            if (!this.defaultHotkeysEnabled || gamePause) { return; }
             if (this.toggleGameSpeedHotkey && !this.awaitingHotkey && e.key.toLowerCase() === this.toggleGameSpeedHotkey) {
                 this.changeGameSpeed(this.pendingTimeFactor);
             }
         });
         AddEvent(document, 'keyup', e => {
-            if (!this.defaultHotkeysEnabled) { return; }
+            if (!this.defaultHotkeysEnabled || gamePause) { return; }
             if (this.toggleGameSpeedHotkey && !this.awaitingHotkey && e.key.toLowerCase() === this.toggleGameSpeedHotkey) {
                 this.changeGameSpeed(1);
             }
@@ -403,6 +430,7 @@ Game.registerMod('P for Pause', {
     },
     pendingTimeFactor: 1,
     defaultHotkeysEnabled: window.__PForPauseDefaultHotkeysEnabled__ ?? true,
+    pToPauseEnabled: true,
     /**
      * @type {string|false|true} false = never, true = always, string = hotkey
      */
@@ -414,9 +442,12 @@ Game.registerMod('P for Pause', {
         const thisObject = this;
         AddEvent(document, 'keydown', e => {
             if (!thisObject.defaultHotkeysEnabled) { return; }
+            if (Game.promptOn) {
+                return;
+            }
             if (e.shiftKey && e.key.toLowerCase() === 'p') {
                 thisObject.openInterface();
-            } else if (e.key.toLowerCase() === 'p') {
+            } else if (e.key.toLowerCase() === 'p' && thisObject.pToPauseEnabled && thisObject.toggleGameSpeedHotkey !== 'p') {
                 PauseGame();
             }
         });
@@ -502,14 +533,20 @@ Game.registerMod('P for Pause', {
         this.refreshHotkeyButton();
         const out = l('hotkeySetOutput');
         if (out) { out.innerHTML = loc('Press above button to set. Shift+Space to set always. Ctrl+Space to set never.'); }
+        Game.Notify(loc('Game speed hotkey set: %1', this.formatHotkeyLabel(this.toggleGameSpeedHotkey)), '', 0);
+        if (gamePause) { return; }
         if (this.toggleGameSpeedHotkey === true) {
             this.changeGameSpeed(this.pendingTimeFactor);
         } else {
             this.changeGameSpeed(1);
         }
-        Game.Notify(loc('Game speed hotkey set: %1', this.formatHotkeyLabel(this.toggleGameSpeedHotkey)), '', 0);
     },
+    interfaceOverride: null,
     openInterface: function() {
+        if (this.interfaceOverride) {
+            this.interfaceOverride();
+            return;
+        }
         Game.Prompt(`<h3>${loc('Modify Game Speed')}</h3>
             <div class="line"></div>
             <div class="block" style="text-align: center;">
@@ -541,15 +578,17 @@ Game.registerMod('P for Pause', {
         });
     },
     save: function() {
-        return '' + this.timeFactor;
+        return '' + this.timeFactor + '/' + this.cumulativeRealTime;
     },
     loadTimeMult: false,
     load: function(str) {
-        if (!this.loadTimeMult) {
-            return;
+        str = str.split('/');
+        if (str[1]) {
+            this.cumulativeRealTime = parseFloat(str[1]);
         }
-
-        this.changeGameSpeed(parseFloat(str));
+        if (this.loadTimeMult) {
+            this.changeGameSpeed(parseFloat(str[0]));
+        }
     }
 });
 
@@ -616,11 +655,14 @@ AddLanguage('EN', 'english', {
     'Never': 'Never',
     'Game speed hotkey set: %1': 'Game speed hotkey set: %1',
     'P For Pause loaded!': 'P For Pause loaded!',
-    'Press P to pause the game, or press Shift+P to change your game speed.': 'Press P to pause the game, or press Shift+P to change your game speed.'
+    'Press P to pause the game, or press Shift+P to change your game speed.': 'Press P to pause the game, or press Shift+P to change your game speed.',
+    'Game paused - press P again to unpause': 'Game paused - press P again to unpause',
+    'Game unpaused': 'Game unpaused'
 }, true);
 
 
-if (!(typeof CCCEMUILoaded === 'undefined')) {
+(function() { function registerCCCEM() {
+    if (typeof CCCEMUILoaded === 'undefined') { return false; }
     class gameSpeedKeySelect extends keySelectButton {
         parseConvert = key => { 
             if (key == -1) {
@@ -694,7 +736,7 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
         new CCCEMButton('gamespeedKey','Trigger method: %1',
             new gameSpeedKeySelect(0),
             new buttonInfo('Gamespeed trigger method', 'Selects the key that changes the game speed to the specified game speed when held.', [0, 8]),
-            down => { if (!down) { PForPause.changeGameSpeed(1); return; } PForPause.changeGameSpeed(timeFactorWhenEnabled); }, { advanced: false }
+            down => { if (gamePause) { return; } if (!down) { PForPause.changeGameSpeed(1); return; } PForPause.changeGameSpeed(timeFactorWhenEnabled); }, { advanced: false }
         )
     ], null, function() {
         CCCEMButtons['gamespeed'].changeState(1);
@@ -703,5 +745,64 @@ if (!(typeof CCCEMUILoaded === 'undefined')) {
     CCCEMCategories.PForPause.complexityHideImmune = false;
     CCCEMCategories.PForPause.presetBypass = true;
     CCCEMButtons['gamePause'].type.willSave = false;
+    CCCEMButtons['loadPForPause'].hidden = true;
+    PForPause.pToPauseEnabled = false;
+    PForPause.interfaceOverride = function() {
+        Game.Prompt(`<id interfaceDisabled><h3>${loc('Notice')}</h3>
+            <div class="line"></div>
+            <div class="block">
+                ${loc('The interface is disabled due to CCCEM being active. Use the game speed controls in the CCCEM Interface instead!')}
+            </div>
+        `, [[loc('OK')]]);
+    }
+    let heldKeyCode = null;
+    AddEvent(document, 'keydown', e => { heldKeyCode = e.keyCode; });
+    AddEvent(document, 'keyup', e => { if (heldKeyCode === e.keyCode) { heldKeyCode = null; } });
+    const gameSpeedKeyInConflict = () => {
+        const speedBtn = CCCEMButtons['gamespeedKey'];
+        if (!speedBtn) { return false; }
+        const speedState = speedBtn.state;
+        if (typeof speedState !== 'number' || speedState <= 0) { return false; }
+        return heldKeyCode !== null && speedState === heldKeyCode;
+    };
+    const wrapPauseTick = (btnKey) => {
+        const btn = CCCEMButtons[btnKey];
+        if (!btn || typeof btn.updateVarFunc !== 'function') { return; }
+        const original = btn.updateVarFunc;
+        btn.updateVarFunc = (down) => {
+            if (down && gameSpeedKeyInConflict()) { return; }
+            original.call(btn, down);
+        };
+    };
     RedrawCCCEM();
+    return true;
+}; 
+const hook = () => {
+    try { if (registerCCCEM()) {
+        Game.removeHook('check', hook);
+    } } catch(e) {
+        Game.removeHook('check', hook);
+        console.error('Failed to register CCCEM plugin!', e);
+    }
 };
+if (!registerCCCEM()) { 
+    Game.registerHook('check', hook);
+}
+})();
+} 
+
+function checkForReady() {
+    return (typeof Game !== 'undefined' && Game && Game.ready);
+}
+if (checkForReady()) {
+    p();
+} else {
+    const int = setInterval(() => {
+        if (checkForReady()) {
+            p();
+            clearInterval(int);
+        }
+    }, 100);
+}
+
+})();

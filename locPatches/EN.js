@@ -567,7 +567,9 @@ Game.mods['CCCEMLoader'].registerLang('EN', 'english', {
     "Trigger method: %1": "Trigger method: %1",
     "Gamespeed trigger method": "Gamespeed trigger method",
     "Selects the key that changes the game speed to the specified game speed when held.": "Selects the key that changes the game speed to the specified game speed when held.",
-    
+    "Notice": "Notice",
+    "The interface is disabled due to CCCEM being active. Use the game speed controls in the CCCEM Interface instead!": "The interface is disabled due to CCCEM being active. Use the game speed controls in the CCCEM Interface instead!",
+
     //castFinder.js
     "Cast Finder": "Cast Finder",
     "Open Cast Finder": "Open Cast Finder",
@@ -596,5 +598,5 @@ Game.mods['CCCEMLoader'].registerLang('EN', 'english', {
     "Imports preload code.": "Imports preload code.",
     "Export current preload": "Export current preload",
     "Export preload": "Export preload",
-    "Exports preload code.": "Exports preload code."
+    "Exports preload code.": "Exports preload code.",
 });
