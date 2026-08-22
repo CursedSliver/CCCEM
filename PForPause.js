@@ -111,11 +111,11 @@ function changeGrimoire() {
 }
 
 (function() { function p() {
-eval("Game.Loop="+Game.Loop.toString().replace("Game.Logic();","if (!gamePause || !legacyPause) {Game.Logic();} else {if (Game.Objects.Farm.minigame && Game.Objects.Farm.minigameLoaded) { Game.Objects.Farm.minigame.nextStep=Math.floor(Date.now()+gardenStepDifference); } if (Game.Objects.Temple.minigame && Game.Objects.Temple.minigameLoaded) { Game.Objects.Temple.minigame.swapT=Math.floor(Date.now()-pantheonSwapDifference); } Game.lumpT=Math.floor(Date.now()-lumpTimeDifference)}"));
-eval("Game.Loop="+Game.Loop.toString().replace("Game.accumulatedDelay+=((time-Game.time)-1000/Game.fps);","if (!gamePause || !legacyPause) Game.accumulatedDelay+=((time-Game.time)-1000/Game.fps);"))
-eval("Game.Logic="+Game.Logic.toString().replace("//minigames","//minigames \nfor (var i in gfdArr) {gfdArr[i][1]+=1000/PForPause.fFps;}"))
-eval("Game.harvestLumps="+Game.harvestLumps.toString().replace("Game.lumpT=Date.now();","Game.lumpT=Date.now(); lumpTimeDifference=0;"))
-
+for (let i in Game.mods) {
+    if (Game.mods[i].PForPause__OnLoadScript) {
+        Game.mods[i].PForPause__OnLoadScript(!!PForPause);
+    }
+}
 Game.registerMod('P for Pause', {
     init: function() {
         PForPause = this;
@@ -129,6 +129,11 @@ Game.registerMod('P for Pause', {
         Game.isNewAnimTick = true; //utility for stuff that triggers per x ticks
         Game.lastAnimT = Math.floor(Game.animT);
         Game.lastAnimTExact = Game.animT;
+
+        eval("Game.Loop="+Game.Loop.toString().replace("Game.Logic();","if (!gamePause || !legacyPause) {Game.Logic();} else {if (Game.Objects.Farm.minigame && Game.Objects.Farm.minigameLoaded) { Game.Objects.Farm.minigame.nextStep=Math.floor(Date.now()+gardenStepDifference); } if (Game.Objects.Temple.minigame && Game.Objects.Temple.minigameLoaded) { Game.Objects.Temple.minigame.swapT=Math.floor(Date.now()-pantheonSwapDifference); } Game.lumpT=Math.floor(Date.now()-lumpTimeDifference)}"));
+        eval("Game.Loop="+Game.Loop.toString().replace("Game.accumulatedDelay+=((time-Game.time)-1000/Game.fps);","if (!gamePause || !legacyPause) Game.accumulatedDelay+=((time-Game.time)-1000/Game.fps);"))
+        eval("Game.Logic="+Game.Logic.toString().replace("//minigames","//minigames \nfor (var i in gfdArr) {gfdArr[i][1]+=1000/PForPause.fFps;}"))
+        eval("Game.harvestLumps="+Game.harvestLumps.toString().replace("Game.lumpT=Date.now();","Game.lumpT=Date.now(); lumpTimeDifference=0;"))      
 
         function inRect(x,y,rect)
         {
@@ -279,7 +284,10 @@ Game.registerMod('P for Pause', {
                 this.changeGameSpeed(1);
             }
         });
-        if (this.defaultHotkeysEnabled) { Game.Notify(loc('P For Pause loaded!'), loc('Press P to pause the game, or press Shift+P to change your game speed.'), 0); }
+        if (this.defaultHotkeysEnabled) { this.notifyReady(); }
+    },
+    notifyReady: function() {
+        Game.Notify(loc('P For Pause loaded!'), loc('Press P to pause the game, or press Shift+P to change your game speed.'), 0);
     },
     changeGameSpeed: function(mult, noCSSUpdates) {
         if (typeof mult != 'number' || mult < 0) { return; }
@@ -395,7 +403,6 @@ Game.registerMod('P for Pause', {
         }
 
         //still replace anyways
-        this.realDate = Date.now; //replace again in case race condition
         if (true) {
             Date.now = function() {
                 return Math.floor(PForPause.cumulativeRealTime);
@@ -578,13 +585,13 @@ Game.registerMod('P for Pause', {
         });
     },
     save: function() {
-        return '' + this.timeFactor + '/' + this.cumulativeRealTime;
+        return '' + this.timeFactor + '/' + this.cumulativeRealTime + '/' + this.realDate();
     },
     loadTimeMult: false,
     load: function(str) {
         str = str.split('/');
         if (str[1]) {
-            this.cumulativeRealTime = parseFloat(str[1]);
+            this.cumulativeRealTime = parseFloat(str[1]) + (str[2]?(this.realDate() - parseFloat(str[2])):0);
         }
         if (this.loadTimeMult) {
             this.changeGameSpeed(parseFloat(str[0]));
