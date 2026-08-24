@@ -220,7 +220,7 @@ function customSave() {
     Game.toSave = false;
     if (!currentSave) { return; }
     let str = currentSave.replace('!END!', '');
-    if (str.match(/([|;])CCCEMContainer:.*?(;|$)/).length) {
+    if (str.match(/([|;])CCCEMContainer:.*?(;|$)/) && str.match(/([|;])CCCEMContainer:.*?(;|$)/).length) {
       str = str.replace(/([|;])CCCEMContainer:.*?(;|$)/, 
         '$1CCCEMContainer:' + Game.safeSaveString(getSettingsCode()) + '$2'
       );
