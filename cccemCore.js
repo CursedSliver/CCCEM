@@ -67,13 +67,14 @@
 //version 3.43: removed save and load and dispersed options into other categories, made the practice mode text not display on web
 //version 3.44: fixed critical issues, major scoring evaluation algorithm rework, added sub-website
 //version 3.5: steam release
+//version 3.51: fixed a bug where steam achievements would be gotten upon entering practice mode
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 window.PRACTICE_MODE = true;
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3.5';
+var CCCEMVerReal = 'v3.51';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -161,6 +162,13 @@ eval('Game.shimmerTypes.golden.getTimeMod='+Game.shimmerTypes.golden.getTimeMod.
 l('bigCookie').removeEventListener('click', Game.ClickCookie);
 eval('Game.ClickCookie='+Game.ClickCookie.toString().replace('now-Game.lastClick<1000/((e?e.detail:1)===0?3:50)', 'now-Game.lastClick<((e?e.detail:1)===0?Math.max(1000/3, clickWait):clickWait)'));
 AddEvent(l('bigCookie'), 'click', Game.ClickCookie);
+
+if (App) {
+  App.gotAchiev = (id) => { };
+  App.justLoadedSave = () => {};
+  App.resetAchievs = () => {};
+  App.allowSteamAchievs = false;
+}
 
 //gets rid of language select
 Game.ClosePrompt();

@@ -290,7 +290,7 @@ Game.registerMod('P for Pause', {
         Game.Notify(loc('P For Pause loaded!'), loc('Press P to pause the game, or press Shift+P to change your game speed.'), 0);
     },
     changeGameSpeed: function(mult, noCSSUpdates) {
-        if (typeof mult != 'number' || mult < 0) { return; }
+        if (typeof mult != 'number' || mult < 0 || Object.is(mult, NaN)) { return; }
         this.timeFactor = mult;
         timeFactorE = this.timeFactor;
         //Game.fps still dont change, create new functional fps to hook to 
@@ -591,7 +591,8 @@ Game.registerMod('P for Pause', {
     load: function(str) {
         str = str.split('/');
         if (str[1]) {
-            this.cumulativeRealTime = parseFloat(str[1]) + (str[2]?(this.realDate() - parseFloat(str[2])):0);
+            const date = parseFloat(str[1]);
+            this.cumulativeRealTime = (Object.is(date, NaN) ? this.realDate() : date) + (str[2]?(this.realDate() - parseFloat(str[2])):0);
         }
         if (this.loadTimeMult) {
             this.changeGameSpeed(parseFloat(str[0]));

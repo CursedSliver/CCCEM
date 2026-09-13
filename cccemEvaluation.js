@@ -6,6 +6,11 @@ if (typeof CCCEMEvaluationLoaded === 'undefined') {
   //prevents you from using OpenSesame as this mod removes the debugLog to make it look nice, which breaks the game if you run OpenSesame.
   eval("Game.OpenSesame="+Game.OpenSesame.toString().replace("var str='';","return")) 
   if (l('debugLog')) {l('debugLog').remove();};
+  // Create a new element so that l('debugLog') remains functional
+  var debugLog = document.createElement('div');
+  debugLog.id = 'debugLog';
+  debugLog.style.display = 'none';
+  l('game').appendChild(debugLog);
   
   //diasbles the first CpS recalculation
   eval("Game.Logic="+Game.Logic.toString().replace("if (Game.recalculateGains) Game.CalculateGains();",""))
