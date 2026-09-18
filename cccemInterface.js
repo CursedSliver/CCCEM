@@ -2854,7 +2854,7 @@ function RedrawCCCEM(openUI) {
   l('debug').style.display='block';
   devConsoleL = l('devConsole');
   l('devConsole').classList.add('CCCEMInterface');
-  if (openUI) {l('devConsoleContent').classList.add('fadeOut'); l('devConsoleContent').classList.add('widthCapped');}
+  if (openUI) {l('devConsoleContent').classList.remove('fadeOut'); l('devConsoleContent').classList.remove('initHidden'); l('devConsoleContent').classList.remove('widthCapped');}
   else {l('devConsoleContent').classList.add('fadeOut'); l('devConsoleContent').classList.add('widthCapped');}
   l('devConsole').scrollTop=l('debug').scroll
   };
