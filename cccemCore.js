@@ -705,7 +705,7 @@ function ResetAll(manual) {
   SpawnGoldenCookies();
   Game.bakeryNameSet(name);
   Game.specialTab = 'dragon';
-  ResetScroll();
+  setTimeout(ResetScroll,200);
   };
 
 function SetBuildings(buildCount, EB, rebuy) {
