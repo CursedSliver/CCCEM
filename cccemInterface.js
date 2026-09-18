@@ -2832,9 +2832,10 @@ function RedrawCCCEM(openUI) {
   
   var initHidden=''
   if (!openUI) {
-    if (l('devConsoleContent')) 
+    if (l('devConsoleContent')) {
       if (l('devConsoleContent').classList.contains('fadeOut'))  {initHidden = 'initHidden'}
       if (l('devConsoleContent').classList.contains('initHidden')) {initHidden = 'initHidden'}
+	}
     else initHidden = 'initHidden'
   }
 
