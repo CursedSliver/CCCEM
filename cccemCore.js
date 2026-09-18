@@ -68,13 +68,14 @@
 //version 3.44: fixed critical issues, major scoring evaluation algorithm rework, added sub-website
 //version 3.5: steam release
 //version 3.51: fixed a bug where steam achievements would be gotten upon entering practice mode
+//version 3.52: made UI disappear with a delay and added scrollbar setting
 
 if (typeof CCCEMLoaded === 'undefined') {
 
 window.PRACTICE_MODE = true;
 
 var CCCEMVer = 'v2.95';
-var CCCEMVerReal = 'v3.51';
+var CCCEMVerReal = 'v3.52';
 var CCCEMLoaded = true;
 var iniSeed='R'; //use 'R' to randomize seed, otherwise set as a specific seed
 var iniLoadSave='' //paste a save to load initially into this variable as a string by using 'apostrophes' around the text. Loading a save in this way will override most cookie, upgrade, prestige, and buildning settings, but not minigame settings.
@@ -750,6 +751,10 @@ function getPrefsCompilation() {
   return obj;
 }
 
+function getScrollCompilation() {
+    return [l('centerArea').scrollTop, l('sectionRight').scrollTop]
+}
+	
 function InitBuffMod() {
     Game.buffTypesByName["frenzy"].baseDur = 77
     Game.buffTypesByName["frenzy"].basePow = 7
