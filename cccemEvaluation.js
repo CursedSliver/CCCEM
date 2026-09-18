@@ -30,8 +30,8 @@ if (typeof CCCEMEvaluationLoaded === 'undefined') {
   eval("Game.shimmer.prototype.die="+Game.shimmer.prototype.die.toString().replace("Game.shimmersL.removeChild(this.l);","if (!isClickedGC) {FindMaxComboPow()}; isClickedGC=false; Game.shimmersL.removeChild(this.l);"))
   eval("Game.updateBuffs="+Game.updateBuffs.toString().replace("if (buff.onDie) buff.onDie();","if (buff.onDie) buff.onDie(); FindMaxComboPow();"))
 
-  //promptinprompt support
-  eval('Game.ClosePrompt='+Game.ClosePrompt.toString().replace('Game.promptNoClose=false;', 'Game.promptNoClose=false; resetPromptNesting();'));
+  //promptinprompt support and UI closing
+  eval('Game.ClosePrompt='+Game.ClosePrompt.toString().replace('Game.promptNoClose=false;', 'Game.promptNoClose=false; resetPromptNesting(); if (!l("debug").hovered) {closeCCCEMUI = setTimeout(RedrawCCCEM, 1000, 0)}'));
   eval('Game.Prompt='+Game.Prompt.toString().replace('{', '{ resetPromptNesting();'));
 };
 
