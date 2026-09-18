@@ -410,6 +410,15 @@ function ResetGame(toFindRaw) {
   Game.popups=1;
   };
 
+function ResetScroll() {
+    Game.BuildStore; 
+    let arr=get('scrollRecord'); 
+    if (Array.isArray(arr)) {
+        l('centerArea').scrollTop=arr[0]
+        l('sectionRight').scrollTop=arr[1]
+    }
+}
+	
 function parsePlantAge(plant, age) {
   const M = Game.Objects.Farm.minigame;
   if (typeof age !== 'number') {
@@ -696,7 +705,7 @@ function ResetAll(manual) {
   SpawnGoldenCookies();
   Game.bakeryNameSet(name);
   Game.specialTab = 'dragon';
-  if (manual) { Game.BuildStore(); }
+  ResetScroll();
   };
 
 function SetBuildings(buildCount, EB, rebuy) {
@@ -1189,7 +1198,6 @@ Game.registerMod('CCCEMContainer', {
       CCCEMPresets.initialization.invoke();
     } 
     ResetAll();
-    Game.BuildStore()
   },
   addLang: function(key, name, json) {
     AddLanguage(key, name, json, true);
