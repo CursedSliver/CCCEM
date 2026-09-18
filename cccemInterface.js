@@ -2210,6 +2210,14 @@ new buttonCategory('gameSettings', 4, [
       this.state = getPrefsCompilation();
       Game.Notify('Game settings recorded!', 'You will get the same settings when you use try again.', 0);
     }, { advanced: false }
+  ),
+  new CCCEMButton('scrollRecord', 'Record scrollbars', 
+    new triggerButton(),
+    new buttonInfo('Record position of scroll bars', 'Makes all subsequent resets set the scrollbars to be the current position at the time of clicking.', [6, 6]),
+    function() {
+      this.state = getScrollCompilation();
+      Game.Notify('Scrollbars recorded!', 'Scrollbars are now persistent.', 0);
+    }
   )
 ], 'optionsBatch3');
 CCCEMCategories.gameSettings.complexityHideImmune = false;
