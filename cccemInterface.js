@@ -2823,11 +2823,9 @@ function RedrawCCCEM(openUI) {
   if (openUI) {
     if (l('debug').open) {l('debug').scroll = l('devConsole').scrollTop}
     style+='width:auto;height:auto;min-width:192px;min-height:48px;overflow:auto;opacity:1;display:block;cursor:auto;'
-    l('devConsoleContent').classList.remove('fadeOut'); l('devConsoleContent').classList.remove('initHidden'); l('devConsoleContent').classList.remove('widthCapped');
   }
   else {
     style+='position:relative;left:-2px;top:-2px;width:24px;height:32px;overflow:hidden;cursor:pointer;opacity:0.5;text-align:center;transition:opacity 0.4s;'
-    l('devConsoleContent').classList.add('fadeOut'); l('devConsoleContent').classList.add('widthCapped');
     l('debug').scroll = l('devConsole').scrollTop
   }
   l('debug').open=openUI
@@ -2855,6 +2853,8 @@ function RedrawCCCEM(openUI) {
   l('debug').style.display='block';
   devConsoleL = l('devConsole');
   l('devConsole').classList.add('CCCEMInterface');
+  if (openUI) {l('devConsoleContent').classList.add('fadeOut'); l('devConsoleContent').classList.add('widthCapped');}
+  else {l('devConsoleContent').classList.add('fadeOut'); l('devConsoleContent').classList.add('widthCapped');}
   l('devConsole').scrollTop=l('debug').scroll
   };
 l('debug').addEventListener('mouseenter', () => {l('debug').hovered=true; clearTimeout(closeCCCEMUI); RedrawCCCEM(true)});
