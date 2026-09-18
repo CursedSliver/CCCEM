@@ -62,6 +62,7 @@ var autoSaveCCCEM=false;
 var pForPausePath = cccemDir+'PForPause.js';
 var castFinderPath = cccemDir+'castFinder.js';
 var invalidateScore=0
+var closeCCCEMUI=false
 
 let cccemShiftDetect = false;
 let cccemCtrlDetect = false;
@@ -2814,25 +2815,53 @@ CCCEMCategories['gcSettings'].hidden = true;*/
 CCCEMButtons['buffType'].updateVarFunc(get('buffType'));
 CCCEMButtons['buffObj'].changeState(-1);
 
-function RedrawCCCEM(noinvalidate) {
+function RedrawCCCEM(openUI) {
   if (hasHarbor) { MacadamiaModList.cccem.mod.syncSettingsRPC.send({ code: getSettingsCode() }); }
-  var str='';
-  str+='<div class="icon" style="position:absolute;left:-9px;top:-6px;background-position:'+(-28*48)+'px '+(-12*48)+'px;"></div><div id="debugLog" style="display:none;"></div>';
+  var style = '';
+  style+=`max-height: calc(100vh - ${((App?0:l('topBar').getBoundingClientRect().height) + 18)}px);`
+  if (typeof openUI === 'undefined') openUI = l('debug').open
+  if (openUI) {
+    if (l('debug').open) {l('debug').scroll = l('devConsole').scrollTop}
+    style+='width:auto;height:auto;min-width:192px;min-height:48px;overflow:auto;opacity:1;display:block;cursor:auto;'
+    l('devConsoleContent').classList.remove('fadeOut'); l('devConsoleContent').classList.remove('initHidden'); l('devConsoleContent').classList.remove('widthCapped');
+  }
+  else {
+    style+='position:relative;left:-2px;top:-2px;width:24px;height:32px;overflow:hidden;cursor:pointer;opacity:0.5;text-align:center;transition:opacity 0.4s;'
+    l('devConsoleContent').classList.add('fadeOut'); l('devConsoleContent').classList.add('widthCapped');
+    l('debug').scroll = l('devConsole').scrollTop
+  }
+  l('debug').open=openUI
   
-  str+='<div id="devConsoleContent" class="'+(l('devConsoleContent')?((l('devConsoleContent').classList.contains('fadeOut') || l('devConsoleContent').classList.contains('initHidden'))?'initHidden':''):'initHidden')+'">';
-  str+='<div class="title" style="font-size:14px;margin:6px;">CCCEM interface</div><div class="line"></div>';
+  var initHidden=''
+  if (!openUI) {
+    if (l('devConsoleContent')) 
+      if (l('devConsoleContent').classList.contains('fadeOut'))  {initHidden = 'initHidden'}
+      if (l('devConsoleContent').classList.contains('initHidden')) {initHidden = 'initHidden'}
+    else initHidden = 'initHidden'
+  }
+
+  var str='';
+  str+='<div id="devConsole" class="framed CCCEMInterface" style="'+style+'">'
+  if (!openUI) str+='<div class="icon" style="position:absolute;left:-9px;top:-6px;background-position:'+(-28*48)+'px '+(-12*48)+'px;"></div>'
+  str+='<div id="debugLog" style="display:none;"></div>';
+  
+  str+='<div id="devConsoleContent" class="'+initHidden+'">';
+  str+='<div class="title" style="font-size:14px;margin:6px;display:block;">CCCEM interface</div><div class="line"></div>';
   
   str+=compileAllButtons();
 
-  str+='</div>';
-  l('devConsole').innerHTML=str;
+  str+='</div></div>';
+  l('debug').innerHTML=str;
   l('debug').style.display='block';
   devConsoleL = l('devConsole');
+  l('devConsole').classList.add('CCCEMInterface');
+  l('devConsole').scrollTop=l('debug').scroll
   };
-l('devConsole').classList.add('CCCEMInterface');
-l('devConsole').style.maxHeight = `calc(100vh - ${((App?0:l('topBar').getBoundingClientRect().height) + 18)}px)`;
-l('devConsole').addEventListener('mouseenter', () => { l('devConsoleContent').classList.remove('fadeOut'); l('devConsoleContent').classList.remove('initHidden'); l('devConsoleContent').classList.remove('widthCapped'); });
-l('devConsole').addEventListener('mouseleave', () => { l('devConsoleContent').classList.add('fadeOut'); l('devConsoleContent').classList.add('widthCapped'); });
+l('debug').addEventListener('mouseenter', () => {l('debug').hovered=true; clearTimeout(closeCCCEMUI); RedrawCCCEM(true)});
+l('debug').addEventListener('mouseleave', () => {l('debug').hovered=false; if (!Game.promptOn) closeCCCEMUI = setTimeout(RedrawCCCEM, 1000, false)});
+l('debug').scroll = 0
+l('debug').open = false
+l('debug').hovered = false
 RedrawCCCEM();
 l('devConsoleContent').classList.add('initHidden');
 l('devConsoleContent').classList.add('fadeOut');
